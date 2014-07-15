@@ -1,0 +1,18 @@
+#1#
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX onto: <http://dbpedia.org/ontology/>
+SELECT ?film WHERE {
+	?film rdf:type onto:Film .
+    ?film onto:productionCosts ?prodCosts .
+    ?film onto:staffCosts ?staffCosts .
+} 
+group by ?film having(min(?prodCosts) > max(?staffCosts))
+#2#
+SELECT DISTINCT  ?uri
+WHERE
+  { ?states rdf:type yago:AfricanCountries .
+    ?states dbo:capital ?uri .
+    ?uri dbo:population ?population
+    FILTER ( ?population < 1000000 )
+  }

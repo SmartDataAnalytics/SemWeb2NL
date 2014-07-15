@@ -1,0 +1,349 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>org.aksw.semweb2nl</groupId>
+	<artifactId>semweb2nl-parent</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Semantic Web 2 Natural Language</name>
+
+	<modules>
+		<module>assess</module>
+		<module>avatar</module>
+		<module>sparql2nl</module>
+		<module>triple2nl</module>
+	</modules>
+
+	<developers>
+		<developer>
+			<name>Lorenz Bühmann</name>
+			<email>buehmann@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/LorenzBuehmann</url>
+			<roles>
+				<role>architect</role>
+				<role>lead developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+		<developer>
+			<name>Axel-C. Ngonga Ngomo</name>
+			<email>ngonga@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/AxelNgonga</url>
+			<roles>
+				<role>architect</role>
+				<role>lead developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+		<developer>
+			<name>Christina Unger</name>
+			<email>cunger@cit-ec.uni-bielefeld.de</email>
+			<url>https://www.cit-ec.de/users/cunger</url>
+			<roles>
+				<role>architect</role>
+				<role>lead developer</role>
+			</roles>
+			<organizationUrl>https://www.cit-ec.de</organizationUrl>
+		</developer>
+		<developer>
+			<name>Jens Lehmann</name>
+			<email>lehmann@informatik.uni-leipzig.de</email>
+			<url>http://aksw.org/JensLehmann</url>
+			<roles>
+				<role>architect</role>
+				<role>developer</role>
+			</roles>
+			<organizationUrl>http://aksw.org</organizationUrl>
+		</developer>
+	</developers>
+
+	<organization>
+		<name>Agile Knowledge Engineering and Semantic Web</name>
+		<url>http://aksw.org</url>
+	</organization>
+
+	<licenses>
+		<license>
+			<name>Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+			<distribution>repo</distribution>
+			<comments>A business-friendly OSS license</comments>
+		</license>
+	</licenses>
+
+	<properties>
+		<compiler.version>1.7</compiler.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<assess.warFile.name>assess</assess.warFile.name>
+	</properties>
+
+	<repositories>
+		<repository>
+			<id>maven.aksw.internal</id>
+			<name>University Leipzig, AKSW Maven2 Repository</name>
+			<url>http://maven.aksw.org/archiva/repository/internal</url>
+		</repository>
+
+		<repository>
+			<id>maven.aksw.snapshots</id>
+			<name>University Leipzig, AKSW Maven2 Repository</name>
+			<url>http://maven.aksw.org/archiva/repository/snapshots</url>
+			<snapshots>
+				<enabled>true</enabled>
+			</snapshots>
+		</repository>
+	</repositories>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>gov.nist.math</groupId>
+				<artifactId>jama</artifactId>
+				<version>1.0.3</version>
+			</dependency>
+			<dependency>
+				<groupId>junit</groupId>
+				<artifactId>junit</artifactId>
+				<version>4.11</version>
+			</dependency>
+			<dependency>
+				<groupId>org.dllearner</groupId>
+				<artifactId>components-ext</artifactId>
+				<version>1.0-SNAPSHOT</version>
+				<exclusions>
+					<exclusion>
+						<artifactId>nif</artifactId>
+						<groupId>org.nlp2rdf</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>org.aksw.commons</artifactId>
+						<groupId>sparql</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>com.hp.hpl.jena</artifactId>
+						<groupId>arq</groupId>
+					</exclusion>
+
+					<exclusion>
+						<artifactId>jena-arq</artifactId>
+						<groupId>org.apache.jena</groupId>
+					</exclusion>
+					<exclusion>
+						<artifactId>jena</artifactId>
+						<groupId>com.hp.hpl.jena</groupId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.dllearner</groupId>
+				<artifactId>components-core</artifactId>
+				<version>1.0-SNAPSHOT</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-api</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>org.slf4j</groupId>
+						<artifactId>slf4j-log4j12</artifactId>
+					</exclusion>
+					<exclusion>
+						<groupId>com.hp.hpl.jena</groupId>
+						<artifactId>jena</artifactId>
+					</exclusion>
+					<!-- <exclusion> <artifactId>stanford-corenlp</artifactId> <groupId>edu.stanford.nlp</groupId> 
+						</exclusion> -->
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>ifi.uzh</groupId>
+				<artifactId>simpack</artifactId>
+				<version>0.9.1</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>simplenlg</groupId>
+				<artifactId>simplenlg</artifactId>
+				<version>4.4.3</version>
+				<type>jar</type>
+				<scope>compile</scope>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.jena</groupId>
+				<artifactId>jena-arq</artifactId>
+				<version>2.11.2</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.solr</groupId>
+				<artifactId>solr-solrj</artifactId>
+				<version>4.9.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jgrapht</groupId>
+				<artifactId>jgrapht-core</artifactId>
+				<version>0.9.0</version>
+			</dependency>
+			<dependency>
+				<groupId>jaws</groupId>
+				<artifactId>core</artifactId>
+				<version>1.0</version>
+			</dependency>
+			<dependency>
+				<groupId>net.didion.jwnl</groupId>
+				<artifactId>jwnl</artifactId>
+				<version>1.4.1.RC2</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.opennlp</groupId>
+				<artifactId>opennlp-tools</artifactId>
+				<version>1.5.3</version>
+			</dependency>
+			<dependency>
+				<groupId>net.sourceforge.owlapi</groupId>
+				<artifactId>owlapi-distribution</artifactId>
+				<version>3.4.4</version>
+			</dependency>
+			<dependency>
+				<groupId>com.aliasi</groupId>
+				<artifactId>lingpipe</artifactId>
+				<version>4.1.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-lang3</artifactId>
+				<version>3.3.2</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-math3</artifactId>
+				<version>3.3</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.commons</groupId>
+				<artifactId>commons-collections4</artifactId>
+				<version>4.0</version>
+			</dependency>
+			<dependency>
+				<groupId>joda-time</groupId>
+				<artifactId>joda-time</artifactId>
+				<version>2.3</version>
+			</dependency>
+			<dependency>
+				<groupId>com.sun.jersey</groupId>
+				<artifactId>jersey-server</artifactId>
+				<version>1.18</version>
+			</dependency>
+			<dependency>
+				<groupId>com.sun.jersey</groupId>
+				<artifactId>jersey-core</artifactId>
+				<version>1.18</version>
+			</dependency>
+			<dependency>
+				<groupId>com.sun.jersey</groupId>
+				<artifactId>jersey-servlet</artifactId>
+				<version>1.18</version>
+			</dependency>
+			<dependency>
+				<groupId>com.sun.jersey</groupId>
+				<artifactId>jersey-json</artifactId>
+				<version>1.18</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.jetty</groupId>
+				<artifactId>jetty-servlets</artifactId>
+				<version>8.1.14.v20131031</version>
+			</dependency>
+			<dependency>
+				<groupId>javax.servlet</groupId>
+				<artifactId>servlet-api</artifactId>
+				<version>2.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.aksw</groupId>
+				<artifactId>sparqltools</artifactId>
+				<version>0.0.1</version>
+			</dependency>
+			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>log4j-over-slf4j</artifactId>
+				<version>1.7.2</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>17.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.tinyjee.jgraphx</groupId>
+				<artifactId>jgraphx</artifactId>
+				<version>2.3.0.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.jgrapht</groupId>
+				<artifactId>jgrapht-ext</artifactId>
+				<version>0.9.0</version>
+			</dependency>
+			<dependency>
+				<groupId>net.sf.jopt-simple</groupId>
+				<artifactId>jopt-simple</artifactId>
+				<version>4.4</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+
+	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>3.1</version>
+					<configuration>
+						<source>${compiler.version}</source>
+						<target>${compiler.version}</target>
+						<encoding>${project.build.sourceEncoding}</encoding>
+					</configuration>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>2.4</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>2.2.1</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<phase>verify</phase>
+							<goals>
+								<goal>jar-no-fork</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>2.8.1</version>
+					<executions>
+						<execution>
+							<id>attach-javadocs</id>
+							<goals>
+								<goal>jar</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
+	</build>
+
+
+
+</project>

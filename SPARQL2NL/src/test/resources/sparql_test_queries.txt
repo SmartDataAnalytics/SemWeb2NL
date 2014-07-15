@@ -1,0 +1,18 @@
+#1#
+PREFIX onto: <http://dbpedia.org/ontology/>
+SELECT ?film WHERE {
+	?film a onto:Film .
+    ?film onto:productionCosts ?prodCosts .
+    ?film onto:staffCosts ?staffCosts .
+} 
+group by ?film having(min(?prodCosts) > max(?staffCosts))
+#2#
+PREFIX onto: <http://dbpedia.org/ontology/>
+PREFIX yago: <http://dbpedia.org/class/yago/>
+SELECT DISTINCT  ?uri
+WHERE
+  { ?states a yago:AfricanCountries .
+    ?states onto:capital ?uri .
+    ?uri onto:population ?population
+    FILTER ( ?population < 1000000 )
+  }
