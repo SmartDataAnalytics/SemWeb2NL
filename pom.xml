@@ -10,8 +10,8 @@
 	<modules>
 		<module>assess</module>
 		<module>avatar</module>
-		<module>sparql2nl</module>
-		<module>triple2nl</module>
+		<module>SPARQL2NL</module>
+		<module>Triple2NL</module>
 	</modules>
 
 	<developers>

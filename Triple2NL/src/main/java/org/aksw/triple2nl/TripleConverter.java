@@ -73,14 +73,22 @@ public class TripleConverter {
 	//for multiple types use 'as well as' to coordinate the last type
 	private boolean useAsWellAsCoordination = true;
 
-	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
-		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), null,
-				null, cacheDirectory, wordnetDirectory, lexicon);
+	public TripleConverter(SparqlEndpoint endpoint) {
+		this(endpoint, null);
+	}
+	
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory) {
+		this(endpoint, cacheDirectory, null);
 	}
 	
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), 
 				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
+	}
+	
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), null,
+				null, cacheDirectory, wordnetDirectory, lexicon);
 	}
 
 	public TripleConverter(QueryExecutionFactory qef, URIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
