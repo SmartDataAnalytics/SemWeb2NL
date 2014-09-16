@@ -325,9 +325,31 @@ public class DatasetBasedGraphGenerator {
              		+ "?o ?p ?s."
              		+ "} GROUP BY ?p";
         }
+        
+        //split into 2 queries because triple stores sometimes do not answer the query above
+        query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+         		+ "?s a <" + cls.getName() + "> ."
+         		+ " ?p a owl:ObjectProperty . "
+         		+ "?s ?p ?o ."
+         		+ "} GROUP BY ?p";
 
         ResultSet rs = executeSelectQuery(query);
         QuerySolution qs;
+        while (rs.hasNext()) {
+            qs = rs.next();
+            String uri = qs.getResource("p").getURI();
+            if (!blacklist.contains(uri)) {
+                properties.put(new ObjectProperty(uri), qs.getLiteral("cnt").getInt());
+            }
+        }
+        
+        query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+         		+ "?s a <" + cls.getName() + "> ."
+         		+ " ?p a owl:DatatypeProperty . "
+         		+ "?s ?p ?o ."
+         		+ "} GROUP BY ?p";
+
+        rs = executeSelectQuery(query);
         while (rs.hasNext()) {
             qs = rs.next();
             String uri = qs.getResource("p").getURI();

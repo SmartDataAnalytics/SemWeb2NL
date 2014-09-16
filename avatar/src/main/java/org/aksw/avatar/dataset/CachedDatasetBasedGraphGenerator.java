@@ -10,7 +10,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.charset.Charset;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -62,8 +61,10 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, File cacheDirectory) {
 		super(endpoint, cacheDirectory);
 		
-		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
-		graphsFolder.mkdirs();
+		if(cacheDirectory != null){
+			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+			graphsFolder.mkdirs();
+		}
 	}
 	
 	/**
@@ -82,12 +83,19 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, File cacheDirectory) {
 		super(qef, cacheDirectory);
 		
-		graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
-		graphsFolder.mkdirs();
+		if(cacheDirectory != null){
+			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+			graphsFolder.mkdirs();
+		}
 	}
 	
 	public CachedDatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
-		this(qef, new File(cacheDirectory));
+		super(qef, cacheDirectory);
+		
+		if(cacheDirectory != null){
+			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
+			graphsFolder.mkdirs();
+		}
 	}
 	
 	/**

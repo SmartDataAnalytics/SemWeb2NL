@@ -13,9 +13,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
@@ -24,6 +23,8 @@ import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.TripleConverter;
 import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.functionality.FunctionalityDetector;
+import org.aksw.triple2nl.functionality.SPARQLFunctionalityDetector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.apache.commons.lang.SystemUtils;
@@ -45,7 +46,6 @@ import simplenlg.realiser.english.Realiser;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
-import com.google.common.net.UrlEscapers;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryFactory;
@@ -157,15 +157,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     		if(endpoint != null){
     			qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
     			if(cacheDirectory != null){
-    				try {
-						CacheCoreEx cache = CacheCoreH2.create(true, 
-								cacheDirectory, 
-								UrlEscapers.urlFormParameterEscaper().escape(endpoint.getURL().toString()), 
-								TimeUnit.DAYS.toMillis(10), true);
-						qef = new QueryExecutionFactoryCacheEx(qef, new CacheExImpl(cache));
-					} catch (ClassNotFoundException | SQLException e) {
-						e.printStackTrace();
-					}
+    				CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
+    				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
     			}
     		} else if(model != null){
     			qef = new QueryExecutionFactoryModel(model);
@@ -186,9 +179,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
         propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
 
-        functionalityDetector = new StatisticalFunctionalityDetector(
-                this.getClass().getClassLoader().getResourceAsStream("dbpedia_functional_axioms.owl"),
-                0.8);
+        functionalityDetector = new SPARQLFunctionalityDetector(qef);
         
         tripleConverter = new TripleConverter(qef, propertyVerbalizer, uriConverter, cacheDirectory, wordnetDirectory, lexicon);
         

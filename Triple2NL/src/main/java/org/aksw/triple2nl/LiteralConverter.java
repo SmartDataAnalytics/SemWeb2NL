@@ -6,6 +6,10 @@ import java.util.Calendar;
 import java.util.Locale;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.joda.time.DateTime;
+import org.joda.time.Period;
+import org.joda.time.format.ISOPeriodFormat;
+import org.joda.time.format.PeriodFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,6 +18,7 @@ import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.IllegalDateTimeFieldException;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
+import com.hp.hpl.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
@@ -46,32 +51,45 @@ public class LiteralConverter {
             }
         } else {// typed literal
             if (dt instanceof XSDDatatype) {// built-in XSD datatype
-            	try {
-					Object value = lit.getValue();
-					if (value instanceof XSDDateTime) {
-						Calendar calendar = ((XSDDateTime) value).asCalendar();
-						if(dt.equals(XSDDatatype.XSDgMonth)){
-							s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
-						} else if(dt.equals(XSDDatatype.XSDgMonthDay)){
-							s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
-						} else if(dt.equals(XSDDatatype.XSDgYearMonth)){
-							s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK) + " " + calendar.get(Calendar.YEAR);
-						} else {
-							s = dateFormat.format(calendar.getTime());
-						}
-					} else {
-						if(encapsulateStringLiterals && dt.equals(XSDDatatype.XSDstring)){
-							s = '"' + s + '"';
-						}
-					}
-				} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
-					logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());
+            	if(dt instanceof XSDAbstractDateTimeType){//date datetypes
+            		s = convertDateLiteral(lit);
+            	} else if(encapsulateStringLiterals && dt.equals(XSDDatatype.XSDstring)){
+					s = '"' + s + '"';
 				}
             } else {// user-defined datatype
                 s = lit.getLexicalForm() + " " + splitAtCamelCase(uriConverter.convert(dt.getURI(), false));
             }
         }
         return s;
+    }
+    
+    private String convertDateLiteral(LiteralLabel lit){
+    	RDFDatatype dt = lit.getDatatype();
+    	String s = lit.getLexicalForm();
+    	
+    	try {
+			Object value = lit.getValue();
+			if (value instanceof XSDDateTime) {
+				Calendar calendar = ((XSDDateTime) value).asCalendar();
+				if(dt.equals(XSDDatatype.XSDgMonth)){
+					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+				} else if(dt.equals(XSDDatatype.XSDgMonthDay)){
+					s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+				} else if(dt.equals(XSDDatatype.XSDgYearMonth)){
+					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK) + " " + calendar.get(Calendar.YEAR);
+				} else {
+					s = dateFormat.format(calendar.getTime());
+				}
+			} else {
+				
+			}
+		} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
+			logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());
+			//fallback
+			DateTime time = new DateTime(lit.getLexicalForm());
+			s = time.toString("MMMM dd, yyyy");
+		}
+    	return s;
     }
 
     public boolean isPlural(LiteralLabel lit) {

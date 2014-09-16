@@ -11,6 +11,7 @@ import java.util.Collection;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Test;
 
+import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.NodeFactory;
@@ -234,6 +235,14 @@ public class TripleConverterTest {
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
 		assertEquals("Lionel Messi's English label is \"Lionel Messi\"", text);
+		
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/London"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/PopulatedPlace/areaTotal"),
+				NodeFactory.createLiteral("1572.122782973952", null, new BaseDatatype("http://dbpedia.org/datatype/squareKilometre")));
+		text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+		assertEquals("London's area total is 1572.122782973952 square kilometres", text);
 		
 		
 	}

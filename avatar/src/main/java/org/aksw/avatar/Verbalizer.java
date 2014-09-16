@@ -16,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import joptsimple.OptionException;
@@ -66,6 +68,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Property;
 import com.hp.hpl.jena.rdf.model.RDFNode;
@@ -81,6 +84,10 @@ import com.hp.hpl.jena.vocabulary.RDF;
 public class Verbalizer {
 	
 	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
+
+	private static final double DEFAULT_THRESHOLD = 0.4;
+	private static final Cooccurrence DEFAULT_COOCCURRENCE_TYPE = Cooccurrence.PROPERTIES;
+	private static final HardeningType DEFAULT_HARDENING_TYPE = HardeningType.SMALLEST;
 
     public SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
@@ -98,7 +105,14 @@ public class Verbalizer {
     public DatasetBasedGraphGenerator graphGenerator;
     int maxShownValuesPerProperty = 5;
     boolean omitContentInBrackets = true;
-
+    
+    public Verbalizer(SparqlEndpoint endpoint) {
+        this(endpoint, null);
+    }
+    
+    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
+    	this(endpoint, cacheDirectory, null);
+    }
 
     public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
         nlg = new SimpleNLGwithPostprocessing(endpoint, cacheDirectory, wordnetDirectory);
@@ -166,10 +180,6 @@ public class Verbalizer {
      */
     public void setOmitContentInBrackets(boolean omitContentInBrackets) {
         this.omitContentInBrackets = omitContentInBrackets;
-    }
-
-    public Verbalizer(SparqlEndpoint endpoint) {
-        this(endpoint, (String) null, null);
     }
 
     /**
@@ -482,6 +492,27 @@ public class Verbalizer {
 
         return verbalizations;
     }
+    
+    /**
+     * Returns a textual summary of the given entity.
+     *
+     * @return
+     */
+    public String summarize(Individual individual) {
+    	//compute the most specific type first
+    	NamedClass cls = getMostSpecificType(individual);
+    	
+        return summarize(individual, cls);
+    }
+    
+    /**
+     * Returns a textual summary of the given entity.
+     *
+     * @return
+     */
+    public String summarize(Individual individual, NamedClass nc) {
+       return getSummary(individual, nc, DEFAULT_THRESHOLD, DEFAULT_COOCCURRENCE_TYPE, DEFAULT_HARDENING_TYPE);
+    }
 
     /**
      * Returns a textual summary of the given entity.
@@ -515,6 +546,36 @@ public class Verbalizer {
         }
 
         return entity2Summaries;
+    }
+    
+    /**
+     * Returns the most specific type of a given individual.
+     * @param ind
+     * @return
+     */
+    private NamedClass getMostSpecificType(Individual ind){
+    	logger.debug("Getting the most specific type of " + ind);
+    	String query = String.format("select distinct ?type where {"
+    			+ " <%s> a ?type ."
+    			+ "?type a owl:Class ."
+    			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}", ind, ind);
+    	
+    	SortedSet<NamedClass> types = new TreeSet<NamedClass>();
+    	
+    	QueryExecution qe = qef.createQueryExecution(query);
+    	ResultSet rs = qe.execSelect();
+    	while (rs.hasNext()) {
+			QuerySolution qs = rs.next();
+			if(qs.get("type").isURIResource()){
+				types.add(new NamedClass(qs.getResource("type").getURI()));
+			}
+		}
+    	qe.close();
+    	
+    	//of more than one type exists, we have to choose one
+    	//TODO
+    	
+    	return types.first();
     }
 
     /**

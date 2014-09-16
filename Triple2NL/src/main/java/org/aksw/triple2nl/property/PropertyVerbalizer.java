@@ -303,14 +303,12 @@ public class PropertyVerbalizer {
 					pattern += " ";
 				}
 			}
-			//get parse tree
-			// this is the parse tree of the current sentence
 			//get the parse tree
 			Tree tree = sentence.get(TreeAnnotation.class);
 			//skip ROOT tag
 			tree = tree.skipRoot();
 			logger.debug("Parse tree:" + tree.pennString());
-			tree.pennPrint();
+//			tree.pennPrint();
 			//check if VP is directly followed by NP
 			//sometimes parent node is S,SINV,etc.
 			if(tree.value().matches(Joiner.on('|').join(Lists.newArrayList(S, SBAR, SBARQ, SINV, FRAGMENT)))){
@@ -328,7 +326,6 @@ public class PropertyVerbalizer {
 					}
 				}
 			}
-			System.out.println(useDeterminer);
 		}
 		pattern = pattern.trim();
 		

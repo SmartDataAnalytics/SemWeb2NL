@@ -13,10 +13,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.graph.Edge;
@@ -94,16 +92,8 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	public SimpleSPARQL2NLConverter(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 		if(cacheDirectory != null){
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+			CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
+			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
 		}
 		reasoner = new SPARQLReasoner(qef);
 		nlgFactory = new NLGFactory(lexicon);
