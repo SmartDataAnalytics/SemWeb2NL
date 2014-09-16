@@ -3,15 +3,12 @@ package org.aksw.triple2nl;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
@@ -72,16 +69,8 @@ public class URIConverter {
 		
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 		if(cacheDirectory != null){
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
 				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 		}
 		init();
 	}
@@ -97,30 +86,11 @@ public class URIConverter {
 		init();
 	}
 	
-	public URIConverter(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, String cacheDirectory) {
-		this.cacheDirectory = cacheDirectory;
-		
-		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		if(cacheBackend != null){
-			CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		}
-		init();
-	}
-	
 	public URIConverter(SparqlEndpoint endpoint) {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 		if(cacheDirectory != null){
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
+				CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
 				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
 		}
 		init();
 	}

@@ -18,10 +18,10 @@ import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizationType;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
-import org.dllearner.core.owl.DatatypeProperty;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.vocab.OWL2Datatype;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +37,8 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+import uk.ac.manchester.cs.owl.owlapi.OWLDataPropertyImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
@@ -440,8 +442,11 @@ public class TripleConverter {
 	
 	private boolean usePluralForm(Triple triple){
 		return triple.getObject().isVariable() 
-				&& !(reasoner.isFunctional(new ObjectProperty(triple.getPredicate().getURI())) 
-					|| reasoner.getRange(new DatatypeProperty(triple.getPredicate().getURI())).toString().equals(XSDDatatype.XSDboolean.getURI()));
+				&& !(reasoner.isFunctional(
+						new OWLObjectPropertyImpl(IRI.create(triple.getPredicate().getURI()))) 
+					|| reasoner.getRange(
+							new OWLDataPropertyImpl(
+									IRI.create(triple.getPredicate().getURI()))).equals(OWL2Datatype.XSD_BOOLEAN));
 	}
 	
 	public NLGElement processNode(Node node) {
