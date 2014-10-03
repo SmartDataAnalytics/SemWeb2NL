@@ -4,14 +4,16 @@
  */
 package org.aksw.avatar.dataset;
 
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.query.ResultSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
+
 import uk.ac.shef.wit.simmetrics.similaritymetrics.QGramsDistance;
+
+import com.google.common.collect.Sets;
 
 /**
  *
@@ -25,8 +27,7 @@ public class PropertySimilarityCorrelation {
 
     public static Map<Set<ObjectProperty>, Double> getCooccurrences(NamedClass cls, Set<ObjectProperty> properties, double threshold) {
         Map<Set<ObjectProperty>, Double> pair2similarity = new HashMap<Set<ObjectProperty>, Double>();
-        //compute the frequency for each pair
-        ResultSet rs;
+       
         QGramsDistance qgrams = new QGramsDistance();
         for (ObjectProperty prop1 : properties) {
             for (ObjectProperty prop2 : properties) {

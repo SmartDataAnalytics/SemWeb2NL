@@ -7,9 +7,6 @@ import java.util.Locale;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
-import org.joda.time.Period;
-import org.joda.time.format.ISOPeriodFormat;
-import org.joda.time.format.PeriodFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
