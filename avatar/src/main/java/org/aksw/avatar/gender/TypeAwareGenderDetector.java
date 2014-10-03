@@ -6,10 +6,6 @@ package org.aksw.avatar.gender;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.jena.web.HttpSC;
@@ -37,23 +33,13 @@ public class TypeAwareGenderDetector implements GenderDetector{
 	
 	private boolean useInference = true;
 
-	public TypeAwareGenderDetector(SparqlEndpoint endpoint, CacheCoreEx cacheBackend, GenderDetector genderDetector) {
-		this.genderDetector = genderDetector;
-		
-		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        if(cacheBackend != null){
-        	CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-            qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-        }
-	}
-	
 	public TypeAwareGenderDetector(QueryExecutionFactory qef, GenderDetector genderDetector) {
 		this.qef = qef;
 		this.genderDetector = genderDetector;
 	}
 	
 	public TypeAwareGenderDetector(SparqlEndpoint endpoint, GenderDetector genderDetector) {
-		this(endpoint, null, genderDetector);
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), genderDetector);
 	}
 	
 	public void setPersonTypes(Set<String> personTypes){

@@ -16,7 +16,6 @@ import java.util.concurrent.ExecutionException;
 
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
@@ -96,16 +95,6 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 			graphsFolder = new File(cacheDirectory, graphsSubFolder.getName());
 			graphsFolder.mkdirs();
 		}
-	}
-	
-	/**
-	 * @param endpoint
-	 * @param cache
-	 */
-	public CachedDatasetBasedGraphGenerator(SparqlEndpoint endpoint, CacheCoreEx cache) {
-		super(endpoint, cache);
-		
-		graphsFolder.mkdirs();
 	}
 	
 	/* (non-Javadoc)

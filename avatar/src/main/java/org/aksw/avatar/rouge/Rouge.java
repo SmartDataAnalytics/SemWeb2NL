@@ -470,7 +470,7 @@ public class Rouge {
     public static void main(String args[]) {
         Rouge rouge = new Rouge();
         rouge.multipleMode = MULTIPLE_MAX;
-        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
+        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW(), null, null);
         Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
         NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");

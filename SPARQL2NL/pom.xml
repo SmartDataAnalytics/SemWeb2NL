@@ -11,15 +11,15 @@
 	<name>SPARQL2NL</name>
 	<description>SPARQL query to natural language converter</description>
 
-	
+
 
 	<dependencies>
-	<dependency>
-		<groupId>org.aksw.semweb2nl</groupId>
-		<artifactId>triple2nl</artifactId>
-		<version>${project.version}</version>
-	</dependency>
-	<dependency>
+		<dependency>
+			<groupId>org.aksw.semweb2nl</groupId>
+			<artifactId>triple2nl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>gov.nist.math</groupId>
 			<artifactId>jama</artifactId>
 		</dependency>
@@ -27,7 +27,14 @@
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>
 		</dependency>
-
+		<dependency>
+			<groupId>org.aksw.jena-sparql-api</groupId>
+			<artifactId>jena-sparql-api-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.aksw.jena-sparql-api</groupId>
+			<artifactId>jena-sparql-api-cache-h2</artifactId>
+		</dependency>
 		<dependency>
 			<groupId>org.dllearner</groupId>
 			<artifactId>components-ext</artifactId>

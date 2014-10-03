@@ -9,10 +9,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.aksw.commons.util.Pair;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.triple2nl.URIConverter;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -29,18 +27,9 @@ public class NumericLiteralFilter {
 	
 	private URIConverter conv;
 	
-	public NumericLiteralFilter(SparqlEndpoint endpoint, CacheCoreEx cache, String cacheDirectory) {
-		conv = new URIConverter(endpoint, cache, cacheDirectory);
-	}
-	
-	public NumericLiteralFilter(SparqlEndpoint endpoint, String cacheDirectory) {
-		conv = new URIConverter(endpoint, cacheDirectory);
-	}
-	
 	public NumericLiteralFilter(QueryExecutionFactory qef, String cacheDirectory) {
 		conv = new URIConverter(qef, cacheDirectory);
 	}
-	
 	
 	public void filter(Set<Triple> triples){
 		//find triples with same subject and predicate where the object is a literal

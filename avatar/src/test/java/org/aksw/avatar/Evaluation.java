@@ -3,7 +3,6 @@
  */
 package org.aksw.avatar;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -19,11 +18,7 @@ import java.util.concurrent.TimeUnit;
 import org.aksw.avatar.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.avatar.rouge.Rouge;
-import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
@@ -63,7 +58,7 @@ public class Evaluation {
 	
 	SPARQLReasoner reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
 	QueryExecutionFactory qef;
-	Verbalizer verbalizer = new Verbalizer(endpoint);
+	Verbalizer verbalizer = new Verbalizer(endpoint, cacheDirectory, null);
 	
 	Rouge rouge = new Rouge();
 	int rougeMode = Rouge.MULTIPLE_MAX;
@@ -71,16 +66,8 @@ public class Evaluation {
 	
 	public Evaluation() {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		try {
-			long timeToLive = TimeUnit.DAYS.toMillis(30);
-			CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-			CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+		long timeToLive = TimeUnit.DAYS.toMillis(30);
+		qef = CacheUtilsH2.createQueryExecutionFactory(qef, cacheDirectory, false, timeToLive);
 		
 		rouge.setMultipleReferenceMode(rougeMode);
 	}

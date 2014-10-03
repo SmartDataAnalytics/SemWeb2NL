@@ -40,11 +40,12 @@ import org.aksw.avatar.rules.NumericLiteralFilter;
 import org.aksw.avatar.rules.ObjectMergeRule;
 import org.aksw.avatar.rules.PredicateMergeRule;
 import org.aksw.avatar.rules.SubjectMergeRule;
+import org.aksw.commons.sparql.api.cache.extra.CacheCoreEx;
+import org.aksw.commons.sparql.api.cache.extra.CacheEx;
+import org.aksw.commons.sparql.api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.h2.CacheCoreH2;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
@@ -106,44 +107,6 @@ public class Verbalizer {
     int maxShownValuesPerProperty = 5;
     boolean omitContentInBrackets = true;
     
-    public Verbalizer(SparqlEndpoint endpoint) {
-        this(endpoint, null);
-    }
-    
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
-    	this(endpoint, cacheDirectory, null);
-    }
-
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
-        nlg = new SimpleNLGwithPostprocessing(endpoint, cacheDirectory, wordnetDirectory);
-        this.endpoint = endpoint;
-        labels = new HashMap<Resource, String>();
-        litFilter = new NumericLiteralFilter(endpoint, cacheDirectory);
-        realiser = nlg.realiser;
-
-        pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-
-        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        CacheCoreEx cacheBackend = null;
-        if (cacheDirectory != null) {
-            try {
-                long timeToLive = TimeUnit.DAYS.toMillis(30);
-                cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-                CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-                qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }
-        gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
-
-        graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
-    }
-    
     public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
     	this.qef = qef;
     	
@@ -159,6 +122,10 @@ public class Verbalizer {
         gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
+    }
+    
+    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory, wordnetDirectory);
     }
     
     /**
@@ -730,16 +697,8 @@ public class Verbalizer {
         
         String cacheDirectory = (String) options.valueOf("cache");
 		if (cacheDirectory != null) {
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
+		    long timeToLive = TimeUnit.DAYS.toMillis(30);
+		    qef = CacheUtilsH2.createQueryExecutionFactory(qef, cacheDirectory, false, timeToLive);
 		}
         
         String wordnetDirectory = (String) options.valueOf("wordnet");

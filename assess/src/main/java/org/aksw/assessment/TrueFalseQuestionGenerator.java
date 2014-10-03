@@ -12,6 +12,7 @@ import java.util.Set;
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
@@ -34,15 +35,9 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 	
 	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
 
-	public TrueFalseQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace,
+	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace,
 			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-		super(ep, cacheDirectory, namespace, restrictions, personTypes, blackList);
-		
-	}
-	
-	public TrueFalseQuestionGenerator(SparqlEndpoint ep, QueryExecutionFactory qef, String cacheDirectory, String namespace,
-			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-		super(ep, qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
+		super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
 		
 	}
 
@@ -60,7 +55,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
             qs = rs.next();
             property = qs.getResource("p");
             object = qs.getResource("o");
-            if (!GeneralPropertyBlackList.contains(property)){
+            if (!GeneralPropertyBlackList.getInstance().contains(property)){
             	if(blackList != null && !blackList.contains(property)) {
 	                if (Math.random() >= 0.5) {
 	                    result = true;
@@ -110,9 +105,10 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
     public static void main(String args[]) {
     	Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace")));
-        
+        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
         TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(
-        		SparqlEndpoint.getEndpointDBpedia(), 
+        		qef, 
         		"cache", 
         		"http://dbpedia.org/ontology/", 
         		restrictions, 

@@ -4,7 +4,6 @@
 package org.aksw.avatar.dataset;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -14,21 +13,14 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
-import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
 import org.dllearner.core.owl.ObjectProperty;
-import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.dllearner.utilities.MapUtils;
@@ -85,21 +77,6 @@ public class DatasetBasedGraphGenerator {
         this(endpoint, (String)null);
     }
 
-    public DatasetBasedGraphGenerator(SparqlEndpoint endpoint, CacheCoreEx cacheBackend) {
-        qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        if(cacheBackend != null){
-        	CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-            qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-        }
-        
-//		qef = new QueryExecutionFactoryPaginated(qef, 10000);
-//		qef = new QueryExecutionFactoryDelay(qef, 500);
-
-        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheBackend);
-        
-        class2OutgoingProperties = new HashMap<NamedClass, Set<ObjectProperty>>();
-    }
-    
     public DatasetBasedGraphGenerator(QueryExecutionFactory qef, String cacheDirectory) {
         this.qef = qef;
         
@@ -119,18 +96,6 @@ public class DatasetBasedGraphGenerator {
     }
     
     private void init(){
-        if(cacheDirectory != null){
-        	try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(true, cacheDirectory, "sparql", timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-        }
         
 //		qef = new QueryExecutionFactoryPaginated(qef, 10000);
 //		qef = new QueryExecutionFactoryDelay(qef, 500);

@@ -14,7 +14,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  * @author Lorenz Buehmann
  *
  */
-public class GeneralPropertyBlackList {
+public class GeneralPropertyBlackList implements BlackList{
 
 	public static Set<String> blacklist = Sets.newHashSet(
 		"http://www.w3.org/ns/prov#was", 
@@ -32,11 +32,21 @@ public class GeneralPropertyBlackList {
 	    "http://xmlns.com/foaf/0.1/surname"
 	    );
 	
-	public static boolean contains(Resource resource){
+	private static final BlackList instance = new GeneralPropertyBlackList();
+	
+	private GeneralPropertyBlackList(){}
+	
+	public static BlackList getInstance(){
+		return instance;
+	}
+	
+	
+	
+	public boolean contains(Resource resource){
 		return blacklist.contains(resource.getURI());
 	}
 	
-	public static boolean contains(String uri){
+	public boolean contains(String uri){
 		return blacklist.contains(uri);
 	}
 }

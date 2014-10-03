@@ -5,7 +5,6 @@ package org.aksw.assessment.rest;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,11 +44,7 @@ import org.aksw.assessment.answer.Answer;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
-import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheCoreH2;
-import org.aksw.jena_sparql_api.cache.extra.CacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheExImpl;
+import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.commons.configuration.ConfigurationException;
@@ -136,24 +131,15 @@ public class RESTService {
 			//summarization setting
 			section = config.getSection("summarization");
 			RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
-			RESTService.cooccurrenceType = Cooccurrence.valueOf(section.getString("cooccurrenceType").toUpperCase());
+			RESTService.cooccurrenceType = Cooccurrence.valueOf(Cooccurrence.class, section.getString("cooccurrenceType").toUpperCase());
 			
 			logger.info("Endpoint:" + endpoint);
 			logger.info("Namespace:" + namespace);
 			logger.info("Cache directory: " + RESTService.cacheDirectory);
 			
 			qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-			try {
-				long timeToLive = TimeUnit.DAYS.toMillis(30);
-				CacheCoreEx cacheBackend = CacheCoreH2.create(RESTService.cacheDirectory, timeToLive, true);
-				CacheEx cacheFrontend = new CacheExImpl(cacheBackend);
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-				
-			} catch (ClassNotFoundException e) {
-				logger.error(e.getMessage(), e);
-			} catch (SQLException e) {
-				logger.error(e.getMessage(), e);
-			}
+			long timeToLive = TimeUnit.DAYS.toMillis(30);
+			qef = CacheUtilsH2.createQueryExecutionFactory(qef, RESTService.cacheDirectory, false, timeToLive);
 			reasoner = new SPARQLReasoner(qef);
 		} catch (ConfigurationException e) {
 			logger.error("Could not load config file.", e);
@@ -177,11 +163,11 @@ public class RESTService {
 		//set up the question generators
 		for (String type : questionTypes) {
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
 			}
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
@@ -264,13 +250,13 @@ public class RESTService {
 		long start = System.currentTimeMillis();
 		for (String type : questionTypes) {
 			if (type.equals(QuestionType.MC.getName())) {
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(qef, cacheDirectory,
 						namespace, domains, personTypes, blackList));
 			} else if (type.equals(QuestionType.JEOPARDY.getName())) {
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(qef, cacheDirectory,
 						namespace, domains, personTypes, blackList));
 			} else if (type.equals(QuestionType.TRUEFALSE.getName())) {
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(endpoint, qef, cacheDirectory,
+				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(qef, cacheDirectory,
 						namespace, domains, personTypes, blackList));
 			}
 		} 

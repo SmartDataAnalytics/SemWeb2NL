@@ -22,6 +22,7 @@ import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.assessment.rest.RESTService;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.NamedClass;
@@ -57,13 +58,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
 	private boolean useCompleteResourcesOnly = true;
 	
-    
-    public JeopardyQuestionGenerator(SparqlEndpoint ep, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-        super(ep, cacheDirectory, namespace, restrictions, personTypes, blackList);
-    }
-    
-    public JeopardyQuestionGenerator(SparqlEndpoint ep, QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-        super(ep, qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
+    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+        super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
     }
     
     /* (non-Javadoc)
@@ -377,7 +373,9 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 			try {
 				Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new NamedClass(cls), new HashSet<ObjectProperty>());
-				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache2", 
+				SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+		        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", 
 						"http://dbpedia.org/ontology/", 
 						restrictions,Sets.newHashSet("http://dbpedia.org/ontology/Person"), new DBpediaPropertyBlackList());
 				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
