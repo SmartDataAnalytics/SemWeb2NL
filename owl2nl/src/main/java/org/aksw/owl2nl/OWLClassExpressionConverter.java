@@ -3,10 +3,14 @@
  */
 package org.aksw.owl2nl;
 
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import org.aksw.triple2nl.IRIConverter;
 import org.aksw.triple2nl.SimpleIRIConverter;
+import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -14,6 +18,7 @@ import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLClassExpressionVisitorEx;
 import org.semanticweb.owlapi.model.OWLDataAllValuesFrom;
 import org.semanticweb.owlapi.model.OWLDataExactCardinality;
+import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLDataHasValue;
 import org.semanticweb.owlapi.model.OWLDataMaxCardinality;
 import org.semanticweb.owlapi.model.OWLDataMinCardinality;
@@ -39,10 +44,14 @@ import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
+import com.google.common.collect.Sets;
+
+import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
@@ -60,6 +69,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	
 	IRIConverter iriConverter = new SimpleIRIConverter();
 	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
+	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	
+	boolean noun;
 	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
@@ -78,7 +90,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		NLGElement nlgElement = ce.accept(this);
 
 		// realise
-		realiser.realise(nlgElement);
+		nlgElement = realiser.realise(nlgElement);
 		
 		return nlgElement.getRealisation();
 	}
@@ -87,8 +99,30 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		return sfp.getShortForm(entity.getIRI());
 	}
 	
+	private boolean containsNamedClass(Set<OWLClassExpression> classExpressions){
+		for (OWLClassExpression ce : classExpressions) {
+			if(!ce.isAnonymous()){
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	private OWLClassExpression rewrite(OWLClassExpression ce){
-		return ce;
+		if(!ce.isAnonymous()){
+			return ce;
+		} else if(ce instanceof OWLObjectIntersectionOf){
+			Set<OWLClassExpression> operands = ((OWLObjectIntersectionOf) ce).getOperands();
+			
+			if(containsNamedClass(operands)){
+				return ce;
+			}
+			
+			operands.add(df.getOWLThing());
+			return df.getOWLObjectIntersectionOf(operands);
+		}
+		Set<OWLClassExpression> operands = Sets.<OWLClassExpression>newHashSet(ce, df.getOWLThing());
+		return df.getOWLObjectIntersectionOf(operands);
 	}
 	
 	/**
@@ -103,18 +137,70 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLClass ce) {
-		return nlgFactory.createNounPhrase(getLexicalForm(ce));
+		if(ce.isOWLThing()){
+			return nlgFactory.createNounPhrase("everything");
+		}
+		noun = true;
+		return nlgFactory.createNounPhrase("a", getLexicalForm(ce));
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectIntersectionOf ce) {
-		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+		List<OWLClassExpression> operands = getOperandsByPriority(ce);
 		
-		for (OWLClassExpression op : getOperandsByPriority(ce)) {
-			cc.addCoordinate(op.accept(this));
+		// process the classes first
+		OWLClassExpression first = operands.remove(0);
+		SPhraseSpec phrase = nlgFactory.createClause();
+		phrase.setSubject(first.accept(this));
+		
+		if(operands.size() >= 2){
+			CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+			
+			// process the classes
+			Iterator<OWLClassExpression> iterator = operands.iterator();
+			List<OWLClass> classes = new ArrayList<OWLClass>();
+			while(iterator.hasNext()){
+				OWLClassExpression operand = iterator.next();
+				if(!operand.isAnonymous()){
+					classes.add(operand.asOWLClass());
+					iterator.remove();
+				}
+			}
+			for (OWLClass cls : classes) {
+				SPhraseSpec clause = nlgFactory.createClause("that", "is");
+				clause.setObject(cls.accept(this));
+				cc.addCoordinate(clause);
+			}
+			
+			// process the rest
+			for (OWLClassExpression operand : operands) {
+				SPhraseSpec clause = nlgFactory.createClause();
+				NLGElement el = operand.accept(this);
+				if(noun){
+					clause.setSubject("whose");
+					clause.setVerbPhrase(el);
+				} else {
+					clause.setSubject("that");
+					clause.setVerbPhrase(el);
+				}
+				cc.addCoordinate(clause);
+			}
+			
+			phrase.setVerbPhrase(cc);
+		} else {
+			OWLClassExpression operand = operands.get(0);
+			SPhraseSpec clause = nlgFactory.createClause();
+			NLGElement el = operand.accept(this);
+			if(noun){
+				clause.setFeature(Feature.COMPLEMENTISER, "whose");
+			} else {
+				clause.setFeature(Feature.COMPLEMENTISER, "that");
+			}
+			clause.setVerbPhrase(el);
+			phrase.setComplement(clause);
 		}
 		
-		return cc;
+		return phrase;
 	}
 
 	@Override
@@ -139,7 +225,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	@Override
 	public NLGElement visit(OWLObjectSomeValuesFrom ce) {
 		SPhraseSpec phrase = nlgFactory.createClause();
-		phrase.setSubject("everything");
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		
@@ -147,9 +232,24 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
 			if(propertyVerbalization.isNounType()){
-				System.out.println("noun");
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				OWLClassExpression filler = ce.getFiller();
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
 				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+				
+				OWLClassExpression filler = ce.getFiller();
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
 			} else {
 				
 			}
@@ -158,11 +258,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		} else {
 			//TODO handle inverse properties
 		}
-		
-		OWLClassExpression filler = ce.getFiller();
-		NLGElement fillerElement = filler.accept(this);
-		phrase.setObject(fillerElement);
-		
 		System.out.println(realiser.realise(phrase));
 		
 		return phrase;
@@ -252,14 +347,31 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	public static void main(String[] args) throws Exception {
+		OWLClassExpressionConverter converter = new OWLClassExpressionConverter();
+		
 		OWLDataFactoryImpl df = new OWLDataFactoryImpl(false, false);
 		PrefixManager pm = new DefaultPrefixManager("http://dbpedia.org/ontology/");
 		OWLObjectProperty p1 = df.getOWLObjectProperty("birthPlace", pm);
 		OWLObjectProperty p2 = df.getOWLObjectProperty("worksFor", pm);
 		OWLClass cls1 = df.getOWLClass("Place", pm);
-		OWLClassExpression ce = df.getOWLObjectSomeValuesFrom(p1, cls1);
+		OWLClass cls2 = df.getOWLClass("Company", pm);
+		OWLClass cls3 = df.getOWLClass("Person", pm);
 		
-		OWLClassExpressionConverter converter = new OWLClassExpressionConverter();
-		System.out.println(converter.convert(ce));
+		// birth place is a place
+		OWLClassExpression ce1 = df.getOWLObjectSomeValuesFrom(p1, cls1);
+		
+		// works for a company
+		OWLClassExpression ce2 = df.getOWLObjectSomeValuesFrom(p2, cls2);
+		
+		// person
+		OWLClassExpression ce3 = cls3;
+		
+		System.out.println(converter.convert(ce1));
+		System.out.println(converter.convert(ce2));
+		System.out.println(converter.convert(ce3));
+		
+		// 
+		OWLClassExpression ce4 = df.getOWLObjectIntersectionOf(ce1, ce2, ce3);
+		System.out.println(converter.convert(ce4));
 	}
 }
