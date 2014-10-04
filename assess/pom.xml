@@ -16,13 +16,18 @@
 			<artifactId>avatar</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-			<dependency>
-				<groupId>org.aksw.jena-sparql-api</groupId>
-				<artifactId>jena-sparql-api-core</artifactId>
-			</dependency>
+		<dependency>
+			<groupId>org.aksw.jena-sparql-api</groupId>
+			<artifactId>jena-sparql-api-core</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>commons-configuration</groupId>
+			<artifactId>commons-configuration</artifactId>
+			<version>1.10</version>
+		</dependency>
 	</dependencies>
 
-<profiles>
+	<profiles>
 		<profile>
 			<id>webapp</id>
 			<build>
@@ -80,5 +85,5 @@
 			</build>
 		</profile>
 	</profiles>
-	
+
 </project>

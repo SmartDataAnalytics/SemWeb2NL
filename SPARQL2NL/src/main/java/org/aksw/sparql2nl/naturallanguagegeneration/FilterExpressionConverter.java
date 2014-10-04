@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.Stack;
 
 import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -65,7 +65,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 	
 	private Stack<NLGElement> stack;
 	
-	private URIConverter uriConverter;
+	private DefaultIRIConverter uriConverter;
 	private LiteralConverter literalConverter;
 	
 	private boolean simplifyLanguageFilterConstructs = true;
@@ -82,7 +82,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 	private final String periodBeforeText = "be before";
 	private final String periodBeforeOrOnText = "be before or in";
 	
-	public FilterExpressionConverter(URIConverter uriConverter, LiteralConverter literalConverter) {
+	public FilterExpressionConverter(DefaultIRIConverter uriConverter, LiteralConverter literalConverter) {
 		this.uriConverter = uriConverter;
 		this.literalConverter = literalConverter;
 		
@@ -91,7 +91,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 		realiser = new Realiser(lexicon);
 	}
 	
-	public FilterExpressionConverter(URIConverter uriConverter) {
+	public FilterExpressionConverter(DefaultIRIConverter uriConverter) {
 		this(uriConverter, new LiteralConverter(uriConverter));
 	}
 	

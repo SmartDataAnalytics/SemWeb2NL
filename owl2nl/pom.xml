@@ -10,6 +10,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>org.aksw.semweb2nl</groupId>
+			<artifactId>triple2nl</artifactId>
+			<version>${project.version}</version>
+		</dependency>
+		<dependency>
 			<groupId>simplenlg</groupId>
 			<artifactId>simplenlg</artifactId>
 		</dependency>

@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.aksw.commons.util.Pair;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
@@ -25,10 +25,10 @@ import com.hp.hpl.jena.graph.impl.LiteralLabel;
  */
 public class NumericLiteralFilter {
 	
-	private URIConverter conv;
+	private DefaultIRIConverter conv;
 	
 	public NumericLiteralFilter(QueryExecutionFactory qef, String cacheDirectory) {
-		conv = new URIConverter(qef, cacheDirectory);
+		conv = new DefaultIRIConverter(qef, cacheDirectory);
 	}
 	
 	public void filter(Set<Triple> triples){

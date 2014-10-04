@@ -77,6 +77,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<assess.warFile.name>assess</assess.warFile.name>
 		<jena.sparql.api.version>2.11.2-56</jena.sparql.api.version>
+		<dllearner.version>1.0-SNAPSHOT</dllearner.version>
 	</properties>
 
 	<repositories>
@@ -121,7 +122,7 @@
 			<dependency>
 				<groupId>org.dllearner</groupId>
 				<artifactId>components-ext</artifactId>
-				<version>1.0-SNAPSHOT</version>
+				<version>${dllearner.version}</version>
 				<exclusions>
 					<exclusion>
 						<artifactId>nif</artifactId>
@@ -149,7 +150,7 @@
 			<dependency>
 				<groupId>org.dllearner</groupId>
 				<artifactId>components-core</artifactId>
-				<version>1.0-SNAPSHOT</version>
+				<version>${dllearner.version}</version>
 				<exclusions>
 					<exclusion>
 						<groupId>org.slf4j</groupId>

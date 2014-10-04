@@ -29,7 +29,7 @@ import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparqltools.util.SPARQLEndpointType;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.apache.log4j.Logger;
 import org.dllearner.core.owl.Individual;
 import org.dllearner.core.owl.NamedClass;
@@ -102,7 +102,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		this.restrictions = restrictions;
 		this.blackList = blackList;
 		
-        literalConverter = new LiteralConverter(new URIConverter(qef, cacheDirectory));
+        literalConverter = new LiteralConverter(new DefaultIRIConverter(qef, cacheDirectory));
         
         reasoner = new SPARQLReasoner(qef);
         

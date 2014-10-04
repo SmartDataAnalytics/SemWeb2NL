@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
 import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import simplenlg.features.Feature;
@@ -63,7 +63,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     Lexicon lexicon;
     NLGFactory nlgFactory;
     Realiser realiser;
-    private URIConverter uriConverter;
+    private DefaultIRIConverter uriConverter;
     private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
     
@@ -80,7 +80,7 @@ public class SimpleNLG implements Sparql2NLConverter {
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
         
-        uriConverter = new URIConverter(endpoint);
+        uriConverter = new DefaultIRIConverter(endpoint);
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
         

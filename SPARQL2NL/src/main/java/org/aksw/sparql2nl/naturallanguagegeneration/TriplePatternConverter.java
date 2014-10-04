@@ -6,7 +6,7 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.triple2nl.TripleConverter;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.aksw.triple2nl.property.PredicateAsNounConversionType;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizationType;
@@ -60,7 +60,7 @@ public class TriplePatternConverter {
 				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 
-	public TriplePatternConverter(QueryExecutionFactory qef, URIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
+	public TriplePatternConverter(QueryExecutionFactory qef, DefaultIRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
 		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
@@ -68,7 +68,7 @@ public class TriplePatternConverter {
 		this(qef, null, null, cacheDirectory, null, lexicon);
 	}
 	
-	public TriplePatternConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, URIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TriplePatternConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, DefaultIRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
 		tripleConverter = new TripleConverter(qef, propertyVerbalizer, uriConverter, cacheDirectory, wordnetDirectory, lexicon);
 		
 		if(propertyVerbalizer == null){

@@ -13,9 +13,10 @@ import java.util.Properties;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
+import org.aksw.triple2nl.IRIConverter;
 import org.aksw.triple2nl.PennTreebankTagSet;
 import org.aksw.triple2nl.Preposition;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -61,7 +62,7 @@ public class PropertyVerbalizer {
 	
 	private final List<String> auxiliaryVerbs = Lists.newArrayList("do", "have", "be", "shall", "can", "may");
 
-	private URIConverter uriConverter;
+	private IRIConverter uriConverter;
 	
     public PropertyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDictionary) {
         this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), wordnetDictionary);
@@ -72,10 +73,10 @@ public class PropertyVerbalizer {
     }
     
     public PropertyVerbalizer(QueryExecutionFactory qef, String wordnetDictionary) {
-        this(new URIConverter(qef), wordnetDictionary);
+        this(new DefaultIRIConverter(qef), wordnetDictionary);
     }
     
-    public PropertyVerbalizer(URIConverter uriConverter, String wordnetDictionary) {
+    public PropertyVerbalizer(IRIConverter uriConverter, String wordnetDictionary) {
         this.uriConverter = uriConverter;
         if (wordnetDictionary == null) {
 			try {

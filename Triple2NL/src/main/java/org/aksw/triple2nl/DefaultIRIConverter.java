@@ -1,14 +1,13 @@
 package org.aksw.triple2nl;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
-import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
-import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
-import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
@@ -16,8 +15,12 @@ import org.aksw.triple2nl.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections15.map.LRUMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.web.HttpSC;
+import org.coode.owlapi.turtle.TurtleOntologyFormat;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyStorageException;
+import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Literal;
 import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Statement;
 import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
@@ -40,11 +44,11 @@ import com.hp.hpl.jena.vocabulary.XSD;
  * @author Lorenz Buehmann
  *
  */
-public class URIConverter {
+public class DefaultIRIConverter implements IRIConverter{
 	
-	private static final Logger logger = LoggerFactory.getLogger(URIConverter.class);
+	private static final Logger logger = LoggerFactory.getLogger(DefaultIRIConverter.class);
 	
-	private SimpleIRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
+	private IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
 	
 	private QueryExecutionFactory qef;
@@ -64,35 +68,31 @@ public class URIConverter {
 	
 	private URIDereferencer uriDereferencer;
 	
-	public URIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
-		this.cacheDirectory = cacheDirectory;
-		
-		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		if(cacheDirectory != null){
-				CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		}
-		init();
+	public DefaultIRIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
+		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
 	}
 	
-	public URIConverter(QueryExecutionFactory qef) {
+	public DefaultIRIConverter(SparqlEndpoint endpoint) {
+		this(endpoint, null);
+	}
+	
+	public DefaultIRIConverter(QueryExecutionFactory qef) {
 		this(qef, null);
 	}
 	
-	public URIConverter(QueryExecutionFactory qef, String cacheDirectory) {
+	public DefaultIRIConverter(QueryExecutionFactory qef, String cacheDirectory) {
 		this.qef = qef;
 		this.cacheDirectory = cacheDirectory;
 		
 		init();
 	}
 	
-	public URIConverter(SparqlEndpoint endpoint) {
-		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		if(cacheDirectory != null){
-				CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
-				qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
-		}
-		init();
+	public DefaultIRIConverter(Model model) {
+		qef = new QueryExecutionFactoryModel(model);
+	}
+	
+	public DefaultIRIConverter(OWLOntology ontology) {
+		this(getModel(ontology));
 	}
 	
 	private void init(){
@@ -101,11 +101,6 @@ public class URIConverter {
 		} else {
 			uriDereferencer = new URIDereferencer();
 		}
-		
-	}
-	
-	public URIConverter(Model model) {
-		qef = new QueryExecutionFactoryModel(model);
 	}
 	
 	/**
@@ -315,8 +310,31 @@ public class URIConverter {
     	return rs;
     }
     
+    public static Model getModel(final OWLOntology ontology) {
+		Model model = ModelFactory.createDefaultModel();
+
+		try (PipedInputStream is = new PipedInputStream(); PipedOutputStream os = new PipedOutputStream(is);) {
+			new Thread(new Runnable() {
+				public void run() {
+					try {
+						ontology.getOWLOntologyManager().saveOntology(ontology, new TurtleOntologyFormat(), os);
+						os.close();
+					} catch (OWLOntologyStorageException e) {
+						e.printStackTrace();
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+			}).start();
+			model.read(is, null, "TURTLE");
+			return model;
+		} catch (Exception e) {
+			throw new RuntimeException("Could not convert OWL API ontology to JENA API model.", e);
+		}
+	}
+    
     public static void main(String[] args) {
-    	URIConverter converter = new URIConverter(SparqlEndpoint.getEndpointDBpedia());
+    	DefaultIRIConverter converter = new DefaultIRIConverter(SparqlEndpoint.getEndpointDBpedia());
 		String label = converter.convert("http://dbpedia.org/resource/Nuclear_Reactor_Technology");
 		System.out.println(label);
 		label = converter.convert("http://dbpedia.org/resource/Woodroffe_School");

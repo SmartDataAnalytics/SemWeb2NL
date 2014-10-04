@@ -18,7 +18,7 @@ import opennlp.tools.parser.ParserModel;
 import opennlp.tools.util.InvalidFormatException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.hp.hpl.jena.query.QueryFactory;
@@ -27,7 +27,7 @@ import com.hp.hpl.jena.query.Syntax;
 public class QueryPreprocessor {
 	
 	private TypeExtractor2 typeExtr;
-	private URIConverter uriConverter;
+	private DefaultIRIConverter uriConverter;
 	private Parser parser;
 	
 	private static final String parseModelFile = "/home/me/Downloads/en-parser-chunking.bin";
@@ -38,7 +38,7 @@ public class QueryPreprocessor {
 		typeExtr.setDomainExtractor(new SPARQLDomainExtractor(endpoint));
 		typeExtr.setRangeExtractor(new SPARQLRangeExtractor(endpoint));
 		
-		uriConverter = new URIConverter(endpoint);
+		uriConverter = new DefaultIRIConverter(endpoint);
 		
 		try {
 			InputStream modelIn = new FileInputStream(parseModelFile);

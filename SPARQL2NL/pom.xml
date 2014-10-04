@@ -36,43 +36,12 @@
 			<artifactId>jena-sparql-api-cache-h2</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.dllearner</groupId>
-			<artifactId>components-ext</artifactId>
-			<exclusions>
-				<exclusion>
-					<artifactId>nif</artifactId>
-					<groupId>org.nlp2rdf</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>org.aksw.commons</artifactId>
-					<groupId>sparql</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>com.hp.hpl.jena</artifactId>
-					<groupId>arq</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jena-arq</artifactId>
-					<groupId>org.apache.jena</groupId>
-				</exclusion>
-				<exclusion>
-					<artifactId>jena</artifactId>
-					<groupId>com.hp.hpl.jena</groupId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-
-		<dependency>
 			<groupId>ifi.uzh</groupId>
 			<artifactId>simpack</artifactId>
-			<type>jar</type>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>simplenlg</groupId>
 			<artifactId>simplenlg</artifactId>
-			<type>jar</type>
-			<scope>compile</scope>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

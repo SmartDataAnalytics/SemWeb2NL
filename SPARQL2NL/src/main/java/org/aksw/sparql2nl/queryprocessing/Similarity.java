@@ -6,7 +6,10 @@ package org.aksw.sparql2nl.queryprocessing;
 
 import org.aksw.sparql2nl.similarity.NormedGraphIsomorphism;
 import org.aksw.sparql2nl.similarity.TypeAwareGraphIsomorphism;
-import uk.ac.shef.wit.simmetrics.similaritymetrics.*;
+
+import simpack.measure.external.simmetrics.JaccardSimilarity;
+import simpack.measure.external.simmetrics.Levenshtein;
+import simpack.measure.external.simmetrics.QGramsDistance;
 
 /**
  * Computes the similarity between two queries
@@ -28,17 +31,17 @@ public class Similarity {
                 q1.getUsesSelect() != q2.getUsesSelect()) return 0;
         //if they do then compute similarity
         if(measure == SimilarityMeasure.LEVENSHTEIN)
-            return (new Levenshtein()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
+            return (new Levenshtein(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars()).getSimilarity());
         else if(measure == SimilarityMeasure.QGRAMS)
-            return (new QGramsDistance()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
+            return (new QGramsDistance(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars()).getSimilarity());
         else if(measure == SimilarityMeasure.JACCARD)
-            return (new JaccardSimilarity()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
+            return (new JaccardSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars()).getSimilarity());
         //add graph based-metric here
         else if(measure == SimilarityMeasure.GRAPH_ISOMORPHY)
             return (new NormedGraphIsomorphism().getSimilarity(q1, q2));
         else if(measure == SimilarityMeasure.TYPE_AWARE_ISOMORPHY)
             return (new TypeAwareGraphIsomorphism().getSimilarity(q1, q2));
         //default
-        return (new Levenshtein()).getSimilarity(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars());
+        return (new Levenshtein(q1.getQueryWithOnlyVars(), q2.getQueryWithOnlyVars()).getSimilarity());
     }
 }

@@ -23,11 +23,11 @@ import com.hp.hpl.jena.rdf.model.Literal;
 public class LiteralConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(LiteralConverter.class);
-    private URIConverter uriConverter;
+    private DefaultIRIConverter uriConverter;
     private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG);
     private boolean encapsulateStringLiterals = true;
 
-    public LiteralConverter(URIConverter uriConverter) {
+    public LiteralConverter(DefaultIRIConverter uriConverter) {
         this.uriConverter = uriConverter;
     }
 
@@ -125,7 +125,7 @@ public class LiteralConverter {
     }
 
     public static void main(String[] args) {
-        LiteralConverter conv = new LiteralConverter(new URIConverter(
+        LiteralConverter conv = new LiteralConverter(new DefaultIRIConverter(
                 SparqlEndpoint.getEndpointDBpediaLiveAKSW()));
         LiteralLabel lit;// = NodeFactory.createLiteralNode("123", null,"http://dbpedia.org/datatypes/squareKilometre").getLiteral();
 //        System.out.println(lit);

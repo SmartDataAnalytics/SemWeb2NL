@@ -5,7 +5,7 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Calendar;
 
-import org.aksw.triple2nl.URIConverter;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Assert;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import com.hp.hpl.jena.sparql.expr.NodeValue;
  */
 public class FilterExpressionConverterTest {
 
-	private URIConverter uriConverter = new URIConverter(SparqlEndpoint.getEndpointDBpedia());
+	private DefaultIRIConverter uriConverter = new DefaultIRIConverter(SparqlEndpoint.getEndpointDBpedia());
 	private FilterExpressionConverter conv = new FilterExpressionConverter(uriConverter);
 	private Realiser realiser = new Realiser(Lexicon.getDefaultLexicon());
 

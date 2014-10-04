@@ -1,7 +1,6 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.io.File;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -20,14 +19,14 @@ import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
+import org.aksw.triple2nl.DefaultIRIConverter;
 import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.TripleConverter;
-import org.aksw.triple2nl.URIConverter;
 import org.aksw.triple2nl.functionality.FunctionalityDetector;
 import org.aksw.triple2nl.functionality.SPARQLFunctionalityDetector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
-import org.apache.commons.lang.SystemUtils;
+import org.apache.commons.lang3.SystemUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -84,7 +83,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public Lexicon lexicon;
     public NLGFactory nlgFactory;
     public Realiser realiser;
-    private URIConverter uriConverter;
+    private DefaultIRIConverter uriConverter;
     private LiteralConverter literalConverter;
     private FilterExpressionConverter expressionConverter;
     Postprocessor post;
@@ -173,7 +172,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         post = new Postprocessor();
         post.id = 0;
 
-        uriConverter = new URIConverter(qef, cacheDirectory);
+        uriConverter = new DefaultIRIConverter(qef, cacheDirectory);
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 

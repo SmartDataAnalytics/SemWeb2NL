@@ -5,6 +5,10 @@ package org.aksw.owl2nl;
 
 import java.util.List;
 
+import org.aksw.triple2nl.IRIConverter;
+import org.aksw.triple2nl.SimpleIRIConverter;
+import org.aksw.triple2nl.property.PropertyVerbalization;
+import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLClassExpressionVisitorEx;
@@ -35,9 +39,11 @@ import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 
+import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
@@ -52,6 +58,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	
 	IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
 	
+	IRIConverter iriConverter = new SimpleIRIConverter();
+	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
+	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -61,11 +70,20 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		this(Lexicon.getDefaultLexicon());
 	}
 	
-	public void convert(OWLClassExpression ce){
-		ce.accept(this);
+	public String convert(OWLClassExpression ce) {
+		// rewrite
+		ce = rewrite(ce);
+
+		// process
+		NLGElement nlgElement = ce.accept(this);
+
+		// realise
+		realiser.realise(nlgElement);
+		
+		return nlgElement.getRealisation();
 	}
 	
-	private String convert(OWLEntity entity){
+	private String getLexicalForm(OWLEntity entity){
 		return sfp.getShortForm(entity.getIRI());
 	}
 	
@@ -85,25 +103,30 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLClass ce) {
-		return null;
+		return nlgFactory.createNounPhrase(getLexicalForm(ce));
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectIntersectionOf ce) {
+		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+		
 		for (OWLClassExpression op : getOperandsByPriority(ce)) {
-			
+			cc.addCoordinate(op.accept(this));
 		}
 		
-		return null;
+		return cc;
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectUnionOf ce) {
+		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+		cc.setConjunction("or");
+		
 		for (OWLClassExpression op : getOperandsByPriority(ce)) {
-			
+			cc.addCoordinate(op.accept(this));
 		}
 		
-		return null;
+		return cc;
 	}
 
 	@Override
@@ -115,10 +138,34 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLObjectSomeValuesFrom ce) {
-		OWLObjectPropertyExpression property = ce.getProperty();
-		OWLClassExpression filler = ce.getFiller();
+		SPhraseSpec phrase = nlgFactory.createClause();
+		phrase.setSubject("everything");
 		
-		return null;
+		OWLObjectPropertyExpression property = ce.getProperty();
+		
+		
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				System.out.println("noun");
+			} else if(propertyVerbalization.isVerbType()){
+				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		
+		OWLClassExpression filler = ce.getFiller();
+		NLGElement fillerElement = filler.accept(this);
+		phrase.setObject(fillerElement);
+		
+		System.out.println(realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
@@ -210,6 +257,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		OWLObjectProperty p1 = df.getOWLObjectProperty("birthPlace", pm);
 		OWLObjectProperty p2 = df.getOWLObjectProperty("worksFor", pm);
 		OWLClass cls1 = df.getOWLClass("Place", pm);
-		OWLClassExpression ce = df.getOWLObjectAllValuesFrom(p1, cls1);
+		OWLClassExpression ce = df.getOWLObjectSomeValuesFrom(p1, cls1);
+		
+		OWLClassExpressionConverter converter = new OWLClassExpressionConverter();
+		System.out.println(converter.convert(ce));
 	}
 }

@@ -19,7 +19,7 @@ import com.hp.hpl.jena.graph.impl.LiteralLabel;
  */
 public class LiteralConverterTest {
 	
-	private static final LiteralConverter conv = new LiteralConverter(new URIConverter(SparqlEndpoint.getEndpointDBpedia()));
+	private static final LiteralConverter conv = new LiteralConverter(new DefaultIRIConverter(SparqlEndpoint.getEndpointDBpedia()));
 
 	/**
 	 * Test method for {@link org.aksw.sparql2nl.naturallanguagegeneration.LiteralConverter#convert(com.hp.hpl.jena.rdf.model.Literal)}.
