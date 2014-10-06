@@ -43,6 +43,8 @@ import org.semanticweb.owlapi.model.PrefixManager;
 import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Sets;
 
@@ -53,6 +55,7 @@ import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
@@ -61,6 +64,8 @@ import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
  *
  */
 public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<NLGElement>{
+	
+	private static final Logger logger = LoggerFactory.getLogger(OWLClassExpressionConverter.class);
 
 	NLGFactory nlgFactory;
 	Realiser realiser;
@@ -227,7 +232,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
-		
+		OWLClassExpression filler = ce.getFiller();
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
@@ -235,9 +240,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
 				phrase.setSubject(propertyNounPhrase);
 				
-				phrase.setVerb("is");
+				phrase.setVerb("have");
 				
-				OWLClassExpression filler = ce.getFiller();
 				NLGElement fillerElement = filler.accept(this);
 				phrase.setObject(fillerElement);
 				
@@ -245,7 +249,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			} else if(propertyVerbalization.isVerbType()){
 				phrase.setVerb(propertyVerbalization.getVerbalizationText());
 				
-				OWLClassExpression filler = ce.getFiller();
+			
 				NLGElement fillerElement = filler.accept(this);
 				phrase.setObject(fillerElement);
 				
@@ -258,17 +262,51 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		} else {
 			//TODO handle inverse properties
 		}
-		System.out.println(realiser.realise(phrase));
+		logger.debug(ce +  " = " + realiser.realise(phrase));
 		
 		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectAllValuesFrom ce) {
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLClassExpression filler = ce.getFiller();
 		
-		return null;
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = true;
+			} else if(propertyVerbalization.isVerbType()){
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+				verb.addModifier("only");
+				phrase.setVerb(verb);
+				
+			
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
@@ -363,15 +401,19 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		// works for a company
 		OWLClassExpression ce2 = df.getOWLObjectSomeValuesFrom(p2, cls2);
 		
+		// only works for a company
+		OWLClassExpression ce4 = df.getOWLObjectAllValuesFrom(p2, cls2);
+		
 		// person
 		OWLClassExpression ce3 = cls3;
 		
 		System.out.println(converter.convert(ce1));
 		System.out.println(converter.convert(ce2));
 		System.out.println(converter.convert(ce3));
+		System.out.println(converter.convert(ce4));
 		
 		// 
-		OWLClassExpression ce4 = df.getOWLObjectIntersectionOf(ce1, ce2, ce3);
-		System.out.println(converter.convert(ce4));
+		OWLClassExpression ce5 = df.getOWLObjectIntersectionOf(ce1, ce2, ce3);
+		System.out.println(converter.convert(ce5));
 	}
 }
