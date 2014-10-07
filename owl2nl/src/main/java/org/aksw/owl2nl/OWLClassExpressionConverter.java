@@ -13,18 +13,30 @@ import org.aksw.triple2nl.SimpleIRIConverter;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
+import org.semanticweb.owlapi.model.OWLAnonymousIndividual;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLClassExpressionVisitorEx;
 import org.semanticweb.owlapi.model.OWLDataAllValuesFrom;
+import org.semanticweb.owlapi.model.OWLDataComplementOf;
 import org.semanticweb.owlapi.model.OWLDataExactCardinality;
 import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLDataHasValue;
+import org.semanticweb.owlapi.model.OWLDataIntersectionOf;
 import org.semanticweb.owlapi.model.OWLDataMaxCardinality;
 import org.semanticweb.owlapi.model.OWLDataMinCardinality;
+import org.semanticweb.owlapi.model.OWLDataOneOf;
+import org.semanticweb.owlapi.model.OWLDataPropertyExpression;
+import org.semanticweb.owlapi.model.OWLDataRange;
+import org.semanticweb.owlapi.model.OWLDataRangeVisitorEx;
 import org.semanticweb.owlapi.model.OWLDataSomeValuesFrom;
+import org.semanticweb.owlapi.model.OWLDataUnionOf;
+import org.semanticweb.owlapi.model.OWLDatatype;
+import org.semanticweb.owlapi.model.OWLDatatypeRestriction;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLIndividual;
+import org.semanticweb.owlapi.model.OWLIndividualVisitorEx;
+import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLNaryBooleanClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectAllValuesFrom;
 import org.semanticweb.owlapi.model.OWLObjectComplementOf;
@@ -35,21 +47,17 @@ import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLObjectMaxCardinality;
 import org.semanticweb.owlapi.model.OWLObjectMinCardinality;
 import org.semanticweb.owlapi.model.OWLObjectOneOf;
-import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLObjectUnionOf;
-import org.semanticweb.owlapi.model.PrefixManager;
-import org.semanticweb.owlapi.util.DefaultPrefixManager;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
@@ -59,11 +67,13 @@ import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 
+import com.google.common.collect.Sets;
+
 /**
  * @author Lorenz Buehmann
  *
  */
-public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<NLGElement>{
+public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<NLGElement>, OWLIndividualVisitorEx<NLGElement>, OWLDataRangeVisitorEx<NLGElement>{
 	
 	private static final Logger logger = LoggerFactory.getLogger(OWLClassExpressionConverter.class);
 
@@ -125,6 +135,15 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			
 			operands.add(df.getOWLThing());
 			return df.getOWLObjectIntersectionOf(operands);
+		} else if(ce instanceof OWLObjectUnionOf){
+			Set<OWLClassExpression> operands = ((OWLObjectUnionOf) ce).getOperands();
+			Set<OWLClassExpression> newOperands = Sets.newHashSet();
+			
+			for (OWLClassExpression operand : operands) {
+				newOperands.add(rewrite(operand));
+			}
+			
+			return df.getOWLObjectUnionOf(newOperands);
 		}
 		Set<OWLClassExpression> operands = Sets.<OWLClassExpression>newHashSet(ce, df.getOWLThing());
 		return df.getOWLObjectIntersectionOf(operands);
@@ -146,7 +165,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			return nlgFactory.createNounPhrase("everything");
 		}
 		noun = true;
-		return nlgFactory.createNounPhrase("a", getLexicalForm(ce));
+		return nlgFactory.createNounPhrase("a", getLexicalForm(ce).toLowerCase());
 	}
 
 	@Override
@@ -204,19 +223,22 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			clause.setVerbPhrase(el);
 			phrase.setComplement(clause);
 		}
-		
+		System.out.println(realiser.realise(phrase));
 		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectUnionOf ce) {
+		List<OWLClassExpression> operands = getOperandsByPriority(ce);
+
 		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
 		cc.setConjunction("or");
-		
-		for (OWLClassExpression op : getOperandsByPriority(ce)) {
-			cc.addCoordinate(op.accept(this));
+
+		for (OWLClassExpression operand : operands) {
+			NLGElement el = operand.accept(this);
+			cc.addCoordinate(el);
 		}
-		
+
 		return cc;
 	}
 
@@ -224,7 +246,16 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	public NLGElement visit(OWLObjectComplementOf ce) {
 		OWLClassExpression op = ce.getOperand();
 		
-		return null;
+		NLGElement phrase = op.accept(this);
+		if(!op.isAnonymous()){
+			phrase = nlgFactory.createClause(null, "is", phrase);
+		}
+		
+		phrase.setFeature(Feature.NEGATED, true);
+		
+		noun = false;
+		
+		return phrase;
 	}
 
 	@Override
@@ -240,7 +271,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
 				phrase.setSubject(propertyNounPhrase);
 				
-				phrase.setVerb("have");
+				phrase.setVerb("is");
 				
 				NLGElement fillerElement = filler.accept(this);
 				phrase.setObject(fillerElement);
@@ -311,19 +342,95 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLObjectHasValue ce) {
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLIndividual value = ce.getValue();
 		
-		return null;
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				NLGElement fillerElement = value.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = true;
+			} else if(propertyVerbalization.isVerbType()){
+				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+				
+			
+				NLGElement fillerElement = value.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectMinCardinality ce) {
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLClassExpression filler = ce.getFiller();
 		int cardinality = ce.getCardinality();
 		
-		return null;
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NLGElement word = nlgFactory.createWord(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()), LexicalCategory.NOUN);
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(word);
+				if(cardinality > 1){
+					word.setPlural(true);
+					propertyNounPhrase.setPlural(true);
+				}
+				
+				phrase.setVerb("have at least " + cardinality);
+				phrase.setObject(propertyNounPhrase);
+				
+				
+				NLGElement fillerElement = filler.accept(this);
+				SPhraseSpec clause = nlgFactory.createClause(null, "is", fillerElement);
+				if(cardinality > 1){
+					clause.setPlural(true);
+				}
+				phrase.setComplement(clause);
+				
+				noun = false;
+			} else if(propertyVerbalization.isVerbType()){
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+				verb.addModifier("at least " + cardinality);
+				phrase.setVerb(verb);
+				
+			
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
@@ -356,7 +463,42 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLDataSomeValuesFrom ce) {
-		return null;
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
+		OWLDataPropertyExpression property = ce.getProperty();
+		OWLDataRange filler = ce.getFiller();
+		
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = true;
+			} else if(propertyVerbalization.isVerbType()){
+				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+				
+			
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
@@ -384,36 +526,68 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		return null;
 	}
 	
-	public static void main(String[] args) throws Exception {
-		OWLClassExpressionConverter converter = new OWLClassExpressionConverter();
-		
-		OWLDataFactoryImpl df = new OWLDataFactoryImpl(false, false);
-		PrefixManager pm = new DefaultPrefixManager("http://dbpedia.org/ontology/");
-		OWLObjectProperty p1 = df.getOWLObjectProperty("birthPlace", pm);
-		OWLObjectProperty p2 = df.getOWLObjectProperty("worksFor", pm);
-		OWLClass cls1 = df.getOWLClass("Place", pm);
-		OWLClass cls2 = df.getOWLClass("Company", pm);
-		OWLClass cls3 = df.getOWLClass("Person", pm);
-		
-		// birth place is a place
-		OWLClassExpression ce1 = df.getOWLObjectSomeValuesFrom(p1, cls1);
-		
-		// works for a company
-		OWLClassExpression ce2 = df.getOWLObjectSomeValuesFrom(p2, cls2);
-		
-		// only works for a company
-		OWLClassExpression ce4 = df.getOWLObjectAllValuesFrom(p2, cls2);
-		
-		// person
-		OWLClassExpression ce3 = cls3;
-		
-		System.out.println(converter.convert(ce1));
-		System.out.println(converter.convert(ce2));
-		System.out.println(converter.convert(ce3));
-		System.out.println(converter.convert(ce4));
-		
-		// 
-		OWLClassExpression ce5 = df.getOWLObjectIntersectionOf(ce1, ce2, ce3);
-		System.out.println(converter.convert(ce5));
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLIndividualVisitorEx#visit(org.semanticweb.owlapi.model.OWLNamedIndividual)
+	 */
+	@Override
+	public NLGElement visit(OWLNamedIndividual individual) {
+		return nlgFactory.createNounPhrase(getLexicalForm(individual));
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLIndividualVisitorEx#visit(org.semanticweb.owlapi.model.OWLAnonymousIndividual)
+	 */
+	@Override
+	public NLGElement visit(OWLAnonymousIndividual individual) {
+		throw new UnsupportedOperationException("Conversion of anonymous individuals not support yet!");
+	}
+	
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDatatype)
+	 */
+	@Override
+	public NLGElement visit(OWLDatatype node) {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDataOneOf)
+	 */
+	@Override
+	public NLGElement visit(OWLDataOneOf node) {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDataComplementOf)
+	 */
+	@Override
+	public NLGElement visit(OWLDataComplementOf node) {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDataIntersectionOf)
+	 */
+	@Override
+	public NLGElement visit(OWLDataIntersectionOf node) {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDataUnionOf)
+	 */
+	@Override
+	public NLGElement visit(OWLDataUnionOf node) {
+		return null;
+	}
+
+	/* (non-Javadoc)
+	 * @see org.semanticweb.owlapi.model.OWLDataRangeVisitorEx#visit(org.semanticweb.owlapi.model.OWLDatatypeRestriction)
+	 */
+	@Override
+	public NLGElement visit(OWLDatatypeRestriction node) {
+		return null;
 	}
 }
