@@ -7,9 +7,11 @@ import java.util.Locale;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
+import org.semanticweb.owlapi.model.OWLLiteral;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hp.hpl.jena.datatypes.BaseDatatype;
 import com.hp.hpl.jena.datatypes.DatatypeFormatException;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
 import com.hp.hpl.jena.datatypes.xsd.IllegalDateTimeFieldException;
@@ -23,12 +25,18 @@ import com.hp.hpl.jena.rdf.model.Literal;
 public class LiteralConverter {
 
     private static final Logger logger = LoggerFactory.getLogger(LiteralConverter.class);
-    private DefaultIRIConverter uriConverter;
+    private IRIConverter uriConverter;
     private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG);
     private boolean encapsulateStringLiterals = true;
 
-    public LiteralConverter(DefaultIRIConverter uriConverter) {
+    public LiteralConverter(IRIConverter uriConverter) {
         this.uriConverter = uriConverter;
+    }
+    
+    public String convert(OWLLiteral lit) {
+    	RDFDatatype datatype = new BaseDatatype(lit.getDatatype().toStringID());
+        return convert(NodeFactory.createLiteral(lit.getLiteral(), lit.getLang(),
+                datatype).getLiteral());
     }
 
     public String convert(Literal lit) {

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.aksw.triple2nl.IRIConverter;
+import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.SimpleIRIConverter;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
@@ -18,6 +19,7 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLClassExpressionVisitorEx;
 import org.semanticweb.owlapi.model.OWLDataAllValuesFrom;
+import org.semanticweb.owlapi.model.OWLDataCardinalityRestriction;
 import org.semanticweb.owlapi.model.OWLDataComplementOf;
 import org.semanticweb.owlapi.model.OWLDataExactCardinality;
 import org.semanticweb.owlapi.model.OWLDataFactory;
@@ -36,9 +38,11 @@ import org.semanticweb.owlapi.model.OWLDatatypeRestriction;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLIndividualVisitorEx;
+import org.semanticweb.owlapi.model.OWLLiteral;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLNaryBooleanClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectAllValuesFrom;
+import org.semanticweb.owlapi.model.OWLObjectCardinalityRestriction;
 import org.semanticweb.owlapi.model.OWLObjectComplementOf;
 import org.semanticweb.owlapi.model.OWLObjectExactCardinality;
 import org.semanticweb.owlapi.model.OWLObjectHasSelf;
@@ -60,6 +64,7 @@ import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseCategory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -84,9 +89,13 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	
 	IRIConverter iriConverter = new SimpleIRIConverter();
 	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
+	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
 	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
 	
 	boolean noun;
+	
+	NLGElement object;
+	NLGElement complement;
 	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
@@ -223,7 +232,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			clause.setVerbPhrase(el);
 			phrase.setComplement(clause);
 		}
-		System.out.println(realiser.realise(phrase));
+		
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
 		return phrase;
 	}
 
@@ -239,6 +250,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			cc.addCoordinate(el);
 		}
 
+		logger.debug(ce +  " = " + realiser.realise(cc));
+		
 		return cc;
 	}
 
@@ -254,6 +267,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		phrase.setFeature(Feature.NEGATED, true);
 		
 		noun = false;
+		
+		logger.debug(ce +  " = " + realiser.realise(phrase));
 		
 		return phrase;
 	}
@@ -382,7 +397,29 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLObjectMinCardinality ce) {
+		return processObjectCardinalityRestriction(ce);
+	}
+	
+	@Override
+	public NLGElement visit(OWLObjectMaxCardinality ce) {
+		return processObjectCardinalityRestriction(ce);
+	}
+
+	@Override
+	public NLGElement visit(OWLObjectExactCardinality ce) {
+		return processObjectCardinalityRestriction(ce);
+	}
+	
+	private NLGElement processObjectCardinalityRestriction(OWLObjectCardinalityRestriction ce){
 		SPhraseSpec phrase = nlgFactory.createClause();
+		String modifier;
+		if(ce instanceof OWLObjectMinCardinality){
+			modifier = "at least";
+		} else if(ce instanceof OWLObjectMaxCardinality){
+			modifier = "at most";
+		} else {
+			modifier = "exactly";
+		}
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLClassExpression filler = ce.getFiller();
@@ -397,26 +434,36 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 					word.setPlural(true);
 					propertyNounPhrase.setPlural(true);
 				}
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have");
+				verb.addModifier(modifier + " " + cardinality);
 				
-				phrase.setVerb("have at least " + cardinality);
+				phrase.setVerb(verb);
 				phrase.setObject(propertyNounPhrase);
 				
 				
 				NLGElement fillerElement = filler.accept(this);
-				SPhraseSpec clause = nlgFactory.createClause(null, "is", fillerElement);
+				
+				SPhraseSpec clause = nlgFactory.createClause();
 				if(cardinality > 1){
 					clause.setPlural(true);
 				}
+				clause.setVerb("be");
+				clause.setObject(fillerElement);
+				if(fillerElement.isA(PhraseCategory.CLAUSE)){
+					fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+				}
+				
 				phrase.setComplement(clause);
 				
 				noun = false;
 			} else if(propertyVerbalization.isVerbType()){
 				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
-				verb.addModifier("at least " + cardinality);
+				verb.addModifier(modifier + " " + cardinality);
 				phrase.setVerb(verb);
 				
 			
 				NLGElement fillerElement = filler.accept(this);
+				fillerElement.setPlural(true);
 				phrase.setObject(fillerElement);
 				
 				noun = false;
@@ -431,24 +478,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		logger.debug(ce +  " = " + realiser.realise(phrase));
 		
 		return phrase;
-	}
-
-	@Override
-	public NLGElement visit(OWLObjectExactCardinality ce) {
-		OWLObjectPropertyExpression property = ce.getProperty();
-		OWLClassExpression filler = ce.getFiller();
-		int cardinality = ce.getCardinality();
-		
-		return null;
-	}
-
-	@Override
-	public NLGElement visit(OWLObjectMaxCardinality ce) {
-		OWLObjectPropertyExpression property = ce.getProperty();
-		OWLClassExpression filler = ce.getFiller();
-		int cardinality = ce.getCardinality();
-		
-		return null;
 	}
 
 	@Override
@@ -503,27 +532,165 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLDataAllValuesFrom ce) {
-		return null;
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
+		OWLDataPropertyExpression property = ce.getProperty();
+		OWLDataRange filler = ce.getFiller();
+		
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = true;
+			} else if(propertyVerbalization.isVerbType()){
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+				verb.addModifier("only");
+				phrase.setVerb(verb);
+				
+			
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLDataHasValue ce) {
-		return null;
+		SPhraseSpec phrase = nlgFactory.createClause();
+		
+		OWLDataPropertyExpression property = ce.getProperty();
+		OWLLiteral value = ce.getValue();
+		
+		NLGElement valueElement = nlgFactory.createNounPhrase(literalConverter.convert(value));
+		phrase.setObject(valueElement);
+		
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				phrase.setSubject(propertyNounPhrase);
+				
+				phrase.setVerb("is");
+				
+				noun = true;
+			} else if(propertyVerbalization.isVerbType()){
+				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLDataMinCardinality ce) {
-		return null;
+		return processDataCardinalityRestriction(ce);
 	}
 
 	@Override
 	public NLGElement visit(OWLDataExactCardinality ce) {
-		return null;
+		return processDataCardinalityRestriction(ce);
 	}
 
 	@Override
 	public NLGElement visit(OWLDataMaxCardinality ce) {
-		return null;
+		return processDataCardinalityRestriction(ce);
+	}
+	
+	private NLGElement processDataCardinalityRestriction(OWLDataCardinalityRestriction ce){
+		SPhraseSpec phrase = nlgFactory.createClause();
+		String modifier;
+		if(ce instanceof OWLDataMinCardinality){
+			modifier = "at least";
+		} else if(ce instanceof OWLDataMaxCardinality){
+			modifier = "at most";
+		} else {
+			modifier = "exactly";
+		}
+		
+		OWLDataPropertyExpression property = ce.getProperty();
+		OWLDataRange filler = ce.getFiller();
+		int cardinality = ce.getCardinality();
+		
+		if(!property.isAnonymous()){
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
+			if(propertyVerbalization.isNounType()){
+				NLGElement word = nlgFactory.createWord(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()), LexicalCategory.NOUN);
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(word);
+				if(cardinality > 1){
+					word.setPlural(true);
+					propertyNounPhrase.setPlural(true);
+				}
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have");
+				verb.addModifier(modifier + " " + cardinality);
+				
+				phrase.setVerb(verb);
+				phrase.setObject(propertyNounPhrase);
+				
+				
+				NLGElement fillerElement = filler.accept(this);
+				
+				SPhraseSpec clause = nlgFactory.createClause();
+				if(cardinality > 1){
+					clause.setPlural(true);
+				}
+				clause.setVerb("be");
+				clause.setObject(fillerElement);
+				if(fillerElement.isA(PhraseCategory.CLAUSE)){
+					fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+				}
+				
+				phrase.setComplement(clause);
+				
+				noun = false;
+			} else if(propertyVerbalization.isVerbType()){
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+				verb.addModifier(modifier + " " + cardinality);
+				phrase.setVerb(verb);
+				
+			
+				NLGElement fillerElement = filler.accept(this);
+				fillerElement.setPlural(true);
+				phrase.setObject(fillerElement);
+				
+				noun = false;
+			} else {
+				
+			}
+			
+			
+		} else {
+			//TODO handle inverse properties
+		}
+		logger.debug(ce +  " = " + realiser.realise(phrase));
+		
+		return phrase;
 	}
 	
 	/* (non-Javadoc)
@@ -548,7 +715,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDatatype node) {
-		return null;
+		return nlgFactory.createNounPhrase(getLexicalForm(node));
 	}
 
 	/* (non-Javadoc)

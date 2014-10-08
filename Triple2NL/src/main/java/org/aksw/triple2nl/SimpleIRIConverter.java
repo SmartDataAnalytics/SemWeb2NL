@@ -35,6 +35,14 @@ public class SimpleIRIConverter implements IRIConverter {
 		return shortForm;
 	}
 	
+	/* (non-Javadoc)
+	 * @see org.aksw.triple2nl.IRIConverter#convert(java.lang.String, boolean)
+	 */
+	@Override
+	public String convert(String iri, boolean dereferenceIRI) {
+		return convert(iri);
+	}
+	
 	 private String splitCamelCase(String s) {
 	    	StringBuilder sb = new StringBuilder();
 	    	for (String token : s.split(" ")) {
@@ -66,5 +74,4 @@ public class SimpleIRIConverter implements IRIConverter {
         }
         return s;
 	}
-
 }

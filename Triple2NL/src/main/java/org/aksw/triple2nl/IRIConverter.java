@@ -9,4 +9,5 @@ package org.aksw.triple2nl;
  */
 public interface IRIConverter {
 	String convert(String iri);
+	String convert(String iri, boolean dereferenceIRI);
 }

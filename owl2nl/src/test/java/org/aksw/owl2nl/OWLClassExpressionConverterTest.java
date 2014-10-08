@@ -11,6 +11,7 @@ import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLDataProperty;
 import org.semanticweb.owlapi.model.OWLDataRange;
 import org.semanticweb.owlapi.model.OWLDatatypeRestriction;
+import org.semanticweb.owlapi.model.OWLLiteral;
 import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.semanticweb.owlapi.model.PrefixManager;
@@ -29,7 +30,7 @@ public class OWLClassExpressionConverterTest {
 	private static OWLClassExpressionConverter converter;
 	private static OWLObjectProperty birthPlace;
 	private static OWLObjectProperty worksFor;
-	private static OWLObjectProperty leadBy;
+	private static OWLObjectProperty ledBy;
 	private static OWLDataProperty nrOfInhabitants;
 	private static OWLClass place;
 	private static OWLClass company;
@@ -37,6 +38,7 @@ public class OWLClassExpressionConverterTest {
 	private static OWLDataFactoryImpl df;
 	private static PrefixManager pm;
 	private static OWLNamedIndividual leipzig;
+	private static OWLLiteral literal;
 	
 	OWLClassExpression ce;
 	String text;
@@ -54,7 +56,7 @@ public class OWLClassExpressionConverterTest {
 		
 		birthPlace = df.getOWLObjectProperty("birthPlace", pm);
 		worksFor = df.getOWLObjectProperty("worksFor", pm);
-		leadBy = df.getOWLObjectProperty("isLeadBy", pm);
+		ledBy = df.getOWLObjectProperty("isLedBy", pm);
 		
 		nrOfInhabitants = df.getOWLDataProperty("nrOfInhabitants", pm);
 		dataRange = df.getOWLDatatypeMinInclusiveRestriction(10000000);
@@ -64,6 +66,7 @@ public class OWLClassExpressionConverterTest {
 		person = df.getOWLClass("Person", pm);
 		
 		leipzig = df.getOWLNamedIndividual("Leipzig", pm);
+		literal = df.getOWLLiteral(1000000);
 		
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
 	}
@@ -90,35 +93,87 @@ public class OWLClassExpressionConverterTest {
 	}
 	
 	@Test
+	public void testNested() {
+		
+		ce = df.getOWLObjectMinCardinality(3, birthPlace,
+				df.getOWLObjectIntersectionOf(place, df.getOWLObjectSomeValuesFrom(ledBy, person)));
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+	}
+	
+	@Test
 	public void testMinCardinality(){
-		// birth place is a place
+		// has at least 3 birth places that are a place
 		ce = df.getOWLObjectMinCardinality(3, birthPlace, place);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 		
-		// birth place is a place
-		ce = df.getOWLObjectMinCardinality(3, birthPlace, df.getOWLObjectIntersectionOf(place, df.getOWLObjectSomeValuesFrom(leadBy, person)));
+		// works for at least 3 companies
+		ce = df.getOWLObjectMinCardinality(3, worksFor, company);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
-				
-		// works for at least 3 company
-		ce = df.getOWLObjectMinCardinality(3, worksFor, company);
+		
+		
+		ce = df.getOWLDataMinCardinality(3, nrOfInhabitants, dataRange);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+	}
+	
+	@Test
+	public void testMaxCardinality(){
+		// has at most 3 birth places that are a place
+		ce = df.getOWLObjectMaxCardinality(3, birthPlace, place);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		// works for at most 3 companies
+		ce = df.getOWLObjectMaxCardinality(3, worksFor, company);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		ce = df.getOWLDataMaxCardinality(3, nrOfInhabitants, dataRange);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+	}
+	
+	@Test
+	public void testExactCardinality(){
+		// has exactly 3 birth places that are a place
+		ce = df.getOWLObjectExactCardinality(3, birthPlace, place);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		// works for exactly 3 companies
+		ce = df.getOWLObjectExactCardinality(3, worksFor, company);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		ce = df.getOWLDataExactCardinality(3, nrOfInhabitants, dataRange);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
 	
 	@Test
 	public void testAllValuesFrom() {
-		// works for a company
+		// works only for a company
 		ce = df.getOWLObjectAllValuesFrom(worksFor, company);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		ce = df.getOWLDataAllValuesFrom(nrOfInhabitants, dataRange);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
 	
 	@Test
-	public void testObjectHasValue() {
+	public void testHasValue() {
 		// works for a company
 		ce = df.getOWLObjectHasValue(birthPlace, leipzig);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+		
+		// nr of inhabitants is 1000000
+		ce = df.getOWLDataHasValue(nrOfInhabitants, literal);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
@@ -142,7 +197,7 @@ public class OWLClassExpressionConverterTest {
 		
 		ce = df.getOWLObjectIntersectionOf(
 				place, 
-				df.getOWLObjectSomeValuesFrom(leadBy, person));
+				df.getOWLObjectSomeValuesFrom(ledBy, person));
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
