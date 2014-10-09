@@ -3,6 +3,8 @@
  */
 package org.aksw.owl2nl;
 
+import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationPropertyRangeAxiom;
@@ -10,6 +12,8 @@ import org.semanticweb.owlapi.model.OWLAsymmetricObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLAxiom;
 import org.semanticweb.owlapi.model.OWLAxiomVisitor;
 import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
+import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLDataFactory;
 import org.semanticweb.owlapi.model.OWLDataPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLDataPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLDataPropertyRangeAxiom;
@@ -34,6 +38,9 @@ import org.semanticweb.owlapi.model.OWLNegativeObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
+import org.semanticweb.owlapi.model.OWLOntology;
+import org.semanticweb.owlapi.model.OWLOntologyChange;
+import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLSameIndividualAxiom;
 import org.semanticweb.owlapi.model.OWLSubAnnotationPropertyOfAxiom;
@@ -44,9 +51,15 @@ import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.SWRLRule;
+import org.semanticweb.owlapi.reasoner.OWLReasoner;
+import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 
+import com.clarkparsia.pellet.owlapiv3.PelletReasonerFactory;
+
+import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
 /**
@@ -63,6 +76,8 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	public OWLAxiomConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
+		
+		ceConverter = new OWLClassExpressionConverter(lexicon);
 	}
 	
 	public OWLAxiomConverter() {
@@ -79,6 +94,16 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	 */
 	@Override
 	public void visit(OWLSubClassOfAxiom axiom) {
+		OWLClassExpression subClass = axiom.getSubClass();
+		NLGElement subClassElement = ceConverter.asNLGElement(subClass);
+		
+		OWLClassExpression superClass = axiom.getSuperClass();
+		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
+		
+		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
+		
+		System.out.println(realiser.realise(clause));
+		
 	}
 
 	/* (non-Javadoc)
@@ -330,6 +355,20 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 
 	@Override
 	public void visit(OWLDeclarationAxiom axiom) {
+	}
+	
+	public static void main(String[] args) throws Exception {
+		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
+		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
+		OWLDataFactory dataFactory = man.getOWLDataFactory();
+		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
+		OWLReasonerFactory reasonerFactory = PelletReasonerFactory.getInstance();
+		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
+		
+		OWLAxiomConverter converter = new OWLAxiomConverter();
+		for (OWLAxiom axiom : ontology.getAxioms()) {
+			converter.convert(axiom);
+		}
 	}
 
 }

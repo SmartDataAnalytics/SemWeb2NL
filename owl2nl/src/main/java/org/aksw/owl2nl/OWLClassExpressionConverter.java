@@ -4,6 +4,7 @@
 package org.aksw.owl2nl;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -97,6 +98,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	NLGElement object;
 	NLGElement complement;
 	
+	int modalDepth;
+	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -107,6 +110,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	public String convert(OWLClassExpression ce) {
+		modalDepth = 1;
 		// rewrite
 		ce = rewrite(ce);
 
@@ -117,6 +121,28 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		nlgElement = realiser.realise(nlgElement);
 		
 		return nlgElement.getRealisation();
+	}
+	
+	public NLGElement asNLGElement(OWLClassExpression ce) {
+		modalDepth = 0;
+		// rewrite
+		ce = rewrite(ce);
+
+		// process
+		NLGElement nlgElement = ce.accept(this);
+
+		return nlgElement;
+	}
+	
+	public NLGElement asNLGElement(OWLClassExpression ce, boolean subClass) {
+		modalDepth = 0;
+		// rewrite
+		ce = rewrite(ce);
+
+		// process
+		NLGElement nlgElement = ce.accept(this);
+
+		return nlgElement;
 	}
 	
 	private String getLexicalForm(OWLEntity entity){
@@ -171,7 +197,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	@Override
 	public NLGElement visit(OWLClass ce) {
 		if(ce.isOWLThing()){
-			return nlgFactory.createNounPhrase("everything");
+			return nlgFactory.createNounPhrase("something");
 		}
 		noun = true;
 		return nlgFactory.createNounPhrase("a", getLexicalForm(ce).toLowerCase());
@@ -181,10 +207,14 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	public NLGElement visit(OWLObjectIntersectionOf ce) {
 		List<OWLClassExpression> operands = getOperandsByPriority(ce);
 		
-		// process the classes first
+		// process first class
 		OWLClassExpression first = operands.remove(0);
 		SPhraseSpec phrase = nlgFactory.createClause();
-		phrase.setSubject(first.accept(this));
+		NPPhraseSpec firstElement = (NPPhraseSpec) first.accept(this);
+		if(modalDepth == 0){
+			firstElement.setDeterminer("the");
+		}
+		phrase.setSubject(firstElement);
 		
 		if(operands.size() >= 2){
 			CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
@@ -487,7 +517,17 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLObjectOneOf ce) {
-		return null;
+		// if it contains more than one value, i.e. oneOf(v1_,...,v_n) with n > 1, we rewrite it as unionOf(oneOf(v_1),...,oneOf(v_n)) 
+		Set<OWLIndividual> individuals = ce.getIndividuals();
+
+		if (individuals.size() > 1) {
+			Set<OWLClassExpression> operands = new HashSet<OWLClassExpression>(individuals.size());
+			for (OWLIndividual ind : individuals) {
+				operands.add(df.getOWLObjectOneOf(ind));
+			}
+			return df.getOWLObjectUnionOf(operands).accept(this);
+		}
+		return individuals.iterator().next().accept(this);
 	}
 
 	@Override
@@ -706,7 +746,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLAnonymousIndividual individual) {
-		throw new UnsupportedOperationException("Conversion of anonymous individuals not support yet!");
+		throw new UnsupportedOperationException("Convertion of anonymous individuals not supported yet!");
 	}
 	
 
@@ -723,7 +763,17 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDataOneOf node) {
-		return null;
+		// if it contains more than one value, i.e. oneOf(v1_,...,v_n) with n > 1, we rewrite it as unionOf(oneOf(v_1),...,oneOf(v_n)) 
+		Set<OWLLiteral> values = node.getValues();
+		
+		if(values.size() > 1){
+			Set<OWLDataRange> operands = new HashSet<OWLDataRange>(values.size());
+			for (OWLLiteral value : values) {
+				operands.add(df.getOWLDataOneOf(value));
+			}
+			return df.getOWLDataUnionOf(operands).accept(this);
+		}
+		return nlgFactory.createNounPhrase(literalConverter.convert(values.iterator().next()));
 	}
 
 	/* (non-Javadoc)
