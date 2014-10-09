@@ -100,6 +100,10 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	
 	int modalDepth;
 	
+	OWLClassExpression root;
+
+	private boolean isSubClassExpression;
+	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -110,12 +114,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	public String convert(OWLClassExpression ce) {
-		modalDepth = 1;
-		// rewrite
-		ce = rewrite(ce);
-
 		// process
-		NLGElement nlgElement = ce.accept(this);
+		NLGElement nlgElement = asNLGElement(ce);
 
 		// realise
 		nlgElement = realiser.realise(nlgElement);
@@ -124,19 +124,17 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	public NLGElement asNLGElement(OWLClassExpression ce) {
-		modalDepth = 0;
-		// rewrite
-		ce = rewrite(ce);
-
-		// process
-		NLGElement nlgElement = ce.accept(this);
-
-		return nlgElement;
+		return asNLGElement(ce, false);
 	}
 	
-	public NLGElement asNLGElement(OWLClassExpression ce, boolean subClass) {
-		modalDepth = 0;
-		// rewrite
+	public NLGElement asNLGElement(OWLClassExpression ce, boolean isSubClassExpression) {
+		this.root = ce;
+		this.isSubClassExpression = isSubClassExpression;
+		
+		// reset modal depth
+		modalDepth = 1;
+		
+		// rewrite class expression
 		ce = rewrite(ce);
 
 		// process
@@ -196,11 +194,23 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLClass ce) {
-		if(ce.isOWLThing()){
-			return nlgFactory.createNounPhrase("something");
-		}
 		noun = true;
-		return nlgFactory.createNounPhrase("a", getLexicalForm(ce).toLowerCase());
+		
+		if(isSubClassExpression){
+			if(ce.isOWLThing()){
+				return nlgFactory.createNounPhrase("something");
+			}
+			NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(getLexicalForm(ce).toLowerCase());;
+			if(modalDepth > 1 && !ce.equals(root)){
+				nounPhrase.setDeterminer("a"); 
+			} 
+			return nounPhrase;
+		} else {
+			if(ce.isOWLThing()){
+				return nlgFactory.createNounPhrase("something");
+			}
+			return nlgFactory.createNounPhrase("a", getLexicalForm(ce).toLowerCase());
+		}
 	}
 
 	@Override
@@ -211,9 +221,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		OWLClassExpression first = operands.remove(0);
 		SPhraseSpec phrase = nlgFactory.createClause();
 		NPPhraseSpec firstElement = (NPPhraseSpec) first.accept(this);
-		if(modalDepth == 0){
-			firstElement.setDeterminer("the");
-		}
 		phrase.setSubject(firstElement);
 		
 		if(operands.size() >= 2){
@@ -451,9 +458,12 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			modifier = "exactly";
 		}
 		
+		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLClassExpression filler = ce.getFiller();
 		int cardinality = ce.getCardinality();
+		
+		modifier += " " + cardinality;
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
@@ -464,8 +474,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 					word.setPlural(true);
 					propertyNounPhrase.setPlural(true);
 				}
-				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have");
-				verb.addModifier(modifier + " " + cardinality);
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have" + modifier);
+//				verb.addModifier(modifier + " " + cardinality);
 				
 				phrase.setVerb(verb);
 				phrase.setObject(propertyNounPhrase);
@@ -543,7 +553,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
 				phrase.setSubject(propertyNounPhrase);
 				
-				phrase.setVerb("is");
+				phrase.setVerb("be");
 				
 				NLGElement fillerElement = filler.accept(this);
 				phrase.setObject(fillerElement);

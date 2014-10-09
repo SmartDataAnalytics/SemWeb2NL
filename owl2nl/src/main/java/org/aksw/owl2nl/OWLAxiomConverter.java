@@ -56,8 +56,10 @@ import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
 
 import com.clarkparsia.pellet.owlapiv3.PelletReasonerFactory;
 
+import simplenlg.features.Feature;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
+import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
@@ -95,12 +97,14 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	@Override
 	public void visit(OWLSubClassOfAxiom axiom) {
 		OWLClassExpression subClass = axiom.getSubClass();
-		NLGElement subClassElement = ceConverter.asNLGElement(subClass);
+		NLGElement subClassElement = ceConverter.asNLGElement(subClass, true);
+		((PhraseElement)subClassElement).setPreModifier("every");
 		
 		OWLClassExpression superClass = axiom.getSuperClass();
 		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
 		
 		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
+		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
 		
 		System.out.println(realiser.realise(clause));
 		
