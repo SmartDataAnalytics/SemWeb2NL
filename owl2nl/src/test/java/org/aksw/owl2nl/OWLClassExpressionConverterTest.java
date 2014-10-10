@@ -97,6 +97,10 @@ public class OWLClassExpressionConverterTest {
 				df.getOWLObjectIntersectionOf(place, df.getOWLObjectSomeValuesFrom(ledBy, person)));
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
+		
+		ce = df.getOWLObjectSomeValuesFrom(worksFor, df.getOWLObjectSomeValuesFrom(ledBy,person));
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
 	}
 	
 	@Test

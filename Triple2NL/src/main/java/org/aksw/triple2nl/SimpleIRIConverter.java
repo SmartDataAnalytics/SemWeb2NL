@@ -43,21 +43,42 @@ public class SimpleIRIConverter implements IRIConverter {
 		return convert(iri);
 	}
 	
-	 private String splitCamelCase(String s) {
-	    	StringBuilder sb = new StringBuilder();
-	    	for (String token : s.split(" ")) {
-				sb.append(StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(token), ' ')).append(" ");
+	private String splitCamelCase(String s) {
+		// we only split if it contains a vowel
+		if(!(s.matches(".*[aeiou].*"))){
+			return s;
+		}
+		
+		StringBuilder sb = new StringBuilder();
+		for (String token : s.split(" ")) {
+			String[] tokenSplit = StringUtils.splitByCharacterTypeCamelCase(token);
+			
+			String noVowels = "";
+			for (String t : tokenSplit) {
+				if(t.matches(".*[aeiou].*")){
+					if(!noVowels.isEmpty()){
+						sb.append(noVowels).append(" ");
+						noVowels = "";
+					}
+					sb.append(t).append(" ");
+				} else {
+					noVowels += t;
+				}
+//				sb = new StringBuilder(sb.toString().trim());
 			}
-	    	return sb.toString().trim();
-//	    	return s.replaceAll(
-//	    	      String.format("%s|%s|%s",
-//	    	         "(?<=[A-Z])(?=[A-Z][a-z])",
-//	    	         "(?<=[^A-Z])(?=[A-Z])",
-//	    	         "(?<=[A-Za-z])(?=[^A-Za-z])"
-//	    	      ),
-//	    	      " "
-//	    	   );
-	    	}
+			sb.append(noVowels);
+//			sb.append(" ");
+		}
+		return sb.toString().trim();
+		//	    	return s.replaceAll(
+		//	    	      String.format("%s|%s|%s",
+		//	    	         "(?<=[A-Z])(?=[A-Z][a-z])",
+		//	    	         "(?<=[^A-Z])(?=[A-Z])",
+		//	    	         "(?<=[A-Za-z])(?=[^A-Za-z])"
+		//	    	      ),
+		//	    	      " "
+		//	    	   );
+	}
 	
 	private String normalize(String s){
 		if(replaceUnderScores){

@@ -3,7 +3,10 @@
  */
 package org.aksw.owl2nl;
 
+import java.util.List;
+
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.io.ToStringRenderer;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLAnnotationPropertyDomainAxiom;
@@ -63,6 +66,8 @@ import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
+import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
 /**
  * @author Lorenz Buehmann
@@ -74,6 +79,8 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	Realiser realiser;
 	
 	OWLClassExpressionConverter ceConverter;
+	
+	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
 	
 	public OWLAxiomConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
@@ -96,247 +103,196 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	 */
 	@Override
 	public void visit(OWLSubClassOfAxiom axiom) {
+//		System.out.println("Axiom: " + axiom);
 		OWLClassExpression subClass = axiom.getSubClass();
 		NLGElement subClassElement = ceConverter.asNLGElement(subClass, true);
-		((PhraseElement)subClassElement).setPreModifier("every");
+//		System.out.println("SubClass: " + realiser.realise(subClassElement));
+//		((PhraseElement)subClassElement).setPreModifier("every");
 		
 		OWLClassExpression superClass = axiom.getSuperClass();
 		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
+//		System.out.println("SuperClass: " + realiser.realise(superClassElement));
 		
 		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
 		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
 		
-		System.out.println(realiser.realise(clause));
+		System.out.println(axiom + " = " + realiser.realise(clause));
 		
 	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLNegativeObjectPropertyAssertionAxiom)
-	 */
+	
 	@Override
-	public void visit(OWLNegativeObjectPropertyAssertionAxiom axiom) {
+	public void visit(OWLEquivalentClassesAxiom axiom) {
+		List<OWLClassExpression> classExpressions = axiom.getClassExpressionsAsList();
+		
+		for (int i = 0; i < classExpressions.size(); i++) {
+			for (int j = i + 1; j < classExpressions.size(); j++) {
+				OWLSubClassOfAxiom subClassAxiom = df.getOWLSubClassOfAxiom(
+						classExpressions.get(i), 
+						classExpressions.get(j));
+				subClassAxiom.accept(this);
+			}
+		}
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLAsymmetricObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLAsymmetricObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLReflexiveObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDisjointClassesAxiom)
+	/*
+	 * We rewrite DisjointClasses(C_1,...,C_n) as SubClassOf(C_i, ObjectComplementOf(C_j)) for each subset {C_i,C_j} with i != j 
 	 */
 	@Override
 	public void visit(OWLDisjointClassesAxiom axiom) {
+		List<OWLClassExpression> classExpressions = axiom.getClassExpressionsAsList();
+		
+		for (int i = 0; i < classExpressions.size(); i++) {
+			for (int j = i + 1; j < classExpressions.size(); j++) {
+				OWLSubClassOfAxiom subClassAxiom = df.getOWLSubClassOfAxiom(
+						classExpressions.get(i), 
+						df.getOWLObjectComplementOf(classExpressions.get(j)));
+				subClassAxiom.accept(this);
+			}
+		}
 	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDataPropertyDomainAxiom)
-	 */
-	@Override
-	public void visit(OWLDataPropertyDomainAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom)
-	 */
-	@Override
-	public void visit(OWLObjectPropertyDomainAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom)
-	 */
-	@Override
-	public void visit(OWLEquivalentObjectPropertiesAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLNegativeDataPropertyAssertionAxiom)
-	 */
-	@Override
-	public void visit(OWLNegativeDataPropertyAssertionAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDifferentIndividualsAxiom)
-	 */
-	@Override
-	public void visit(OWLDifferentIndividualsAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDisjointDataPropertiesAxiom)
-	 */
-	@Override
-	public void visit(OWLDisjointDataPropertiesAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDisjointObjectPropertiesAxiom)
-	 */
-	@Override
-	public void visit(OWLDisjointObjectPropertiesAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom)
-	 */
-	@Override
-	public void visit(OWLObjectPropertyRangeAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom)
-	 */
-	@Override
-	public void visit(OWLObjectPropertyAssertionAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLFunctionalObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLFunctionalObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom)
-	 */
-	@Override
-	public void visit(OWLSubObjectPropertyOfAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDisjointUnionAxiom)
-	 */
+	
 	@Override
 	public void visit(OWLDisjointUnionAxiom axiom) {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom)
-	 */
+	
+	//#########################################################
+	//################# object property axioms ################
+	//#########################################################
+
 	@Override
-	public void visit(OWLSymmetricObjectPropertyAxiom axiom) {
+	public void visit(OWLSubObjectPropertyOfAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLEquivalentObjectPropertiesAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLDisjointObjectPropertiesAxiom axiom) {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDataPropertyRangeAxiom)
-	 */
 	@Override
-	public void visit(OWLDataPropertyRangeAxiom axiom) {
+	public void visit(OWLObjectPropertyDomainAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
 	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLFunctionalDataPropertyAxiom)
-	 */
+	
 	@Override
-	public void visit(OWLFunctionalDataPropertyAxiom axiom) {
+	public void visit(OWLObjectPropertyRangeAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
 	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLEquivalentDataPropertiesAxiom)
-	 */
-	@Override
-	public void visit(OWLEquivalentDataPropertiesAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLClassAssertionAxiom)
-	 */
-	@Override
-	public void visit(OWLClassAssertionAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom)
-	 */
-	@Override
-	public void visit(OWLEquivalentClassesAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDataPropertyAssertionAxiom)
-	 */
-	@Override
-	public void visit(OWLDataPropertyAssertionAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLTransitiveObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLIrreflexiveObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLIrreflexiveObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom)
-	 */
-	@Override
-	public void visit(OWLSubDataPropertyOfAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLInverseFunctionalObjectPropertyAxiom)
-	 */
-	@Override
-	public void visit(OWLInverseFunctionalObjectPropertyAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLSameIndividualAxiom)
-	 */
-	@Override
-	public void visit(OWLSameIndividualAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom)
-	 */
-	@Override
-	public void visit(OWLSubPropertyChainOfAxiom axiom) {
-	}
-
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom)
-	 */
+	
 	@Override
 	public void visit(OWLInverseObjectPropertiesAxiom axiom) {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLHasKeyAxiom)
-	 */
+	@Override
+	public void visit(OWLFunctionalObjectPropertyAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	@Override
+	public void visit(OWLAsymmetricObjectPropertyAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLReflexiveObjectPropertyAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	@Override
+	public void visit(OWLSymmetricObjectPropertyAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLTransitiveObjectPropertyAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLIrreflexiveObjectPropertyAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	@Override
+	public void visit(OWLInverseFunctionalObjectPropertyAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	//#########################################################
+	//################# data property axioms ##################
+	//#########################################################
+	
+	@Override
+	public void visit(OWLSubDataPropertyOfAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLEquivalentDataPropertiesAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLDisjointDataPropertiesAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLDataPropertyDomainAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	@Override
+	public void visit(OWLDataPropertyRangeAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	@Override
+	public void visit(OWLFunctionalDataPropertyAxiom axiom) {
+		axiom.asOWLSubClassOfAxiom().accept(this);
+	}
+	
+	//#########################################################
+	//################# individual axioms #####################
+	//#########################################################
+	
+	@Override
+	public void visit(OWLClassAssertionAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLObjectPropertyAssertionAxiom axiom) {
+	}
+	
+	@Override
+	public void visit(OWLDataPropertyAssertionAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLNegativeObjectPropertyAssertionAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLNegativeDataPropertyAssertionAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLDifferentIndividualsAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLSameIndividualAxiom axiom) {
+	}
+
+	@Override
+	public void visit(OWLSubPropertyChainOfAxiom axiom) {
+	}
+
 	@Override
 	public void visit(OWLHasKeyAxiom axiom) {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.OWLDatatypeDefinitionAxiom)
-	 */
 	@Override
 	public void visit(OWLDatatypeDefinitionAxiom axiom) {
 	}
 
-	/* (non-Javadoc)
-	 * @see org.semanticweb.owlapi.model.OWLAxiomVisitor#visit(org.semanticweb.owlapi.model.SWRLRule)
-	 */
 	@Override
 	public void visit(SWRLRule axiom) {
 	}
@@ -362,6 +318,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	}
 	
 	public static void main(String[] args) throws Exception {
+		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLDataFactory dataFactory = man.getOWLDataFactory();

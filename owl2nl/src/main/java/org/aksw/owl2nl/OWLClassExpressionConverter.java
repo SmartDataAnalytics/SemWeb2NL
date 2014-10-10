@@ -61,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import simplenlg.features.Feature;
+import simplenlg.features.InternalFeature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
@@ -86,8 +87,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	NLGFactory nlgFactory;
 	Realiser realiser;
 	
-	IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
-	
 	IRIConverter iriConverter = new SimpleIRIConverter();
 	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
 	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
@@ -103,6 +102,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	OWLClassExpression root;
 
 	private boolean isSubClassExpression;
+
+	private OWLClassExpression startClass;
 	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
@@ -130,6 +131,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	public NLGElement asNLGElement(OWLClassExpression ce, boolean isSubClassExpression) {
 		this.root = ce;
 		this.isSubClassExpression = isSubClassExpression;
+		this.startClass = null;
 		
 		// reset modal depth
 		modalDepth = 1;
@@ -144,7 +146,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	private String getLexicalForm(OWLEntity entity){
-		return sfp.getShortForm(entity.getIRI());
+		return iriConverter.convert(entity.toStringID());
 	}
 	
 	private boolean containsNamedClass(Set<OWLClassExpression> classExpressions){
@@ -157,17 +159,27 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	private OWLClassExpression rewrite(OWLClassExpression ce){
+		return rewrite(ce, false);
+	}
+	
+	private OWLClassExpression rewrite(OWLClassExpression ce, boolean inIntersection){
 		if(!ce.isAnonymous()){
+			return ce;
+		} else if(ce instanceof OWLObjectOneOf){
 			return ce;
 		} else if(ce instanceof OWLObjectIntersectionOf){
 			Set<OWLClassExpression> operands = ((OWLObjectIntersectionOf) ce).getOperands();
+			Set<OWLClassExpression> newOperands = Sets.newHashSet();
 			
-			if(containsNamedClass(operands)){
-				return ce;
+			for (OWLClassExpression operand : operands) {
+				newOperands.add(rewrite(operand, true));
 			}
 			
-			operands.add(df.getOWLThing());
-			return df.getOWLObjectIntersectionOf(operands);
+			if(!containsNamedClass(operands)){
+				newOperands.add(df.getOWLThing());
+			}
+			
+			return df.getOWLObjectIntersectionOf(newOperands);
 		} else if(ce instanceof OWLObjectUnionOf){
 			Set<OWLClassExpression> operands = ((OWLObjectUnionOf) ce).getOperands();
 			Set<OWLClassExpression> newOperands = Sets.newHashSet();
@@ -177,6 +189,25 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			}
 			
 			return df.getOWLObjectUnionOf(newOperands);
+		} else if(ce instanceof OWLObjectSomeValuesFrom){
+			OWLClassExpression newCe = df.getOWLObjectSomeValuesFrom(((OWLObjectSomeValuesFrom) ce).getProperty(), rewrite(((OWLObjectSomeValuesFrom) ce).getFiller()));
+			if(inIntersection){
+				return newCe;
+			}
+			return df.getOWLObjectIntersectionOf(
+					df.getOWLThing(),
+					newCe);
+		} else if(ce instanceof OWLObjectAllValuesFrom){
+			OWLClassExpression newCe = df.getOWLObjectSomeValuesFrom(((OWLObjectAllValuesFrom) ce).getProperty(), rewrite(((OWLObjectAllValuesFrom) ce).getFiller()));
+			if(inIntersection){
+				return newCe;
+			}
+			return df.getOWLObjectIntersectionOf(
+					df.getOWLThing(),
+					newCe);
+		}
+		if(inIntersection){
+			return ce;
 		}
 		Set<OWLClassExpression> operands = Sets.<OWLClassExpression>newHashSet(ce, df.getOWLThing());
 		return df.getOWLObjectIntersectionOf(operands);
@@ -196,20 +227,37 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	public NLGElement visit(OWLClass ce) {
 		noun = true;
 		
+		// get the lexical form
+		String lexicalForm  = getLexicalForm(ce).toLowerCase();
+		
+		// we always start with the singular form and if necessary pluralize later
+		lexicalForm = PlingStemmer.stem(lexicalForm);
+		
+		
 		if(isSubClassExpression){
 			if(ce.isOWLThing()){
-				return nlgFactory.createNounPhrase("something");
+				if(modalDepth == 1){
+					NLGElement word = nlgFactory.createWord("everything", LexicalCategory.NOUN);
+					word.setFeature(InternalFeature.NON_MORPH, true);
+					return nlgFactory.createNounPhrase(word);
+				} else {
+					NLGElement word = nlgFactory.createWord("something", LexicalCategory.NOUN);
+					word.setFeature(InternalFeature.NON_MORPH, true);
+					return nlgFactory.createNounPhrase(word);
+				}
 			}
-			NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(getLexicalForm(ce).toLowerCase());;
+			NPPhraseSpec nounPhrase = nlgFactory.createNounPhrase(lexicalForm);
 			if(modalDepth > 1 && !ce.equals(root)){
 				nounPhrase.setDeterminer("a"); 
-			} 
+			} else {
+				nounPhrase.setPreModifier("every");
+			}
 			return nounPhrase;
 		} else {
 			if(ce.isOWLThing()){
 				return nlgFactory.createNounPhrase("something");
 			}
-			return nlgFactory.createNounPhrase("a", getLexicalForm(ce).toLowerCase());
+			return nlgFactory.createNounPhrase("a", lexicalForm);
 		}
 	}
 
@@ -222,6 +270,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		SPhraseSpec phrase = nlgFactory.createClause();
 		NPPhraseSpec firstElement = (NPPhraseSpec) first.accept(this);
 		phrase.setSubject(firstElement);
+		startClass = first;
 		
 		if(operands.size() >= 2){
 			CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
@@ -312,6 +361,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLObjectSomeValuesFrom ce) {
+		modalDepth++;
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
@@ -319,8 +369,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			String verbalizationText = propertyVerbalization.getVerbalizationText();
 			if(propertyVerbalization.isNounType()){
-				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(verbalizationText));
 				phrase.setSubject(propertyNounPhrase);
 				
 				phrase.setVerb("is");
@@ -330,11 +381,52 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				
 				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
-				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+//				phrase.setVerb(propertyVerbalization.getVerbalizationText());
 				
-			
-				NLGElement fillerElement = filler.accept(this);
-				phrase.setObject(fillerElement);
+				String[] posTags = propertyVerbalization.getPOSTags().split(" ");
+				String firstTag = posTags[0];
+				String secondTag = posTags[1];
+				
+				if(firstTag.startsWith("V") && secondTag.startsWith("N")){
+//				if(tokens[0].equals("has") || tokens[0].equals("have")){
+					String[] tokens = verbalizationText.split(" ");
+					
+					verbalizationText = tokens[0];
+					
+					if(!filler.isOWLThing()){
+						verbalizationText += " as";
+					} else {
+						verbalizationText += " a";
+					}
+					
+					// stem the noun
+					// TODO to absolutely correct we have to stem the noun phrase
+					String nounToken = tokens[1];
+					nounToken = PlingStemmer.stem(nounToken);
+					verbalizationText += " " + nounToken;
+					
+					// append rest of the tokens
+					for (int i = 2; i < tokens.length; i++) {
+						verbalizationText += " " + tokens[i];
+					}
+					verbalizationText = verbalizationText.trim();
+					
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					phrase.setVerb(verb);
+					
+					if(!filler.isOWLThing()){
+						NLGElement fillerElement = filler.accept(this);
+						phrase.setObject(fillerElement);
+						fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+					}
+				} else {
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					phrase.setVerb(verb);
+					
+					NLGElement fillerElement = filler.accept(this);
+					phrase.setObject(fillerElement);
+					fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+				}
 				
 				noun = false;
 			} else {
@@ -346,12 +438,13 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			//TODO handle inverse properties
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
-		
+		modalDepth--;
 		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLObjectAllValuesFrom ce) {
+		modalDepth++;
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
@@ -388,7 +481,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			//TODO handle inverse properties
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
-		
+		modalDepth--;
 		return phrase;
 	}
 
@@ -467,15 +560,16 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
-			if(propertyVerbalization.isNounType()){
+			
+			if(propertyVerbalization.isNounType()){ // if the verbalization of the property is a noun phrase
 				NLGElement word = nlgFactory.createWord(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()), LexicalCategory.NOUN);
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(word);
 				if(cardinality > 1){
 					word.setPlural(true);
 					propertyNounPhrase.setPlural(true);
 				}
-				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have" + modifier);
-//				verb.addModifier(modifier + " " + cardinality);
+				VPPhraseSpec verb = nlgFactory.createVerbPhrase("have");
+				verb.addModifier(modifier);
 				
 				phrase.setVerb(verb);
 				phrase.setObject(propertyNounPhrase);
@@ -496,15 +590,56 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				phrase.setComplement(clause);
 				
 				noun = false;
-			} else if(propertyVerbalization.isVerbType()){
-				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
-				verb.addModifier(modifier + " " + cardinality);
-				phrase.setVerb(verb);
+			} else if(propertyVerbalization.isVerbType()){ // if the verbalization of the property is a verb phrase
 				
-			
-				NLGElement fillerElement = filler.accept(this);
-				fillerElement.setPlural(true);
-				phrase.setObject(fillerElement);
+				String verbalizationText = propertyVerbalization.getVerbalizationText();
+				
+				/* here comes actually one of the most tricky parts
+				   Normally, we just use the verbalization as verb, and add a modifier like 'at least n' which works
+				   good for phrase like 'works for', such that we get 'works for at least n'.
+				   But, if we have something like 'has gender' it would result in a strange construct
+				   'has gender at least n', although it sounds more natural to have 'has at least n gender'
+				   We could make use of POS tags to find such cases, although it might be more complex for longer
+				   phrases.
+				   It's not really clear for which verbs the rules holds, but 'has','include','contains',etc. might be a good
+				   starting point.
+				*/
+				String[] posTags = propertyVerbalization.getPOSTags().split(" ");
+				String firstTag = posTags[0];
+				String secondTag = posTags[1];
+				
+				if(firstTag.startsWith("V") && secondTag.startsWith("N")){
+//				if(tokens[0].equals("has") || tokens[0].equals("have")){
+					String[] tokens = verbalizationText.split(" ");
+					
+					verbalizationText = tokens[0];
+					verbalizationText += " " + modifier;
+					
+					// stem the noun if card == 1
+					String nounToken = tokens[1];
+					if(cardinality == 1){
+						nounToken = PlingStemmer.stem(nounToken);
+					}
+					verbalizationText += " " + nounToken;
+					for (int i = 2; i < tokens.length; i++) {
+						verbalizationText += " " + tokens[i];
+					}
+					verbalizationText = verbalizationText.trim();
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					phrase.setVerb(verb);
+				} else {
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					verb.addModifier(modifier);
+					phrase.setVerb(verb);
+				}
+				
+				if(!filler.isOWLThing()){
+					NLGElement fillerElement = filler.accept(this);
+					if(cardinality > 1){
+						fillerElement.setPlural(true);
+					}
+					phrase.setObject(fillerElement);
+				}
 				
 				noun = false;
 			} else {
@@ -542,12 +677,19 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 	@Override
 	public NLGElement visit(OWLDataSomeValuesFrom ce) {
+		modalDepth++;
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLDataPropertyExpression property = ce.getProperty();
 		OWLDataRange filler = ce.getFiller();
 		
 		if(!property.isAnonymous()){
+			
+			if(!filler.isTopDatatype()){
+				NLGElement fillerElement = filler.accept(this);
+				phrase.setObject(fillerElement);
+			}
+			
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
 			if(propertyVerbalization.isNounType()){
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
@@ -555,33 +697,25 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				
 				phrase.setVerb("be");
 				
-				NLGElement fillerElement = filler.accept(this);
-				phrase.setObject(fillerElement);
-				
 				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
 				phrase.setVerb(propertyVerbalization.getVerbalizationText());
-				
-			
-				NLGElement fillerElement = filler.accept(this);
-				phrase.setObject(fillerElement);
 				
 				noun = false;
 			} else {
 				
 			}
-			
-			
 		} else {
 			//TODO handle inverse properties
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
-		
+		modalDepth--;
 		return phrase;
 	}
 
 	@Override
 	public NLGElement visit(OWLDataAllValuesFrom ce) {
+		modalDepth++;
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLDataPropertyExpression property = ce.getProperty();
@@ -618,7 +752,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			//TODO handle inverse properties
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
-		
+		modalDepth--;
 		return phrase;
 	}
 
@@ -629,20 +763,32 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		OWLDataPropertyExpression property = ce.getProperty();
 		OWLLiteral value = ce.getValue();
 		
-		NLGElement valueElement = nlgFactory.createNounPhrase(literalConverter.convert(value));
-		phrase.setObject(valueElement);
-		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
+			String verbalizationText = propertyVerbalization.getVerbalizationText();
 			if(propertyVerbalization.isNounType()){
-				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(verbalizationText));
 				phrase.setSubject(propertyNounPhrase);
 				
 				phrase.setVerb("is");
 				
+				NLGElement valueElement = nlgFactory.createNounPhrase(literalConverter.convert(value));
+				phrase.setObject(valueElement);
+				
 				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
-				phrase.setVerb(propertyVerbalization.getVerbalizationText());
+				// if phrase starts with something like 'is' and value is a Boolean
+				String[] tokens = verbalizationText.split(" ");
+				if(value.getDatatype().isBoolean() && tokens[0].equals("is")){
+					if(!value.parseBoolean()){
+						phrase.setFeature(Feature.NEGATED, true);
+					}
+				} else {
+					NLGElement valueElement = nlgFactory.createNounPhrase(literalConverter.convert(value));
+					phrase.setObject(valueElement);
+				}
+				
+				phrase.setVerb(verbalizationText);
 				
 				noun = false;
 			} else {
