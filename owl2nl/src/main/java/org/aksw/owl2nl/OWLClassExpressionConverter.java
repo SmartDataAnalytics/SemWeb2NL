@@ -198,7 +198,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 					df.getOWLThing(),
 					newCe);
 		} else if(ce instanceof OWLObjectAllValuesFrom){
-			OWLClassExpression newCe = df.getOWLObjectSomeValuesFrom(((OWLObjectAllValuesFrom) ce).getProperty(), rewrite(((OWLObjectAllValuesFrom) ce).getFiller()));
+			OWLClassExpression newCe = df.getOWLObjectAllValuesFrom(((OWLObjectAllValuesFrom) ce).getProperty(), rewrite(((OWLObjectAllValuesFrom) ce).getFiller()));
 			if(inIntersection){
 				return newCe;
 			}
@@ -452,6 +452,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
+			String verbalizationText = propertyVerbalization.getVerbalizationText();
 			if(propertyVerbalization.isNounType()){
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(propertyVerbalization.getVerbalizationText()));
 				phrase.setSubject(propertyNounPhrase);
@@ -463,13 +464,52 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				
 				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
-				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
-				verb.addModifier("only");
-				phrase.setVerb(verb);
+				String[] posTags = propertyVerbalization.getPOSTags().split(" ");
+				String firstTag = posTags[0];
+				String secondTag = posTags[1];
 				
-			
-				NLGElement fillerElement = filler.accept(this);
-				phrase.setObject(fillerElement);
+				if(firstTag.startsWith("V") && secondTag.startsWith("N")){
+//				if(tokens[0].equals("has") || tokens[0].equals("have")){
+					String[] tokens = verbalizationText.split(" ");
+					
+					verbalizationText = tokens[0];
+					
+					if(!filler.isOWLThing()){
+						verbalizationText += " as";
+					} else {
+						verbalizationText += " a";
+					}
+					
+					// stem the noun
+					// TODO to be absolutely correct, we have to stem the noun phrase
+					String nounToken = tokens[1];
+					nounToken = PlingStemmer.stem(nounToken);
+					verbalizationText += " " + nounToken;
+					
+					// append rest of the tokens
+					for (int i = 2; i < tokens.length; i++) {
+						verbalizationText += " " + tokens[i];
+					}
+					verbalizationText += " only";
+					verbalizationText = verbalizationText.trim();
+					
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					phrase.setVerb(verb);
+					
+					if(!filler.isOWLThing()){
+						NLGElement fillerElement = filler.accept(this);
+						phrase.setObject(fillerElement);
+						fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+					}
+				} else {
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(verbalizationText);
+					verb.addModifier("only");
+					phrase.setVerb(verb);
+
+					NLGElement fillerElement = filler.accept(this);
+					phrase.setObject(fillerElement);
+					fillerElement.setFeature(Feature.COMPLEMENTISER, null);
+				}
 				
 				noun = false;
 			} else {
