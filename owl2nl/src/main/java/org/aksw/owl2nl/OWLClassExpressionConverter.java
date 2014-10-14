@@ -515,10 +515,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			} else {
 				
 			}
-			
-			
 		} else {
-			//TODO handle inverse properties
+			
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
 		modalDepth--;
@@ -555,8 +553,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			} else {
 				
 			}
-			
-			
 		} else {
 			//TODO handle inverse properties
 		}
@@ -590,7 +586,6 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		} else {
 			modifier = "exactly";
 		}
-		
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
 		OWLClassExpression filler = ce.getFiller();
@@ -680,15 +675,12 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 					}
 					phrase.setObject(fillerElement);
 				}
-				
 				noun = false;
 			} else {
 				
 			}
-			
-			
 		} else {
-			//TODO handle inverse properties
+			
 		}
 		logger.debug(ce +  " = " + realiser.realise(phrase));
 		
