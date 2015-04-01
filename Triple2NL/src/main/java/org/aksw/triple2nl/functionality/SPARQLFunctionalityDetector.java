@@ -4,8 +4,10 @@
 package org.aksw.triple2nl.functionality;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 /**
  * @author Lorenz Buehmann
@@ -25,7 +27,7 @@ public class SPARQLFunctionalityDetector implements FunctionalityDetector{
 	@Override
 	public boolean isFunctional(String uri) {
 		try {
-			return sparqlReasoner.isFunctional(new ObjectProperty(uri));
+			return sparqlReasoner.isFunctional(new OWLObjectPropertyImpl(IRI.create(uri)));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

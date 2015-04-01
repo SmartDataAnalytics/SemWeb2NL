@@ -57,6 +57,7 @@ import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLObjectUnionOf;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
+import org.semanticweb.owlapi.vocab.OWL2Datatype;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -234,7 +235,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		lexicalForm = PlingStemmer.stem(lexicalForm);
 		
 		
-		if(isSubClassExpression){
+		if(isSubClassExpression){// subclass expression
 			if(ce.isOWLThing()){
 				if(modalDepth == 1){
 					NLGElement word = nlgFactory.createWord("everything", LexicalCategory.NOUN);
@@ -253,7 +254,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				nounPhrase.setPreModifier("every");
 			}
 			return nounPhrase;
-		} else {
+		} else {// superclass expression
 			if(ce.isOWLThing()){
 				return nlgFactory.createNounPhrase("something");
 			}
@@ -311,11 +312,19 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			SPhraseSpec clause = nlgFactory.createClause();
 			NLGElement el = operand.accept(this);
 			if(noun){
-				clause.setFeature(Feature.COMPLEMENTISER, "whose");
+				if(operand instanceof OWLObjectSomeValuesFrom && ((OWLObjectSomeValuesFrom) operand).getFiller().isOWLThing()){
+//					clause.setFeature(Feature.COMPLEMENTISER, "that");
+					clause.setVerb("have");
+					clause.setObject(el);
+				} else {
+					clause.setFeature(Feature.COMPLEMENTISER, "whose");
+					clause.setVerbPhrase(el);
+				}
+				
 			} else {
 				clause.setFeature(Feature.COMPLEMENTISER, "that");
+				clause.setVerbPhrase(el);
 			}
-			clause.setVerbPhrase(el);
 			phrase.setComplement(clause);
 		}
 		
@@ -372,11 +381,17 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			String verbalizationText = propertyVerbalization.getVerbalizationText();
 			if(propertyVerbalization.isNounType()){
 				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(verbalizationText));
+				
+				if(filler.isOWLThing()){
+					propertyNounPhrase.setDeterminer("a");
+					return propertyNounPhrase;
+				}
 				phrase.setSubject(propertyNounPhrase);
 				
 				phrase.setVerb("is");
 				
 				NLGElement fillerElement = filler.accept(this);
+				fillerElement.setPlural(false);
 				phrase.setObject(fillerElement);
 				
 				noun = true;
@@ -766,13 +781,21 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				
 				noun = true;
 			} else if(propertyVerbalization.isVerbType()){
-				VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
-				verb.addModifier("only");
-				phrase.setVerb(verb);
 				
-			
-				NLGElement fillerElement = filler.accept(this);
-				phrase.setObject(fillerElement);
+				if(filler.isDatatype() && filler.asOWLDatatype().getIRI().equals(OWL2Datatype.XSD_BOOLEAN.getIRI())){
+					// "either VERB or not"
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+					phrase.setVerb(verb);
+					verb.addFrontModifier("either");
+					verb.addPostModifier("or not");
+				} else {
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase(propertyVerbalization.getVerbalizationText());
+					verb.addModifier("only");
+					phrase.setVerb(verb);
+					
+					NLGElement fillerElement = filler.accept(this);
+					phrase.setObject(fillerElement);
+				}
 				
 				noun = false;
 			} else {
@@ -799,7 +822,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());
 			String verbalizationText = propertyVerbalization.getVerbalizationText();
 			if(propertyVerbalization.isNounType()){
-				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(PlingStemmer.stem(verbalizationText));
+//				verbalizationText = PlingStemmer.stem(verbalizationText);
+				NPPhraseSpec propertyNounPhrase = nlgFactory.createNounPhrase(verbalizationText);
 				phrase.setSubject(propertyNounPhrase);
 				
 				phrase.setVerb("is");

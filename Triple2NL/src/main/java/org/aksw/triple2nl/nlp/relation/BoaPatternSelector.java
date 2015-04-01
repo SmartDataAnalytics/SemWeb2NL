@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
@@ -32,7 +33,7 @@ import com.google.common.base.Joiner;
  */
 public class BoaPatternSelector {
 
-    private static HttpSolrServer server;
+    private static SolrServer server;
     private static Double WORDNET_DISTANCE_BOOST_FACTOR = 300000D;
     private static Double BOA_SCORE_BOOST_FACTOR = 10000D;
     private static Double REVERB_BOOST_FACTOR = 1000000D;
@@ -43,7 +44,6 @@ public class BoaPatternSelector {
 
     static {
     	server = new HttpSolrServer("http://dbpedia.aksw.org:8080/solr/" + SOLR_INDEX);
-        server.setRequestWriter(new BinaryRequestWriter());
     }
 
     /**

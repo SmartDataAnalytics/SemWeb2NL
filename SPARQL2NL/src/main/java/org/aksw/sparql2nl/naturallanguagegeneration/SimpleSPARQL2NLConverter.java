@@ -92,7 +92,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	public SimpleSPARQL2NLConverter(SparqlEndpoint endpoint, String cacheDirectory, Lexicon lexicon) {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 		if(cacheDirectory != null){
-			CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("sparql2nl", false, TimeUnit.DAYS.toMillis(7));
+			CacheFrontend cacheFrontend = CacheUtilsH2.createCacheFrontend("./sparql2nl", false, TimeUnit.DAYS.toMillis(7));
 			qef = new QueryExecutionFactoryCacheEx(qef, cacheFrontend);
 		}
 		reasoner = new SPARQLReasoner(qef);

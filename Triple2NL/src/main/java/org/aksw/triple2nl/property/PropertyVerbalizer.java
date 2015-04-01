@@ -4,6 +4,15 @@
  */
 package org.aksw.triple2nl.property;
 
+import static org.aksw.triple2nl.PennTreebankTagSet.DETERMINER;
+import static org.aksw.triple2nl.PennTreebankTagSet.FRAGMENT;
+import static org.aksw.triple2nl.PennTreebankTagSet.NOUN_PHRASE;
+import static org.aksw.triple2nl.PennTreebankTagSet.S;
+import static org.aksw.triple2nl.PennTreebankTagSet.SBAR;
+import static org.aksw.triple2nl.PennTreebankTagSet.SBARQ;
+import static org.aksw.triple2nl.PennTreebankTagSet.SINV;
+import static org.aksw.triple2nl.PennTreebankTagSet.VERB_PHRASE;
+
 import java.io.File;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -13,11 +22,10 @@ import java.util.Properties;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
-import org.aksw.triple2nl.IRIConverter;
-import org.aksw.triple2nl.PennTreebankTagSet;
-import org.aksw.triple2nl.Preposition;
 import org.aksw.triple2nl.DefaultIRIConverter;
-import org.apache.commons.lang3.SystemUtils;
+import org.aksw.triple2nl.IRIConverter;
+import org.aksw.triple2nl.Preposition;
+import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
@@ -36,12 +44,9 @@ import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
 import edu.stanford.nlp.pipeline.StanfordCoreNLP;
-import edu.stanford.nlp.trees.PennTreebankLanguagePack;
-import edu.stanford.nlp.trees.PennTreebankTokenizer;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.util.CoreMap;
-import static org.aksw.triple2nl.PennTreebankTagSet.*;
 
 /**
  * Verbalize a property.

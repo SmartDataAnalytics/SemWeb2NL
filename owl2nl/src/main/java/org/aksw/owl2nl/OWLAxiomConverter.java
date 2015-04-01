@@ -42,7 +42,6 @@ import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
 import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
 import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyChange;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLSameIndividualAxiom;
@@ -54,15 +53,10 @@ import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.SWRLRule;
-import org.semanticweb.owlapi.reasoner.OWLReasoner;
-import org.semanticweb.owlapi.reasoner.OWLReasonerFactory;
-
-import com.clarkparsia.pellet.owlapiv3.PelletReasonerFactory;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
-import simplenlg.framework.PhraseElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
@@ -106,12 +100,12 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 //		System.out.println("Axiom: " + axiom);
 		OWLClassExpression subClass = axiom.getSubClass();
 		NLGElement subClassElement = ceConverter.asNLGElement(subClass, true);
-//		System.out.println("SubClass: " + realiser.realise(subClassElement));
+		System.out.println("SubClass: " + realiser.realise(subClassElement));
 //		((PhraseElement)subClassElement).setPreModifier("every");
 		
 		OWLClassExpression superClass = axiom.getSuperClass();
 		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
-//		System.out.println("SuperClass: " + realiser.realise(superClassElement));
+		System.out.println("SuperClass: " + realiser.realise(superClassElement));
 		
 		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
 		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
@@ -320,11 +314,9 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	public static void main(String[] args) throws Exception {
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
+		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
-		OWLDataFactory dataFactory = man.getOWLDataFactory();
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
-		OWLReasonerFactory reasonerFactory = PelletReasonerFactory.getInstance();
-		OWLReasoner reasoner = reasonerFactory.createNonBufferingReasoner(ontology);
 		
 		OWLAxiomConverter converter = new OWLAxiomConverter();
 		for (OWLAxiom axiom : ontology.getAxioms()) {

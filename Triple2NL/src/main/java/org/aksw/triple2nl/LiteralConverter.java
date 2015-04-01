@@ -8,6 +8,7 @@ import java.util.Locale;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
 import org.semanticweb.owlapi.model.OWLLiteral;
+import org.semanticweb.owlapi.vocab.XSDVocabulary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,7 @@ import com.hp.hpl.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
+import com.hp.hpl.jena.vocabulary.XSD;
 
 public class LiteralConverter {
 
@@ -34,7 +36,13 @@ public class LiteralConverter {
     }
     
     public String convert(OWLLiteral lit) {
-    	RDFDatatype datatype = new BaseDatatype(lit.getDatatype().toStringID());
+    	RDFDatatype datatype;
+    	String uri = lit.getDatatype().getIRI().toString();
+    	if(uri != null && uri.startsWith(XSD.getURI())){
+    		datatype = new XSDDatatype(uri.substring(uri.indexOf("#")+1));
+    	} else {
+    		datatype = new BaseDatatype(lit.getDatatype().toStringID());
+    	}
         return convert(NodeFactory.createLiteral(lit.getLiteral(), lit.getLang(),
                 datatype).getLiteral());
     }

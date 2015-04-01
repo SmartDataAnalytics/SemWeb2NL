@@ -22,5 +22,26 @@
 			<groupId>net.sourceforge.owlapi</groupId>
 			<artifactId>owlapi-distribution</artifactId>
 		</dependency>
+	<!-- 	<dependency>
+			<groupId>gr.aueb.cs.nlg</groupId>
+			<artifactId>naturalowl</artifactId>
+			<version>2.0</version>
+		</dependency> -->
+		 <dependency>
+            <groupId>org.gnu.glpk</groupId>
+            <artifactId>glpk-java</artifactId>
+            <version>1.0.37</version>
+        </dependency>
 	</dependencies>
+	
+	<repositories>
+        <repository>
+            <id>XypronRelease</id>
+            <name>Xypron Release</name>
+            <url>http://rsync.xypron.de/repository</url>
+            <layout>default</layout>
+        </repository>
+    </repositories>
+
+    
 </project>

@@ -55,7 +55,7 @@ public class SimpleIRIConverter implements IRIConverter {
 			
 			String noVowels = "";
 			for (String t : tokenSplit) {
-				if(t.matches(".*[aeiou].*")){
+				if(t.matches(".*[aeiou].*") || !StringUtils.isAllUpperCase(t)){
 					if(!noVowels.isEmpty()){
 						sb.append(noVowels).append(" ");
 						noVowels = "";

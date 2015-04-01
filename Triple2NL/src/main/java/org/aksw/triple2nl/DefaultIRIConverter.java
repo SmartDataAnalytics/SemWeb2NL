@@ -13,7 +13,7 @@ import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections15.map.LRUMap;
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.jena.web.HttpSC;
 import org.coode.owlapi.turtle.TurtleOntologyFormat;
 import org.dllearner.kb.sparql.SparqlEndpoint;
