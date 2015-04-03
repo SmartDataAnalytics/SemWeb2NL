@@ -62,7 +62,7 @@ public class TripleConverter {
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
 
-	private DefaultIRIConverter uriConverter;
+	private IRIConverter uriConverter;
 	private LiteralConverter literalConverter;
 	private PropertyVerbalizer pp;
 	private SPARQLReasoner reasoner;
@@ -93,7 +93,7 @@ public class TripleConverter {
 				null, cacheDirectory, wordnetDirectory, lexicon);
 	}
 
-	public TripleConverter(QueryExecutionFactory qef, DefaultIRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
+	public TripleConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
 		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
@@ -101,7 +101,7 @@ public class TripleConverter {
 		this(qef, null, null, cacheDirectory, null, lexicon);
 	}
 	
-	public TripleConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, DefaultIRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TripleConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
 		if(uriConverter == null){
 			uriConverter = new DefaultIRIConverter(qef, cacheDirectory);
 		}
