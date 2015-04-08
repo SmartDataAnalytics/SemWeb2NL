@@ -20,9 +20,9 @@ import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.gender.Gender;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLIndividual;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -50,7 +50,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 		super(qef, cacheDirectory, wordnetDirectory);
 	}
     
-     public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
+     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
         
         //first get graph for class
@@ -66,11 +66,11 @@ public class JeopardyVerbalizer extends Verbalizer {
 			logger.info(cluster);
 		}
 
-        Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
+        Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
 
-        for (Individual ind : individuals) {
+        for (OWLIndividual ind : individuals) {
             //finally generateSentencesFromClusters
-            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc, true);
+            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
 //            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
 //                    ResourceFactory.createResource(nc.getName()).asNode());
 //            result = Lists.reverse(result);
@@ -86,9 +86,9 @@ public class JeopardyVerbalizer extends Verbalizer {
      
      
     @Override
-    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass nc, Gender g) {
+    public List<NPPhraseSpec> generateSubjects(Resource resource, OWLClass nc, Gender g) {
         List<NPPhraseSpec> result = new ArrayList<>();
-        NPPhraseSpec np = nlg.getNPPhrase(nc.getName(), false);
+        NPPhraseSpec np = nlg.getNPPhrase(nc.toStringID(), false);
         np.addPreModifier("This");
         result.add(np);
         if (g.equals(Gender.MALE)) {

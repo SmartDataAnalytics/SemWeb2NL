@@ -54,10 +54,14 @@ import org.apache.log4j.Logger;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -157,8 +161,8 @@ public class RESTService {
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
-		Map<NamedClass, Set<ObjectProperty>> domains = new HashMap<NamedClass, Set<ObjectProperty>>();
-		domains.put(new NamedClass(domain), new HashSet<ObjectProperty>());
+		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
+		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<OWLObjectProperty>());
 		
 		//set up the question generators
 		for (String type : questionTypes) {
@@ -229,15 +233,15 @@ public class RESTService {
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
 		//extract the domain from the JSON array
-		Map<NamedClass, Set<ObjectProperty>> domains = new HashMap<NamedClass, Set<ObjectProperty>>();
+		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
 		try {
 			for(int i = 0; i < domain.length(); i++){
 				JSONObject entry = domain.getJSONObject(i);
-				NamedClass cls = new NamedClass(entry.getString("className"));
+				OWLClass cls = new OWLClassImpl(IRI.create(entry.getString("className")));
 				JSONArray propertiesArray = entry.getJSONArray("properties");
-				Set<ObjectProperty> properties = new HashSet<>();
+				Set<OWLObjectProperty> properties = new HashSet<>();
 				for (int j = 0; j < propertiesArray.length(); j++) {
-					properties.add(new ObjectProperty(propertiesArray.getString(j)));
+					properties.add(new OWLObjectPropertyImpl(IRI.create(propertiesArray.getString(j))));
 				}
 				domains.put(cls, properties);
 			}
@@ -303,9 +307,9 @@ public class RESTService {
 		
 		if(properties == null){
 			properties = new ArrayList<String>();
-			for (ObjectProperty p : reasoner.getObjectProperties(new NamedClass(classURI))) {
-				if(!blackList.contains(p.getName())){
-					properties.add(p.getName());
+			for (OWLObjectProperty p : reasoner.getObjectProperties(new OWLClassImpl(IRI.create(classURI)))) {
+				if(!blackList.contains(p.toStringID())){
+					properties.add(p.toStringID());
 				}
 			}
 			Collections.sort(properties); 
@@ -327,9 +331,9 @@ public class RESTService {
 		
 		if(classes == null){
 			classes = new ArrayList<String>();
-			for (NamedClass cls : reasoner.getNonEmptyOWLClasses()) {
-				if (!blackList.contains(cls.getName())) {
-					classes.add(cls.getName());
+			for (OWLClass cls : reasoner.getNonEmptyOWLClasses()) {
+				if (!blackList.contains(cls.toStringID())) {
+					classes.add(cls.toStringID());
 				}
 			}
 			Collections.sort(classes); 
@@ -374,7 +378,7 @@ public class RESTService {
 		for (String cls : entities.keySet()) {
 			try {
 				logger.info(cls);
-				graphGenerator.generateGraph(new NamedClass(cls), propertyFrequencyThreshold, namespace, cooccurrenceType);
+				graphGenerator.generateGraph(new OWLClassImpl(IRI.create(cls)), propertyFrequencyThreshold, namespace, cooccurrenceType);
 			} catch (Exception e) {
 				logger.error(e, e);
 			}

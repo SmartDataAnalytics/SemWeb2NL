@@ -12,6 +12,7 @@ import org.aksw.avatar.dump.DBpediaDumpProcessor;
 import org.aksw.avatar.dump.DumpProcessor;
 import org.aksw.avatar.dump.LogEntry;
 import org.aksw.avatar.dump.LogEntryGrouping;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.base.Charsets;
@@ -24,12 +25,12 @@ import com.google.common.io.Files;
  */
 public class EntitySummarizationTest {
 	
-	SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpediaLiveAKSW();
+	SparqlEndpointKS ks = new SparqlEndpointKS(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
 	String queryLog = "resources/dbpediaLog/dbpedia.log-valid-select.gz";
 	DumpProcessor dumpProcessor = new DBpediaDumpProcessor();
 	Collection<LogEntry> logEntries;
 	int maxNrOfLogEntries = -1;//-1 means load all entries
-	EntitySummarizationModelGenerator generator = new EntitySummarizationModelGenerator(endpoint);
+	EntitySummarizationModelGenerator generator = new EntitySummarizationModelGenerator(ks);
 
 	/**
 	 * @throws java.lang.Exception

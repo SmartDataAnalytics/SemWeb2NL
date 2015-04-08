@@ -18,9 +18,12 @@ import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.base.Charsets;
 import com.google.common.cache.CacheBuilder;
@@ -101,7 +104,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	 * @see org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator#generateGraph(org.dllearner.core.owl.NamedClass, double, java.lang.String, org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence)
 	 */
 	@Override
-	public WeightedGraph generateGraph(NamedClass cls, double threshold, String namespace, Cooccurrence c) {
+	public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace, Cooccurrence c) {
 		try {
 			return graphs.get(new Configuration(cls, threshold, namespace, c));
 		} catch (ExecutionException e) {
@@ -113,7 +116,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	private WeightedGraph buildGraph(Configuration configuration){
 		logger.info("Generating graph for " + configuration.cls + "...");
 		HashCode hc = hf.newHasher()
-		       .putString(configuration.cls.getName(), Charsets.UTF_8)
+		       .putString(configuration.cls.toStringID(), Charsets.UTF_8)
 		       .putDouble(configuration.threshold)
 		       .putString(configuration.c.name(), Charsets.UTF_8)
 		       .hash();
@@ -125,10 +128,10 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 			try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))){
 				g = (WeightedGraph) ois.readObject();
 				
-				Set<ObjectProperty> outgoingProperties = new HashSet<ObjectProperty>();
+				Set<OWLObjectProperty> outgoingProperties = new HashSet<OWLObjectProperty>();
 				for (Node node : g.getNodes().keySet()) {
 					if(node.outgoing){
-						outgoingProperties.add(new ObjectProperty(node.label));
+						outgoingProperties.add(new OWLObjectPropertyImpl(IRI.create(node.label)));
 					}
 				}
 				class2OutgoingProperties.put(configuration.cls, outgoingProperties );
@@ -163,8 +166,8 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	}
 	
 	public void precomputeGraphs(double threshold, String namespace, Cooccurrence c){
-		Set<NamedClass> classes = reasoner.getOWLClasses();
-		for (NamedClass cls : classes) {
+		Set<OWLClass> classes = reasoner.getOWLClasses();
+		for (OWLClass cls : classes) {
 			generateGraph(cls, threshold, namespace, c);
 		}
 	}
@@ -174,12 +177,12 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	}
 	
 	class Configuration{
-		NamedClass cls;
+		OWLClass cls;
 		double threshold;
 		String namespace;
 		Cooccurrence c;
 		
-		public Configuration(NamedClass cls, double threshold, String namespace, Cooccurrence c) {
+		public Configuration(OWLClass cls, double threshold, String namespace, Cooccurrence c) {
 			this.cls = cls;
 			this.threshold = threshold;
 			this.namespace = namespace;

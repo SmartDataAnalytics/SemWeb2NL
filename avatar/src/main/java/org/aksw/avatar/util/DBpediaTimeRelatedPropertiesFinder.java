@@ -6,9 +6,10 @@ package org.aksw.avatar.util;
 import java.util.Set;
 
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.dllearner.core.owl.ObjectProperty;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.ResultSet;
@@ -25,10 +26,11 @@ public class DBpediaTimeRelatedPropertiesFinder {
 	 */
 	public static void main(String[] args) {
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-		SPARQLReasoner reasoner = new SPARQLReasoner(endpoint, "cache");
+		SparqlEndpointKS ks = new SparqlEndpointKS(endpoint);
+		SPARQLReasoner reasoner = new SPARQLReasoner(ks);
 		QueryExecutionFactoryHttp qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-		Set<ObjectProperty> properties = reasoner.getOWLObjectProperties();
-		for (ObjectProperty p : properties) {
+		Set<OWLObjectProperty> properties = reasoner.getOWLObjectProperties();
+		for (OWLObjectProperty p : properties) {
 			String query = "SELECT ?o WHERE {?s <" + p + "> ?o} LIMIT 1"; 
 			QueryExecution qe = qef.createQueryExecution(query);
 			ResultSet rs = qe.execSelect();

@@ -13,12 +13,13 @@ import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.dump.Controller;
 import org.aksw.avatar.dump.LogEntry;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
-import org.dllearner.core.owl.Property;
 import org.dllearner.kb.SparqlEndpointKS;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLProperty;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 /**
  * @author Lorenz Buehmann
@@ -26,15 +27,12 @@ import org.dllearner.reasoning.SPARQLReasoner;
  */
 public class EntitySummarizationModelGenerator {
 
-	private SparqlEndpoint endpoint;
 	private SPARQLQueryProcessor processor;
+	private SparqlEndpointKS ks;
 
-	/**
-	 * 
-	 */
-	public EntitySummarizationModelGenerator(SparqlEndpoint endpoint) {
-		this.endpoint = endpoint;
-		processor = new SPARQLQueryProcessor(endpoint);
+	public EntitySummarizationModelGenerator(SparqlEndpointKS ks) {
+		this.ks = ks;
+		processor = new SPARQLQueryProcessor(ks);
 	}
 	
 	
@@ -47,16 +45,16 @@ public class EntitySummarizationModelGenerator {
 		Set<EntitySummarizationTemplate> templates = new HashSet<EntitySummarizationTemplate>();
         
         //process the log entries
-        Collection<Map<NamedClass, Set<Property>>> result = processor.processEntries(logEntries);
+        Collection<Map<OWLClass, Set<OWLProperty>>> result = processor.processEntries(logEntries);
         
         //generate for each class in the knowledge base a summarization template
-        for(NamedClass nc : new SPARQLReasoner(new SparqlEndpointKS(endpoint)).getOWLClasses()){
+        for(OWLClass nc : new SPARQLReasoner(ks).getOWLClasses()){
         	//generate the weighted graph
        	 	WeightedGraph wg = Controller.generateGraphMultithreaded(nc, result);
        	 	//generate the entity summarization template
-       	 	Set<Property> properties = new HashSet<Property>();
+       	 	Set<OWLProperty> properties = new HashSet<OWLProperty>();
        	 	for (Entry<Node, Double> entry : wg.getNodes().entrySet()) {
-				properties.add(new ObjectProperty(entry.getKey().label));
+				properties.add(new OWLObjectPropertyImpl(IRI.create(entry.getKey().label)));
 			}
        	 	templates.add(new EntitySummarizationTemplate(nc, properties));
         }

@@ -14,9 +14,13 @@ import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -36,13 +40,13 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
 
 	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace,
-			Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+			Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
 		super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
 		
 	}
 
     @Override
-    public Question generateQuestion(Resource r, NamedClass type) {
+    public Question generateQuestion(Resource r, OWLClass type) {
         logger.info("Generating question for resource " + r + "...");
         //get properties
         logger.info("Getting statement for resource");
@@ -103,8 +107,9 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
     }
 
     public static void main(String args[]) {
-    	Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
-        restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace")));
+    	Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
+        restrictions.put(new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Writer")), 
+        		Sets.<OWLObjectProperty>newHashSet(new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace"))));
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
         TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(

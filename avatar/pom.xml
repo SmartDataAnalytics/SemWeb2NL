@@ -28,5 +28,10 @@
 			<artifactId>gson</artifactId>
 			<version>2.2.4</version>
 		</dependency>
+		<dependency>
+					<artifactId>httpclient</artifactId>
+					<groupId>org.apache.httpcomponents</groupId>
+					<version>4.2.6</version>
+		</dependency>
   </dependencies>
 </project>

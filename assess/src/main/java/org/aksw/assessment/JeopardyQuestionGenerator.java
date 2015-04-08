@@ -25,11 +25,14 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import simplenlg.framework.NLGElement;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -50,7 +53,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
     private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
    
-    private Map<NamedClass, List<Resource>> wrongAnswersByType = new HashMap<>();
+    private Map<OWLClass, List<Resource>> wrongAnswersByType = new HashMap<>();
     
 	private boolean preferPopularWrongAnswers = true;
 
@@ -58,7 +61,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
 	private boolean useCompleteResourcesOnly = true;
 	
-    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
         super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
     }
     
@@ -66,17 +69,17 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
      * @see org.aksw.assessment.question.MultipleChoiceQuestionGenerator#getMostProminentResources(java.util.Set)
      */
     @Override
-    protected Map<Resource, NamedClass> getMostProminentResources(Set<NamedClass> types) {
+    protected Map<Resource, OWLClass> getMostProminentResources(Set<OWLClass> types) {
     	//INFO for this type of questions it might makes sense to use only resources having all properties of the summary graph
         //as this makes the summary more fancy
     	if(useCompleteResourcesOnly ){
-    		Map<Resource, NamedClass> result = Maps.newLinkedHashMap();
+    		Map<Resource, OWLClass> result = Maps.newLinkedHashMap();
     		//we need the summarizing properties graph first
-    		for (NamedClass type : types) {
+    		for (OWLClass type : types) {
 				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(type, propertyFrequencyThreshold, namespace, cooccurrenceType);
 				StringBuilder query = new StringBuilder();
 	        	query.append("SELECT DISTINCT ?x WHERE{");
-	        	query.append("?x a <" + type.getURI() + ">.");
+	        	query.append("?x a <" + type.toStringID() + ">.");
 	        	//add triple pattern for each property in summary graph
 	        	int i = 0;
 				for (org.aksw.avatar.clustering.Node propertyNode : summaryProperties) {
@@ -100,7 +103,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     }
 
     @Override
-    public Question generateQuestion(Resource r, NamedClass type) {
+    public Question generateQuestion(Resource r, OWLClass type) {
         
         //generate the question in forms of a summary describing the resource
         String summary = getEntitySummary(r.getURI());
@@ -120,7 +123,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         //generate the wrong answers
 		List<Answer> wrongAnswers = generateWrongAnswers(r, type);
 
-		NLGElement npPhrase = nlg.getNPPhrase(type.getName(), false);
+		NLGElement npPhrase = nlg.getNPPhrase(type.toStringID(), false);
 		npPhrase = nlg.realiser.realise(npPhrase);
 		String className = npPhrase.getRealisation();
 		className = className.toLowerCase().replaceAll(Pattern.quote("."), "");
@@ -129,7 +132,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 				correctAnswers, wrongAnswers, DIFFICULTY, QueryFactory.create(query), QuestionType.JEOPARDY);
 	}
     
-    private List<Answer> generateWrongAnswers(Resource r, NamedClass type){
+    private List<Answer> generateWrongAnswers(Resource r, OWLClass type){
     	List<Answer> wrongAnswers = new ArrayList<>();
 		logger.info("Generating wrong answers...");
 		
@@ -231,7 +234,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		return wrongAnswers;
     }
     
-    private String asSPARQLQuery(List<Triple> triples, NamedClass type){
+    private String asSPARQLQuery(List<Triple> triples, OWLClass type){
     	StringBuilder query = new StringBuilder();
     	query.append("SELECT DISTINCT ?s WHERE{");
     	//we should keep the type as constraint to get more similar wrong answers
@@ -257,7 +260,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
      * @param resources
      * @return
      */
-    private String asFilterInSPARQLQuery(Collection<Triple> triples, NamedClass type){
+    private String asFilterInSPARQLQuery(Collection<Triple> triples, OWLClass type){
     	Iterator<Triple> iterator = triples.iterator();
     	Triple firstTriple = iterator.next();
     	StringBuilder query = new StringBuilder();
@@ -267,7 +270,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     	if(triples.size() == 1){
     		query.append(asTriplePattern("s", firstTriple, type));
     	} else {
-    		ObjectProperty property = new ObjectProperty(firstTriple.getPredicate().getURI());
+    		OWLObjectProperty property = new OWLObjectPropertyImpl(IRI.create(firstTriple.getPredicate().getURI()));
     		boolean outgoingProperty = verbalizer.graphGenerator.isOutgoingProperty(type, property);
     		String subject = outgoingProperty ? "?s" : "?o";
         	String predicate = asTriplePatternComponent(firstTriple.getPredicate());
@@ -298,8 +301,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
      * @param t
      * @return
      */
-    private String asTriplePattern(String subjectVar, Triple t, NamedClass cls){
-    	boolean outgoingProperty = verbalizer.graphGenerator.isOutgoingProperty(cls, new ObjectProperty(t.getPredicate().getURI()));
+    private String asTriplePattern(String subjectVar, Triple t, OWLClass cls){
+    	boolean outgoingProperty = verbalizer.graphGenerator.isOutgoingProperty(cls, new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
     	//we have to reverse the triple pattern if the property is not an outgoing property
     	String subject = outgoingProperty ? "?" + subjectVar : asTriplePatternComponent(t.getObject());
     	String predicate = asTriplePatternComponent(t.getPredicate());
@@ -327,7 +330,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
      * @param r
      * @return
      */
-    private List<Answer> generateWrongAnswersSimple(Resource r, NamedClass type){
+    private List<Answer> generateWrongAnswersSimple(Resource r, OWLClass type){
     	List<Answer> wrongAnswers = new ArrayList<>();
 		logger.info("Generating wrong answers...");
 		
@@ -353,8 +356,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     }
 
 	public static void main(String args[]) {
-//		Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
-//		restrictions.put(new NamedClass("http://dbpedia.org/ontology/Writer"), new HashSet<ObjectProperty>());
+//		Map<OWLClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
+//		restrictions.put(new OWLClass("http://dbpedia.org/ontology/Writer"), new HashSet<ObjectProperty>());
 //        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
 //        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
 //        for (Question q : questions) {
@@ -371,8 +374,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		classes = Lists.newArrayList("http://dbpedia.org/ontology/Play");
 		for(String cls : classes){
 			try {
-				Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
-				restrictions.put(new NamedClass(cls), new HashSet<ObjectProperty>());
+				Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
+				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
 				SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", 

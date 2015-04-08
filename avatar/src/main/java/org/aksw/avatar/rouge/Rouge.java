@@ -13,11 +13,14 @@ import java.util.List;
 import org.aksw.avatar.Verbalizer;
 import org.aksw.avatar.clustering.hardening.HardeningFactory;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLIndividual;
 
 import simplenlg.framework.NLGElement;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
 import com.aliasi.chunk.Chunk;
 import com.aliasi.sentences.IndoEuropeanSentenceModel;
@@ -471,8 +474,8 @@ public class Rouge {
         Rouge rouge = new Rouge();
         rouge.multipleMode = MULTIPLE_MAX;
         Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW(), null, null);
-        Individual ind = new Individual("http://dbpedia.org/resource/Chad_Ochocinco");
-        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/AmericanFootballPlayer");
+        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create("http://dbpedia.org/resource/Chad_Ochocinco"));
+        OWLClass nc = new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/AmericanFootballPlayer"));
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
         List<NLGElement> text = v.verbalize(ind, nc, 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);

@@ -16,14 +16,16 @@ import java.util.concurrent.Future;
 
 import org.aksw.avatar.dump.LogEntry;
 import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
-import org.dllearner.core.owl.Property;
 import org.dllearner.kb.SparqlEndpointKS;
-import org.dllearner.kb.sparql.ExtractionDBCache;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLProperty;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.base.Joiner;
 import com.hp.hpl.jena.graph.Node;
@@ -36,33 +38,31 @@ import com.hp.hpl.jena.vocabulary.RDF;
 
 public class SPARQLQueryProcessor {
 
-    private SparqlEndpoint endpoint;
     private TriplePatternExtractor patternExtractor = new TriplePatternExtractor();
     private SPARQLReasoner reasoner;
 
-    public SPARQLQueryProcessor(SparqlEndpoint endpoint) {
-        this.endpoint = endpoint;
-        reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), new ExtractionDBCache("cache"));
+    public SPARQLQueryProcessor(SparqlEndpointKS ks) {
+        reasoner = new SPARQLReasoner(ks);
     }
 
-    public Map<NamedClass, Set<Property>> processQuery(String query) {
+    public Map<OWLClass, Set<OWLProperty>> processQuery(String query) {
         return processQuery(QueryFactory.create(query, Syntax.syntaxARQ));
     }
 
-    public Collection<Map<NamedClass, Set<Property>>> processQueries(Collection<Query> queries) {
-        Collection<Map<NamedClass, Set<Property>>> result = new ArrayList<Map<NamedClass, Set<Property>>>();
+    public Collection<Map<OWLClass, Set<OWLProperty>>> processQueries(Collection<Query> queries) {
+        Collection<Map<OWLClass, Set<OWLProperty>>> result = new ArrayList<Map<OWLClass, Set<OWLProperty>>>();
         ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        List<Future<Map<NamedClass, Set<Property>>>> futures = new ArrayList<Future<Map<NamedClass, Set<Property>>>>();
+        List<Future<Map<OWLClass, Set<OWLProperty>>>> futures = new ArrayList<Future<Map<OWLClass, Set<OWLProperty>>>>();
         for (final Query query : queries) {
-            futures.add(threadPool.submit(new Callable<Map<NamedClass, Set<Property>>>() {
+            futures.add(threadPool.submit(new Callable<Map<OWLClass, Set<OWLProperty>>>() {
 
                 @Override
-                public Map<NamedClass, Set<Property>> call() throws Exception {
+                public Map<OWLClass, Set<OWLProperty>> call() throws Exception {
                     return processQuery(query);
                 }
             }));
         }
-        for (Future<Map<NamedClass, Set<Property>>> future : futures) {
+        for (Future<Map<OWLClass, Set<OWLProperty>>> future : futures) {
             try {
                 result.add(future.get());
             } catch (InterruptedException e) {
@@ -81,7 +81,7 @@ public class SPARQLQueryProcessor {
      * @param entries
      * @return
      */
-    public Collection<Map<NamedClass, Set<Property>>> processEntries(Collection<LogEntry> entries) {
+    public Collection<Map<OWLClass, Set<OWLProperty>>> processEntries(Collection<LogEntry> entries) {
     	List<Query> queries = new ArrayList<Query>();
 //    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
     	for (LogEntry entry : entries) {
@@ -99,9 +99,9 @@ public class SPARQLQueryProcessor {
      *
      * @param query
      */
-    public Map<NamedClass, Set<Property>> processQuery(Query query) {
+    public Map<OWLClass, Set<OWLProperty>> processQuery(Query query) {
         TriplePatternExtractor patternExtractor = new TriplePatternExtractor();
-        Map<NamedClass, Set<Property>> result = new HashMap<NamedClass, Set<Property>>();
+        Map<OWLClass, Set<OWLProperty>> result = new HashMap<OWLClass, Set<OWLProperty>>();
         //get all projection variables in the query
         List<Var> vars = query.getProjectVars();
 
@@ -132,25 +132,25 @@ public class SPARQLQueryProcessor {
                 Node predicate = triple.getPredicate();
                 //*BUG HERE*. Sometimes the predicates are variables
                 if (!predicate.isVariable()) {
-                    Property property = new ObjectProperty(predicate.getURI());
+                    OWLProperty property = new OWLObjectPropertyImpl(IRI.create(predicate.getURI()));
 
                     if (subject.isVariable()) {//if the subject s is a variable we can look for outgoing rdf:type triple patterns of s in the query
                         Set<Triple> outgoingTriplePatterns = patternExtractor.extractOutgoingTriplePatterns(query, subject);
                         for (Triple tp : outgoingTriplePatterns) {
                             //check for rdf:type triples
                             if (tp.predicateMatches(RDF.type.asNode()) && tp.getObject().isURI()) {
-                                NamedClass nc = new NamedClass(tp.getObject().getURI());
+                                OWLClass nc = new OWLClassImpl(IRI.create(tp.getObject().getURI()));
                                 if (!result.containsKey(nc)) {
-                                    result.put(nc, new HashSet<Property>());
+                                    result.put(nc, new HashSet<OWLProperty>());
                                 }
                                 result.get(nc).add(property);
                             }
                         }
                     } else if (subject.isURI()) {//if the subject is a URI we can ask the knowledge base for the types
-                        Set<NamedClass> types = reasoner.getTypes(new Individual(subject.getURI()));
-                        for (NamedClass nc : types) {
+                        Set<OWLClass> types = reasoner.getTypes(new OWLNamedIndividualImpl(IRI.create(subject.getURI())));
+                        for (OWLClass nc : types) {
                             if (!result.containsKey(nc)) {
-                                result.put(nc, new HashSet<Property>());
+                                result.put(nc, new HashSet<OWLProperty>());
                             }
                             result.get(nc).add(property);
                         }
@@ -163,13 +163,13 @@ public class SPARQLQueryProcessor {
 
     public static void main(String[] args) throws Exception {
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        SPARQLQueryProcessor processor = new SPARQLQueryProcessor(endpoint);
+        SPARQLQueryProcessor processor = new SPARQLQueryProcessor(new SparqlEndpointKS(endpoint));
 
         Query query = QueryFactory.create(
                 "PREFIX dbr: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "
                 + "SELECT ?s ?place ?date WHERE {?s a dbo:Person. ?s dbo:birthPlace ?place. ?s dbo:birthDate ?date.}");
-        Map<NamedClass, Set<Property>> occurrences = processor.processQuery(query);
+        Map<OWLClass, Set<OWLProperty>> occurrences = processor.processQuery(query);
         System.out.println(Joiner.on("\n").withKeyValueSeparator("=").join(occurrences));
 
         query = QueryFactory.create(

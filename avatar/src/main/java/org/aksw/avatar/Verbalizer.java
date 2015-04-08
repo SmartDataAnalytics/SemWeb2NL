@@ -44,10 +44,11 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLIndividual;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
@@ -58,6 +59,8 @@ import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -177,7 +180,7 @@ public class Verbalizer {
         return result;
     }
     
-    public Set<Node> getSummaryProperties(NamedClass cls, double threshold, String namespace, DatasetBasedGraphGenerator.Cooccurrence cooccurrence){
+    public Set<Node> getSummaryProperties(OWLClass cls, double threshold, String namespace, DatasetBasedGraphGenerator.Cooccurrence cooccurrence){
    	 Set<Node> properties = new HashSet<Node>();
    	 WeightedGraph wg = graphGenerator.generateGraph(cls, threshold, "http://dbpedia.org/ontology/", cooccurrence);
    	 return wg.getNodes().keySet();
@@ -194,7 +197,7 @@ public class Verbalizer {
      * @param resource Resource to summarize
      * @return Textual representation
      */
-    public String realize(List<Set<Node>> properties, Resource resource, NamedClass nc) {
+    public String realize(List<Set<Node>> properties, Resource resource, OWLClass nc) {
         List<NLGElement> elts = generateSentencesFromClusters(properties, resource, nc);
         return realize(elts);
     }
@@ -209,8 +212,8 @@ public class Verbalizer {
     }
 
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
-            Resource resource, NamedClass namedClass) {
-        return generateSentencesFromClusters(clusters, resource, namedClass, false);
+            Resource resource, OWLClass OWLClass) {
+        return generateSentencesFromClusters(clusters, resource, OWLClass, false);
     }
 
     /**
@@ -222,7 +225,7 @@ public class Verbalizer {
      * @return List of NLGElement
      */
     public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
-            Resource resource, NamedClass namedClass, boolean replaceSubjects) {
+            Resource resource, OWLClass namedClass, boolean replaceSubjects) {
         List<SPhraseSpec> buffer;
 
         //compute the gender of the resource
@@ -335,8 +338,8 @@ public class Verbalizer {
      * @param individual the individual of the summary
      * @return a set of triples
      */
-    public Collection<Triple> getSummaryTriples(Individual individual) {
-        return getSummaryTriples(ResourceFactory.createResource(individual.getName()));
+    public Collection<Triple> getSummaryTriples(OWLIndividual individual) {
+        return getSummaryTriples(ResourceFactory.createResource(individual.toStringID()));
     }
 
     /**
@@ -418,11 +421,11 @@ public class Verbalizer {
         return nlg.getNLForTriple(triple, outgoing);
     }
 
-    public List<NLGElement> verbalize(Individual ind, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public List<NLGElement> verbalize(OWLIndividual ind, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         return verbalize(Sets.newHashSet(ind), nc, threshold, cooccurrence, hType).get(ind);
     }
 
-    public Map<Individual, List<NLGElement>> verbalize(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
         //first get graph for nc
         WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
@@ -434,21 +437,21 @@ public class Verbalizer {
         List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
         logger.debug("Cluster = " + sortedPropertyClusters);
 
-        Map<Individual, List<NLGElement>> verbalizations = new HashMap<Individual, List<NLGElement>>();
+        Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
 
-        for (Individual ind : individuals) {
+        for (OWLIndividual ind : individuals) {
             //finally generateSentencesFromClusters
-            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.getName()), nc, true);
+            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
 
-            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
-                    ResourceFactory.createResource(nc.getName()).asNode());
+            Triple t = Triple.create(ResourceFactory.createResource(ind.toStringID()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
+                    ResourceFactory.createResource(nc.toStringID()).asNode());
             result = Lists.reverse(result);
             result.add(generateSimplePhraseFromTriple(t));
             result = Lists.reverse(result);
 
             verbalizations.put(ind, result);
 
-            resource2Triples.get(ResourceFactory.createResource(ind.getName())).add(t);
+            resource2Triples.get(ResourceFactory.createResource(ind.toStringID())).add(t);
         }
 
         return verbalizations;
@@ -459,9 +462,9 @@ public class Verbalizer {
      *
      * @return
      */
-    public String summarize(Individual individual) {
+    public String summarize(OWLIndividual individual) {
     	//compute the most specific type first
-    	NamedClass cls = getMostSpecificType(individual);
+    	OWLClass cls = getMostSpecificType(individual);
     	
         return summarize(individual, cls);
     }
@@ -471,7 +474,7 @@ public class Verbalizer {
      *
      * @return
      */
-    public String summarize(Individual individual, NamedClass nc) {
+    public String summarize(OWLIndividual individual, OWLClass nc) {
        return getSummary(individual, nc, DEFAULT_THRESHOLD, DEFAULT_COOCCURRENCE_TYPE, DEFAULT_HARDENING_TYPE);
     }
 
@@ -480,7 +483,7 @@ public class Verbalizer {
      *
      * @return
      */
-    public String getSummary(Individual individual, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public String getSummary(OWLIndividual individual, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         List<NLGElement> elements = verbalize(individual, nc, threshold, cooccurrence, hType);
         String summary = realize(elements);
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
@@ -493,12 +496,12 @@ public class Verbalizer {
      *
      * @return
      */
-    public Map<Individual, String> getSummaries(Set<Individual> individuals, NamedClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        Map<Individual, String> entity2Summaries = new HashMap<>();
+    public Map<OWLIndividual, String> getSummaries(Set<OWLIndividual> individuals, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+        Map<OWLIndividual, String> entity2Summaries = new HashMap<>();
 
-        Map<Individual, List<NLGElement>> verbalize = verbalize(individuals, nc, threshold, cooccurrence, hType);
-        for (Entry<Individual, List<NLGElement>> entry : verbalize.entrySet()) {
-            Individual individual = entry.getKey();
+        Map<OWLIndividual, List<NLGElement>> verbalize = verbalize(individuals, nc, threshold, cooccurrence, hType);
+        for (Entry<OWLIndividual, List<NLGElement>> entry : verbalize.entrySet()) {
+        	OWLIndividual individual = entry.getKey();
             List<NLGElement> elements = entry.getValue();
             String summary = realize(elements);
             summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
@@ -514,21 +517,22 @@ public class Verbalizer {
      * @param ind
      * @return
      */
-    private NamedClass getMostSpecificType(Individual ind){
+    private OWLClass getMostSpecificType(OWLIndividual ind){
     	logger.debug("Getting the most specific type of " + ind);
     	String query = String.format("select distinct ?type where {"
     			+ " <%s> a ?type ."
     			+ "?type a owl:Class ."
-    			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}", ind, ind);
+    			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
+    			ind.toStringID(), ind.toStringID());
     	
-    	SortedSet<NamedClass> types = new TreeSet<NamedClass>();
+    	SortedSet<OWLClass> types = new TreeSet<OWLClass>();
     	
     	QueryExecution qe = qef.createQueryExecution(query);
     	ResultSet rs = qe.execSelect();
     	while (rs.hasNext()) {
 			QuerySolution qs = rs.next();
 			if(qs.get("type").isURIResource()){
-				types.add(new NamedClass(qs.getResource("type").getURI()));
+				types.add(new OWLClassImpl(IRI.create(qs.getResource("type").getURI())));
 			}
 		}
     	qe.close();
@@ -546,12 +550,12 @@ public class Verbalizer {
      * @param resourceGender the gender of the resource
      * @return list of synonymous expressions
      */
-    public List<NPPhraseSpec> generateSubjects(Resource resource, NamedClass resourceType, Gender resourceGender) {
+    public List<NPPhraseSpec> generateSubjects(Resource resource, OWLClass resourceType, Gender resourceGender) {
         List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
         //the textual representation of the resource itself
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         //the class, e.g. 'this book'
-        NPPhraseSpec np = nlg.getNPPhrase(resourceType.getName(), false);
+        NPPhraseSpec np = nlg.getNPPhrase(resourceType.toStringID(), false);
         np.addPreModifier("This");
         result.add(np);
         //the pronoun depending on the gender of the resource
@@ -699,8 +703,8 @@ public class Verbalizer {
         
         Verbalizer v = new Verbalizer(qef, cacheDirectory, wordnetDirectory);
         
-        NamedClass cls = new NamedClass((URI)options.valueOf("c"));
-        Individual ind = new Individual(((URI)options.valueOf("i")).toString());
+        OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
+        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(((URI)options.valueOf("i")).toString()));
         
         v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
    

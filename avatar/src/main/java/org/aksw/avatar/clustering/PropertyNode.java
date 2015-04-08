@@ -4,17 +4,17 @@
  */
 package org.aksw.avatar.clustering;
 
-import org.dllearner.core.owl.Property;
+import org.semanticweb.owlapi.model.OWLProperty;
 /**
  *
  * @author ngonga
  */
 public class PropertyNode extends Node {
-    public Property property;
+    public OWLProperty property;
     
-    public PropertyNode(Property p)
+    public PropertyNode(OWLProperty p)
     {
-        super(p.getName());
+        super(p.toStringID());
 //        this.label = p.getName();
         this.property = p;
     }

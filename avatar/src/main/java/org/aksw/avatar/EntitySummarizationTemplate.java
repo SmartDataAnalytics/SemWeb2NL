@@ -5,8 +5,9 @@ package org.aksw.avatar;
 
 import java.util.Set;
 
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.Property;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLProperty;
+
 
 /**
  * This class basically represents a summarization of a class by containing a set of properties which
@@ -16,10 +17,10 @@ import org.dllearner.core.owl.Property;
  */
 public class EntitySummarizationTemplate {
 
-	private NamedClass cls;
-	private Set<Property> properties;
+	private OWLClass cls;
+	private Set<OWLProperty> properties;
 	
-	public EntitySummarizationTemplate(NamedClass cls, Set<Property> properties) {
+	public EntitySummarizationTemplate(OWLClass cls, Set<OWLProperty> properties) {
 		this.cls = cls;
 		this.properties = properties;
 	}
@@ -27,14 +28,14 @@ public class EntitySummarizationTemplate {
 	/**
 	 * @return the class
 	 */
-	public NamedClass getTemplateClass() {
+	public OWLClass getTemplateClass() {
 		return cls;
 	}
 	
 	/**
 	 * @return the properties
 	 */
-	public Set<Property> getProperties() {
+	public Set<OWLProperty> getProperties() {
 		return properties;
 	}
 	

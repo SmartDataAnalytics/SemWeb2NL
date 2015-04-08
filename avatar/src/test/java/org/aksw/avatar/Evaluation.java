@@ -23,13 +23,15 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLIndividual;
 
 import simplenlg.framework.NLGElement;
+import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
 import com.hp.hpl.jena.query.ParameterizedSparqlString;
 import com.hp.hpl.jena.query.Query;
@@ -74,9 +76,9 @@ public class Evaluation {
 	
 	public void run(){
 		//get the classes
-		Collection<NamedClass> classes = getClasses();
+		Collection<OWLClass> classes = getClasses();
 		//for each class
-		for (NamedClass cls : classes) {
+		for (OWLClass cls : classes) {
 			System.out.println("Processing class " + cls);
 			
 			SummaryStatistics pStats = new SummaryStatistics();
@@ -84,14 +86,14 @@ public class Evaluation {
 			SummaryStatistics fStats = new SummaryStatistics();
 			
 			//get some instances with abstracts
-			Map<Individual, String> individualsWithAbstract = getIndividualsWithAbstract(cls);
+			Map<OWLIndividual, String> individualsWithAbstract = getIndividualsWithAbstract(cls);
 			
 			//get the verbalizations
-			Map<Individual, List<NLGElement>> verbalizations = verbalizer.verbalize(individualsWithAbstract.keySet(), cls, threshold, cooccurrence, hardeningType);
+			Map<OWLIndividual, List<NLGElement>> verbalizations = verbalizer.verbalize(individualsWithAbstract.keySet(), cls, threshold, cooccurrence, hardeningType);
 		
 			//compare the verbalization with the abstract by using ROUGE
-			for (Entry<Individual, String> entry : individualsWithAbstract.entrySet()) {
-				Individual ind = entry.getKey();
+			for (Entry<OWLIndividual, String> entry : individualsWithAbstract.entrySet()) {
+				OWLIndividual ind = entry.getKey();
 				String abstr = entry.getValue();
 				List<NLGElement> verbalization = verbalizations.get(ind);
 				String realization = verbalizer.realize(verbalization);
@@ -124,14 +126,14 @@ public class Evaluation {
 	 * Get x randomly chosen classes which contain at least y instances
 	 * @return
 	 */
-	private Collection<NamedClass> getClasses(){
-		Collection<NamedClass> classes = new TreeSet<NamedClass>();
+	private Collection<OWLClass> getClasses(){
+		Collection<OWLClass> classes = new TreeSet<OWLClass>();
 		
-		List<NamedClass> allClasses = new ArrayList<NamedClass>(reasoner.getOWLClasses());
+		List<OWLClass> allClasses = new ArrayList<OWLClass>(reasoner.getOWLClasses());
 		Collections.shuffle(allClasses, new Random(123));
 		
-		Iterator<NamedClass> iter = allClasses.iterator();
-		NamedClass cls;
+		Iterator<OWLClass> iter = allClasses.iterator();
+		OWLClass cls;
 		while(iter.hasNext() && classes.size() < nrOfClasses){
 			cls = iter.next();
 			int cnt = reasoner.getIndividualsCount(cls);
@@ -142,12 +144,12 @@ public class Evaluation {
 		return classes;
 	}
 	
-	private Map<Individual, String> getIndividualsWithAbstract(NamedClass cls){
-		Map<Individual, String> individualsWithAbstract = new HashMap<Individual, String>();
+	private Map<OWLIndividual, String> getIndividualsWithAbstract(OWLClass cls){
+		Map<OWLIndividual, String> individualsWithAbstract = new HashMap<OWLIndividual, String>();
 		ParameterizedSparqlString template = new ParameterizedSparqlString(
 				"SELECT ?s ?abstract WHERE {?s a ?type. ?s ?abstractProperty ?abstract. FILTER(LANGMATCHES(LANG(?abstract),'en'))}");
 		template.setIri("abstractProperty", abstractProperty);
-		template.setIri("type", cls.getName());
+		template.setIri("type", cls.toStringID());
 		
 		Query q = template.asQuery();
 		q.setLimit(nrOfInstancePerClass);
@@ -157,7 +159,7 @@ public class Evaluation {
 		QuerySolution qs;
 		while(rs.hasNext()){
 			qs = rs.next();
-			individualsWithAbstract.put(new Individual(qs.getResource("s").getURI()), qs.getLiteral("abstract").getLexicalForm());
+			individualsWithAbstract.put(new OWLNamedIndividualImpl(IRI.create(qs.getResource("s").getURI())), qs.getLiteral("abstract").getLexicalForm());
 		}
 		return individualsWithAbstract;
 	}

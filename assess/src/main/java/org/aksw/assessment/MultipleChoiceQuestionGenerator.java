@@ -28,16 +28,18 @@ import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparqltools.util.SPARQLEndpointType;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
-import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.DefaultIRIConverter;
+import org.aksw.triple2nl.LiteralConverter;
 import org.apache.log4j.Logger;
-import org.dllearner.core.owl.Individual;
-import org.dllearner.core.owl.NamedClass;
-import org.dllearner.core.owl.ObjectProperty;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
+import org.semanticweb.owlapi.model.IRI;
+import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import simplenlg.framework.NLGElement;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -91,12 +93,12 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		}
 	};
     
-	protected Map<NamedClass, Set<ObjectProperty>> restrictions;
+	protected Map<OWLClass, Set<OWLObjectProperty>> restrictions;
 	protected Set<RDFNode> usedWrongAnswers;
 	
 	protected SPARQLEndpointType endpointType = SPARQLEndpointType.Virtuoso;
 	
-    public MultipleChoiceQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<NamedClass, Set<ObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
+    public MultipleChoiceQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
     	this.qef = qef;
 		this.namespace = namespace;
 		this.restrictions = restrictions;
@@ -117,7 +119,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         nlg = verbalizer.nlg;
     }
 
-    public Question generateQuestion(Resource r, NamedClass type) {
+    public Question generateQuestion(Resource r, OWLClass type) {
         logger.info("Generating question for resource " + r + "...");
         
         //choose the property
@@ -151,9 +153,9 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             property = propertyCandidates.toArray(new String[]{})[rnd.nextInt(propertyCandidates.size())];
            
         } else {
-        	Set<ObjectProperty> propertyCandidates = restrictions.get(type);
+        	Set<OWLObjectProperty> propertyCandidates = restrictions.get(type);
         	Random rnd = new Random();
-            property = propertyCandidates.toArray(new ObjectProperty[]{})[rnd.nextInt(propertyCandidates.size())].getName();
+            property = propertyCandidates.toArray(new OWLObjectProperty[]{})[rnd.nextInt(propertyCandidates.size())].toStringID();
         }
         logger.info("Chosen property: " + property);
 
@@ -223,12 +225,12 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         Set<Question> questions = new HashSet<>();
         
         //1. we generate of possible resources
-        Map<Resource, NamedClass> resources = getMostProminentResources(restrictions.keySet());
+        Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
         
         //2. we generate question(s) as long as we have resources or we got the maximum number of questions
 //        Collections.shuffle(resources, new Random(123));
-        Iterator<Entry<Resource, NamedClass>> iterator = resources.entrySet().iterator();
-        Entry<Resource, NamedClass> entry;
+        Iterator<Entry<Resource, OWLClass>> iterator = resources.entrySet().iterator();
+        Entry<Resource, OWLClass> entry;
         Question q;
         while(questions.size() < numberOfQuestions && iterator.hasNext()){
         	entry = iterator.next();
@@ -247,7 +249,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     /**
 	 * @param restrictions the restrictions to set
 	 */
-	public void setRestrictions(Map<NamedClass, Set<ObjectProperty>> restrictions) {
+	public void setRestrictions(Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
 		this.restrictions = restrictions;
 	}
     
@@ -307,10 +309,10 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
      */
 	protected String getEntitySummary(String entityURI) {
 		//get the most specific type(s) of the individual
-		Set<NamedClass> mostSpecificTypes = getMostSpecificTypes(entityURI);
+		Set<OWLClass> mostSpecificTypes = getMostSpecificTypes(entityURI);
 		
 		//pick the most prominent type
-		NamedClass mostSpecificType = mostSpecificTypes.iterator().next();
+		OWLClass mostSpecificType = mostSpecificTypes.iterator().next();
 		
 		//return the summary
 		return getEntitySummary(entityURI, mostSpecificType);
@@ -321,10 +323,10 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
      * @param ind
      * @return
      */
-	protected String getEntitySummary(String entityURI, NamedClass type) {
+	protected String getEntitySummary(String entityURI, OWLClass type) {
 		logger.info("Generating summary for " + entityURI + " of type " + type + "...");
 		//create the summary
-		List<NLGElement> text = verbalizer.verbalize(new Individual(entityURI), type, propertyFrequencyThreshold, cooccurrenceType,
+		List<NLGElement> text = verbalizer.verbalize(new OWLNamedIndividualImpl(IRI.create(entityURI)), type, propertyFrequencyThreshold, cooccurrenceType,
 				hardeningType);
 		if (text == null)
 			return null;
@@ -337,17 +339,17 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		return summary;
 	}
 	
-	 protected Map<Resource, NamedClass> getMostProminentResources(Set<NamedClass> types) {
+	 protected Map<Resource, OWLClass> getMostProminentResources(Set<OWLClass> types) {
         logger.info("Getting possible resources for types " + types + " ranked by prominence...");
         if (types == null || types.isEmpty()) {
             return null;
         }
         
-        Map<Resource, NamedClass> result = Maps.newLinkedHashMap();
-        for (NamedClass type : types) {
+        Map<Resource, OWLClass> result = Maps.newLinkedHashMap();
+        for (OWLClass type : types) {
         	StringBuilder query = new StringBuilder();
         	query.append("SELECT DISTINCT ?x WHERE{");
-        	query.append("?x a <" + type.getURI() + ">.");
+        	query.append("?x a <" + type.toStringID() + ">.");
         	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
         	query.append("}");
         	SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
@@ -360,7 +362,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
             }
 		}
 //        String query = "SELECT distinct ?x (COUNT(?s) AS ?cnt) WHERE {?s ?p ?x. ";
-//		for (NamedClass nc : types) {
+//		for (OWLClass nc : types) {
 //			query = query + "{?x a <" + nc.getURI() + ">} UNION ";
 //		}
 //		query = query.substring(0, query.lastIndexOf("UNION"));
@@ -370,11 +372,11 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         return result;
     }
 	
-	protected Set<NamedClass> getMostSpecificTypes(String uri) {
-		Set<NamedClass> types = reasoner.getMostSpecificTypes(new Individual(uri));
-		for (Iterator<NamedClass> iter = types.iterator(); iter.hasNext();) {
-			NamedClass cls = iter.next();
-			if (namespace != null && !cls.getName().startsWith(namespace)) {
+	protected Set<OWLClass> getMostSpecificTypes(String uri) {
+		Set<OWLClass> types = reasoner.getMostSpecificTypes(new OWLNamedIndividualImpl(IRI.create(uri)));
+		for (Iterator<OWLClass> iter = types.iterator(); iter.hasNext();) {
+			OWLClass cls = iter.next();
+			if (namespace != null && !cls.toStringID().startsWith(namespace)) {
 				iter.remove();
 			}
 		}
@@ -382,7 +384,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 	}
 
     protected Collection<Triple> getSummaryTriples(String entityURI){
-		return verbalizer.getSummaryTriples(new Individual(entityURI));
+		return verbalizer.getSummaryTriples(new OWLNamedIndividualImpl(IRI.create(entityURI)));
 	}
     
     /**
@@ -393,11 +395,11 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 	}
     
     public static void main(String args[]) throws Exception{
-        Map<NamedClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
+        Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(
-        		new NamedClass("http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/diseases"), 
-//        		Sets.newHashSet(new ObjectProperty("http://dbpedia.org/ontology/birthPlace"), new ObjectProperty("http://dbpedia.org/ontology/birthDate")));
-        new HashSet<ObjectProperty>());
+        		new OWLClassImpl(IRI.create("http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/diseases")), 
+//        		Sets.newHashSet(new OWLObjectProperty("http://dbpedia.org/ontology/birthPlace"), new OWLObjectProperty("http://dbpedia.org/ontology/birthDate")));
+        new HashSet<OWLObjectProperty>());
         SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
         QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 //        MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
