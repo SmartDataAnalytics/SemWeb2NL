@@ -1,0 +1,1 @@
+mvn clean package -Pwebapp -DskipTests=true jetty:run
