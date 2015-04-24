@@ -70,7 +70,7 @@ import com.google.common.collect.Sets;
  * @author Lorenz Buehmann
  *
  */
-@Path("/assess")
+@Path("/assess-service")
 public class RESTService {
 	
 	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
