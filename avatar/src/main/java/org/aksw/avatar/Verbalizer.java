@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -445,9 +446,9 @@ public class Verbalizer {
 
             Triple t = Triple.create(ResourceFactory.createResource(ind.toStringID()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
                     ResourceFactory.createResource(nc.toStringID()).asNode());
-            result = Lists.reverse(result);
+            Collections.reverse(result);
             result.add(generateSimplePhraseFromTriple(t));
-            result = Lists.reverse(result);
+            Collections.reverse(result);
 
             verbalizations.put(ind, result);
 

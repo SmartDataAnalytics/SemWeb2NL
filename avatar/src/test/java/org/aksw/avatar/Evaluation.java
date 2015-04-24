@@ -58,7 +58,7 @@ public class Evaluation {
 	String abstractProperty = "http://dbpedia.org/ontology/abstract";
 	
 	
-	SPARQLReasoner reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint), cacheDirectory);
+	SPARQLReasoner reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint, cacheDirectory));
 	QueryExecutionFactory qef;
 	Verbalizer verbalizer = new Verbalizer(endpoint, cacheDirectory, null);
 	

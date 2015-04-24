@@ -9,7 +9,7 @@
 		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
 		<init-param>
 			<param-name>com.sun.jersey.config.property.packages</param-name>
-			<param-value>org.aksw.assessment.question.rest</param-value>
+			<param-value>org.aksw.assessment.rest</param-value>
 		</init-param>
 		<init-param>
 			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
@@ -17,9 +17,9 @@
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>
-	<!-- <listener>
-        <listener-class>org.aksw.assessment.question.rest.AssessServletContextListener</listener-class>
-    </listener> -->
+	<listener>
+        <listener-class>org.aksw.assessment.rest.AssessServletContextListener</listener-class>
+    </listener>
 	<servlet-mapping>
 		<servlet-name>ASSESS REST Service</servlet-name>
 		<url-pattern>/rest/*</url-pattern>
@@ -40,7 +40,7 @@
 			<param-value>*</param-value>
 		</init-param>
 	</filter>
-	<filter>
+	<!-- <filter>
 		<filter-name>CorsFilter</filter-name>
 		<filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
 	</filter>
@@ -51,5 +51,5 @@
 	<filter-mapping>
 		<filter-name>cross-origin</filter-name>
 		<url-pattern>/*</url-pattern>
-	</filter-mapping>
+	</filter-mapping> -->
 </web-app> 
