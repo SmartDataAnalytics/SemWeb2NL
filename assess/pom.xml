@@ -9,6 +9,7 @@
 	<artifactId>assess</artifactId>
 	<name>ASSESS</name>
 	<description>Automatic Self Assessment</description>
+	<packaging>war</packaging>
 
 	<dependencies>
 		<dependency>
@@ -81,6 +82,17 @@
 							</execution>
 						</executions>
 					</plugin>
+					<plugin>
+  <groupId>org.eclipse.jetty</groupId>
+  <artifactId>jetty-maven-plugin</artifactId>
+  <version>9.2.11-SNAPSHOT</version>
+  <configuration>
+    <scanIntervalSeconds>10</scanIntervalSeconds>
+    <webApp>
+      <contextPath>/test</contextPath>
+    </webApp>
+  </configuration>
+</plugin>
 				</plugins>
 			</build>
 		</profile>
