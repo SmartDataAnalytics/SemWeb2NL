@@ -238,7 +238,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     	StringBuilder query = new StringBuilder();
     	query.append("SELECT DISTINCT ?s WHERE{");
     	//we should keep the type as constraint to get more similar wrong answers
-    	query.append("?s a <" + type + ">.");
+    	query.append("?s a <" + type.toStringID() + ">.");
 		for (Triple triple : triples) {
 			//add triple pattern
 			query.append(asTriplePattern("s", triple, type));
@@ -266,7 +266,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     	StringBuilder query = new StringBuilder();
     	query.append("SELECT DISTINCT ?s WHERE{");
     	//we should keep the type as constraint to get more similar wrong answers
-    	query.append("?s a <" + type + ">.");
+    	query.append("?s a <" + type.toStringID() + ">.");
     	if(triples.size() == 1){
     		query.append(asTriplePattern("s", firstTriple, type));
     	} else {
@@ -318,7 +318,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     		s = "\"" + node.getLiteralLexicalForm().replace("\"", "\\\"") + "\"";
     		if(node.getLiteralDatatypeURI() != null){
     			s += "^^<" + node.getLiteralDatatypeURI() + ">";
-    		} else if(node.getLiteralLanguage() != null){
+    		} else if(node.getLiteralLanguage() != null && !node.getLiteralLanguage().isEmpty()){
     			s += "@" + node.getLiteralLanguage();
     		}
     	}
