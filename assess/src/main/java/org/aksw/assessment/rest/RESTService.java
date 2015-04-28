@@ -50,7 +50,9 @@ import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
-import org.apache.log4j.Logger;
+//import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -73,7 +75,8 @@ import com.google.common.collect.Sets;
 @Path("/assess")
 public class RESTService {
 	
-	private static final Logger logger = Logger.getLogger(RESTService.class.getName());
+ 	//private static final Logger logger = Logger.getLogger(RESTService.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(RESTService.class);
 	
 	static SparqlEndpoint endpoint;
 	static String namespace;
@@ -380,7 +383,7 @@ public class RESTService {
 				logger.info(cls);
 				graphGenerator.generateGraph(new OWLClassImpl(IRI.create(cls)), propertyFrequencyThreshold, namespace, cooccurrenceType);
 			} catch (Exception e) {
-				logger.error(e, e);
+				logger.error(e.getLocalizedMessage(), e);
 			}
 		}
 	}

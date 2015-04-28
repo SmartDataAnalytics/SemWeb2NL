@@ -110,7 +110,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         
         String wordNetDir = "wordnet/" + (SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux") + "/dict";
         wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
-        
+        System.setProperty("wordnet.database.dir", "/home/rusbeck/wordnet/linux/dict");
+ 
         verbalizer = new JeopardyVerbalizer(qef, cacheDirectory, wordNetDir);
         verbalizer.setPersonTypes(personTypes);
         verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
