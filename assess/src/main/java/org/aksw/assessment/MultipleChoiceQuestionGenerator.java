@@ -312,11 +312,14 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		//get the most specific type(s) of the individual
 		Set<OWLClass> mostSpecificTypes = getMostSpecificTypes(entityURI);
 		
-		//pick the most prominent type
-		OWLClass mostSpecificType = mostSpecificTypes.iterator().next();
-		
-		//return the summary
-		return getEntitySummary(entityURI, mostSpecificType);
+		// pick the most prominent type
+		if (mostSpecificTypes.iterator().hasNext()) {
+			// return the summary
+			OWLClass mostSpecificType = mostSpecificTypes.iterator().next();
+			return getEntitySummary(entityURI, mostSpecificType);
+		} else {
+			return "No hint available";
+		}
 	}
     
     /**
