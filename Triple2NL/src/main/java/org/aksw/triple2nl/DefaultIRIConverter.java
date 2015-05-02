@@ -248,6 +248,7 @@ public class DefaultIRIConverter implements IRIConverter{
 					return rs.next().getLiteral("label").getLexicalForm();
 				}
 			} catch (Exception e) {
+				e.printStackTrace();
 				int code = -1;
 				//cached exception is wrapped in a RuntimeException
 				if(e.getCause() instanceof QueryExceptionHTTP){

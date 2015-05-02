@@ -33,5 +33,9 @@
 					<groupId>org.apache.httpcomponents</groupId>
 					<version>4.2.6</version>
 		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+		</dependency>
   </dependencies>
 </project>

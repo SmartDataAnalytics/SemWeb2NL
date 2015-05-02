@@ -254,7 +254,8 @@ public class Verbalizer {
                     subsetShown = true;
                 }
                 //all share the same property, thus they can be merged
-                buffer.addAll(or.apply(getPhraseSpecsFromTriples(triples, property.outgoing), subsetShown));
+                List<SPhraseSpec> phraseSpecs = getPhraseSpecsFromTriples(triples, property.outgoing);
+				buffer.addAll(or.apply(phraseSpecs, subsetShown));
                 allTriples.addAll(triples);
             }
             result.addAll(sr.apply(or.apply(buffer), g));
@@ -266,7 +267,9 @@ public class Verbalizer {
         if (replaceSubjects) {
 
             for (int i = 0; i < result.size(); i++) {
-                phrases.add(replaceSubject(result.get(i), subjects, g));
+                NLGElement phrase = result.get(i);
+				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);
+				phrases.add(replacedPhrase);
             }
             return phrases;
         } else {

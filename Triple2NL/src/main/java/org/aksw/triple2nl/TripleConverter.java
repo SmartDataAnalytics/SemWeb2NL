@@ -304,7 +304,7 @@ public class TripleConverter {
 			PropertyVerbalization propertyVerbalization = pp.verbalize(predicate.getURI());
 			String predicateAsString = propertyVerbalization.getVerbalizationText();
 			
-			// if the object is a class we generate 'SUBJECT be a OBJECT'
+			// if the object is a class we generate 'SUBJECT be a(n) OBJECT'
 			if (objectIsClass) {
 				p.setSubject(subjectElement);
 				p.setVerb("be");

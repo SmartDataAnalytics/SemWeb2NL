@@ -382,6 +382,7 @@ public class RESTService {
 			} catch (Exception e) {
 				logger.error(e, e);
 			}
+			break;
 		}
 	}
 	
