@@ -25,6 +25,7 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
 
 import simplenlg.features.Feature;
+import simplenlg.features.InternalFeature;
 import simplenlg.framework.CoordinatedPhraseElement;
 import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
@@ -113,7 +114,10 @@ public class JeopardyVerbalizer extends Verbalizer {
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
 //        index = 2;
-        if (((NPPhraseSpec) sphrase.getSubject()).getPreModifiers().size() > 0) //possessive subject
+        
+        boolean isPossessive = isPossessive(sphrase);
+        
+        if (isPossessive) //possessive subject
         {
 
             NPPhraseSpec subject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) sphrase.getSubject()).getHead());
@@ -151,5 +155,18 @@ public class JeopardyVerbalizer extends Verbalizer {
         }
         return phrase;
     }
+
+	/**
+	 * @param sphrase
+	 * @return
+	 */
+	private boolean isPossessive(SPhraseSpec phrase) {
+		NLGElement subject = phrase.getSubject();
+		NLGElement specifier = subject.getFeatureAsElement(InternalFeature.SPECIFIER);
+		if(specifier != null) {
+			return specifier.getFeatureAsBoolean(Feature.POSSESSIVE);
+		}
+		return false;
+	}
     
 }

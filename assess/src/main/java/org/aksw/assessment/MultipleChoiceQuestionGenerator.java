@@ -329,9 +329,10 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
      */
 	protected String getEntitySummary(String entityURI, OWLClass type) {
 		logger.info("Generating summary for " + entityURI + " of type " + type + "...");
-		//create the summary
-		List<NLGElement> text = verbalizer.verbalize(new OWLNamedIndividualImpl(IRI.create(entityURI)), type, propertyFrequencyThreshold, cooccurrenceType,
-				hardeningType);
+		
+		// create the summary
+		OWLNamedIndividualImpl ind = new OWLNamedIndividualImpl(IRI.create(entityURI));
+		List<NLGElement> text = verbalizer.verbalize(ind, type, propertyFrequencyThreshold, cooccurrenceType, hardeningType);
 		if (text == null)
 			return null;
 		String summary = verbalizer.realize(text);
