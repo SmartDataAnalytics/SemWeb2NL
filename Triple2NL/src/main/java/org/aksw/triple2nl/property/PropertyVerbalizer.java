@@ -94,7 +94,7 @@ public class PropertyVerbalizer {
 		}
     	logger.info("WordNet directory: " + wordnetDictionary);
         
-		System.setProperty("wordnet.database.dir", wordnetDictionary);
+		System.setProperty("wordnet.database.dir", "/home/rusbeck/wordnet/linux/dict");
         database = WordNetDatabase.getFileInstance();
         preposition = new Preposition();
         

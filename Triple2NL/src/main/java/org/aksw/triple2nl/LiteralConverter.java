@@ -99,8 +99,8 @@ public class LiteralConverter {
 		} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
 			logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());
 			//fallback
-			DateTime time = new DateTime(lit.getLexicalForm());
-			s = time.toString("MMMM dd, yyyy");
+			//DateTime time = new DateTime(lit.getLexicalForm());
+			//s = time.toString("MMMM dd, yyyy");
 		}
     	return s;
     }

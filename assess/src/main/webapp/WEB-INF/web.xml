@@ -22,34 +22,14 @@
     </listener>
 	<servlet-mapping>
 		<servlet-name>ASSESS REST Service</servlet-name>
-		<url-pattern>/rest/*</url-pattern>
+		<url-pattern>/assess/*</url-pattern>
 	</servlet-mapping>
 	<filter>
-		<filter-name>cross-origin</filter-name>
-		<filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
-		<init-param>
-			<param-name>allowedOrigins</param-name>
-			<param-value>*</param-value>
-		</init-param>
-		<init-param>
-			<param-name>allowedMethods</param-name>
-			<param-value>*</param-value>
-		</init-param>
-		<init-param>
-			<param-name>allowedHeaders</param-name>
-			<param-value>*</param-value>
-		</init-param>
-	</filter>
-	<!-- <filter>
-		<filter-name>CorsFilter</filter-name>
-		<filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
-	</filter>
-	<filter-mapping>
-		<filter-name>CorsFilter</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping>
-	<filter-mapping>
-		<filter-name>cross-origin</filter-name>
-		<url-pattern>/*</url-pattern>
-	</filter-mapping> -->
+       		<filter-name>cross-origin</filter-name>
+       		<filter-class>org.eclipse.jetty.servlets.CrossOriginFilter</filter-class>
+   	</filter>
+   	<filter-mapping>
+       		<filter-name>cross-origin</filter-name>
+       		<url-pattern>/*</url-pattern>
+   	</filter-mapping>
 </web-app> 
