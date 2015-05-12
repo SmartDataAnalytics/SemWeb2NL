@@ -35,6 +35,11 @@ public class LiteralConverterTest {
         
         lit = NodeFactory.createLiteral("--04", null, XSDDatatype.XSDgMonth).getLiteral();
         System.out.println(lit + " --> " + conv.convert(lit));
+        
+        lit = NodeFactory.createLiteral("1989-01-01+02:00", null, XSDDatatype.XSDdate).getLiteral();
+        System.out.println(lit + " --> " + conv.convert(lit));
+        
+        
 	}
 	
 	@Test
