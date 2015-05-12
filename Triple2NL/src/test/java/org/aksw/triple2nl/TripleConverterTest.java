@@ -3,12 +3,14 @@
  */
 package org.aksw.triple2nl;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.hp.hpl.jena.datatypes.BaseDatatype;
@@ -26,8 +28,17 @@ import com.hp.hpl.jena.vocabulary.RDFS;
 public class TripleConverterTest {
 	
 	private static final SparqlEndpoint ENDPOINT_DBPEDIA = SparqlEndpoint.getEndpointDBpedia();
-	private static final TripleConverter converter = new TripleConverter(ENDPOINT_DBPEDIA, "cache", null);
-
+	private static final SparqlEndpointKS KS = new SparqlEndpointKS(ENDPOINT_DBPEDIA);
+	
+	private static TripleConverter converter;
+	
+	@BeforeClass
+	public static void init() throws Exception {
+		KS.init();
+		
+		converter = new TripleConverter(KS.getQueryExecutionFactory(), "cache", null);
+	}
+	
 	/**
 	 * Test method for {@link org.aksw.triple2nl.TripleConverter#convertTriplesToText(java.util.Collection)}.
 	 */
@@ -51,7 +62,7 @@ public class TripleConverterTest {
 		
 		String text = converter.convertTriplesToText(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a person, whose's birth place is Ulm and whose's birth date is March 14, 1879.", text);
+		assertEquals("Albert Einstein is a person, whose's birth place is Ulm and whose's birth date is 14 March 1879.", text);
 		
 		triples = new ArrayList<Triple>();
 		triples.add(Triple.create(
@@ -80,7 +91,7 @@ public class TripleConverterTest {
 		
 		text = converter.convertTriplesToText(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a musican as well as a physican and its birth date is March 14, 1879.", text);
+		assertEquals("Albert Einstein is a musican as well as a physican and its birth date is 14 March 1879.", text);
 		
 		//more than 2 types
 		triples = new ArrayList<Triple>();
@@ -103,7 +114,7 @@ public class TripleConverterTest {
 		
 		text = converter.convertTriplesToText(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a physican and a philosopher as well as a musican and its birth date is March 14, 1879.", text);
+		assertEquals("Albert Einstein is a physican and a philosopher as well as a musican and its birth date is 14 March 1879.", text);
 		
 		//no type
 		triples = new ArrayList<Triple>();
@@ -118,7 +129,7 @@ public class TripleConverterTest {
 		
 		text = converter.convertTriplesToText(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein's birth place is Ulm and its birth date is March 14, 1879.", text);
+		assertEquals("Albert Einstein's birth place is Ulm and its birth date is 14 March 1879.", text);
 	}
 
 	/**
@@ -196,7 +207,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate));
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Albert Einstein's birth date is March 14, 1879", text);
+		assertEquals("Albert Einstein's birth date is 14 March 1879", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),

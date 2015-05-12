@@ -112,6 +112,10 @@ public class TripleConverter {
 		}
 		pp = propertyVerbalizer;
 		
+		if(lexicon == null) {
+			lexicon = Lexicon.getDefaultLexicon();
+		}
+		
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 		
@@ -504,7 +508,8 @@ public class TripleConverter {
 	}
 	
 	public NPPhraseSpec processResourceNode(Node node) {
-		NLGElement word = nlgFactory.createWord(uriConverter.convert(node.getURI()), LexicalCategory.NOUN);
+		String s = uriConverter.convert(node.getURI());
+		NLGElement word = nlgFactory.createWord(s, LexicalCategory.NOUN);
 		word.setFeature(LexicalFeature.PROPER, true);
 		NPPhraseSpec np = nlgFactory.createNounPhrase(word);
 		return np;
