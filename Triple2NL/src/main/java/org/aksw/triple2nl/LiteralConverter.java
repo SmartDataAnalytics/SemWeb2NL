@@ -26,9 +26,10 @@ import com.hp.hpl.jena.vocabulary.XSD;
 
 public class LiteralConverter {
 
+    private static final Locale ENGLISH_LOCAL = Locale.UK;
     private static final Logger logger = LoggerFactory.getLogger(LiteralConverter.class);
     private IRIConverter uriConverter;
-    private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG);
+    private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG, ENGLISH_LOCAL);
     private boolean encapsulateStringLiterals = true;
 
     public LiteralConverter(IRIConverter uriConverter) {
@@ -85,11 +86,11 @@ public class LiteralConverter {
 			if (value instanceof XSDDateTime) {
 				Calendar calendar = ((XSDDateTime) value).asCalendar();
 				if(dt.equals(XSDDatatype.XSDgMonth)){
-					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL);
 				} else if(dt.equals(XSDDatatype.XSDgMonthDay)){
-					s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK);
+					s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL);
 				} else if(dt.equals(XSDDatatype.XSDgYearMonth)){
-					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, Locale.UK) + " " + calendar.get(Calendar.YEAR);
+					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL) + " " + calendar.get(Calendar.YEAR);
 				} else {
 					s = dateFormat.format(calendar.getTime());
 				}

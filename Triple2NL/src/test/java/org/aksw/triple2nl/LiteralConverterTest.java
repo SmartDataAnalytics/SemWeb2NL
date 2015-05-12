@@ -28,8 +28,10 @@ public class LiteralConverterTest {
 	public void testConvertDate() {
 		
         LiteralLabel lit = NodeFactory.createLiteral("1869-06-27", null, XSDDatatype.XSDdate).getLiteral();
-        System.out.println(lit + " --> " + conv.convert(lit));
-        
+		String convert = conv.convert(lit);
+		System.out.println(lit + " --> " + convert);
+		assertEquals("June 27, 1869", convert); // with java 1.8.0_40-b26 I get on windows: "27 June 1869"
+
         lit = NodeFactory.createLiteral("1914-01-01T00:00:00+02:00", null, XSDDatatype.XSDgYear).getLiteral();
         System.out.println(lit + " --> " + conv.convert(lit));
         
