@@ -143,7 +143,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
                 	propertyCandidates.add(property);
                 }
             }
-            logger.info("...got " + propertyCandidates);
+            logger.info("Property candidates: " + propertyCandidates);
             //early termination if resource has no meaningful properties
             if (propertyCandidates.isEmpty()) {
                 return null;
@@ -158,7 +158,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         	Random rnd = new Random();
             property = propertyCandidates.toArray(new OWLObjectProperty[]{})[rnd.nextInt(propertyCandidates.size())].toStringID();
         }
-        logger.info("Chosen property: " + property);
+        logger.info("Randomly chosen property: " + property);
 
         //get values for property, i.e. the correct answers
         logger.info("Generating correct answers...");
@@ -211,8 +211,13 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion-correctAnswerList.size()));
         usedWrongAnswers.addAll(wrongAnswerList);
         logger.info("...got " + wrongAnswers);
+        
+        String nlr = nlg.getNLR(sparqlQuery);
+        nlr = nlr.replace("This query retrieves distinct entities that are", "Please select")
+        		.replace("This query retrieves distinct entities that are", "Please select");
+        
         return new SimpleQuestion(
-        		nlg.getNLR(sparqlQuery).replaceAll("This query retrieves", "Please select"), 
+        		nlr, 
         		generateAnswers(correctAnswerList, true), 
         		generateAnswers(wrongAnswerList, false), 
         		DIFFICULTY, 
@@ -235,7 +240,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         Question q;
         while(questions.size() < numberOfQuestions && iterator.hasNext()){
         	entry = iterator.next();
-        	logger.info("Generating question based on " + entry.getKey() + "...");
+        	
         	q = generateQuestion(entry.getKey(), entry.getValue());
             if (q != null) {
                 questions.add(q);
@@ -340,7 +345,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 			return null;
 		summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
 		summary = summary.replace(" , among others,", ", among others,");
-		logger.info("...done.");
+		logger.info("...finished generating summary.");
 		return summary;
 	}
 	

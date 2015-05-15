@@ -40,8 +40,6 @@ public class GeneralPropertyBlackList implements BlackList{
 		return instance;
 	}
 	
-	
-	
 	public boolean contains(Resource resource){
 		return blacklist.contains(resource.getURI());
 	}

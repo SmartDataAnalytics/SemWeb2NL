@@ -114,7 +114,6 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	}
 	
 	private WeightedGraph buildGraph(Configuration configuration){
-		logger.info("Generating graph for " + configuration.cls + "...");
 		HashCode hc = hf.newHasher()
 		       .putString(configuration.cls.toStringID(), Charsets.UTF_8)
 		       .putDouble(configuration.threshold)
@@ -124,7 +123,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		File file = new File(graphsFolder, filename);
 		WeightedGraph g = null;
 		if(isUseCache() && file.exists()){
-			logger.info("...loading from disk...");
+			logger.info("Loading summary graph for " + configuration.cls + " from disk...");
 			try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))){
 				g = (WeightedGraph) ois.readObject();
 				
@@ -143,6 +142,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 				logger.error(e, e);
 			}
 		} else {
+			logger.info("Generating summary graph for type " + configuration.cls + "...");
 			g = super.generateGraph(configuration.cls, configuration.threshold, configuration.namespace, configuration.c);
 			if(isUseCache()){
 				try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){

@@ -228,7 +228,6 @@ public class PropertyVerbalizer {
             synset.add("VERB " + synsets[i].getWordForms()[0]);
         }
 
-        System.out.println(synset);
         return synset;
     }
 

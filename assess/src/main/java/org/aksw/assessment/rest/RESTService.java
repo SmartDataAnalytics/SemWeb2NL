@@ -3,9 +3,12 @@
  */
 package org.aksw.assessment.rest;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,7 +36,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
 import org.aksw.assessment.BlackList;
-import org.aksw.assessment.DBpediaPropertyBlackList;
+import org.aksw.assessment.DefaultPropertyBlackList;
 import org.aksw.assessment.JeopardyQuestionGenerator;
 import org.aksw.assessment.MultipleChoiceQuestionGenerator;
 import org.aksw.assessment.Question;
@@ -46,13 +49,10 @@ import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.jena_sparql_api.core.SparqlServiceBuilder;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
-//import org.apache.log4j.Logger;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -61,6 +61,9 @@ import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
+//import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
@@ -75,14 +78,13 @@ import com.google.common.collect.Sets;
 @Path("/assess")
 public class RESTService {
 	
- 	//private static final Logger logger = Logger.getLogger(RESTService.class.getName());
 	private static final Logger logger = LoggerFactory.getLogger(RESTService.class);
 	
 	static SparqlEndpoint endpoint;
 	static String namespace;
 	static String cacheDirectory = "cache";
-	static Set<String> personTypes = Sets.newHashSet("http://dbpedia.org/ontology/Person");
-	static BlackList blackList = new DBpediaPropertyBlackList();
+	static Set<String> personTypes;
+	static BlackList blackList;
 	
 	static Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
 	static Map<String, List<String>> propertiesCache = new HashMap<>();
@@ -121,7 +123,7 @@ public class RESTService {
 			HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
 			config.load(RESTService.class.getClassLoader().getResourceAsStream("assess_config.ini"));
 			
-			//endpoint settings
+			// endpoint settings
 			SubnodeConfiguration section = config.getSection("endpoint");
 			String url = section.getString("url");
 			String defaultGraph = section.getString("defaultGraph");
@@ -134,24 +136,39 @@ public class RESTService {
 			} else {
 				RESTService.cacheDirectory = context.getRealPath(cacheDirectory);
 			}
-			
-			//summarization setting
-			section = config.getSection("summarization");
-			RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
-			RESTService.cooccurrenceType = Cooccurrence.valueOf(Cooccurrence.class, section.getString("cooccurrenceType").toUpperCase());
-			
 			logger.info("Endpoint:" + endpoint);
 			logger.info("Namespace:" + namespace);
 			logger.info("Cache directory: " + RESTService.cacheDirectory);
 			
-			qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-			long timeToLive = TimeUnit.DAYS.toMillis(30);
-			qef = CacheUtilsH2.createQueryExecutionFactory(qef, RESTService.cacheDirectory, false, timeToLive);
+			// summarization setting
+			section = config.getSection("summarization");
+			String propertyBlacklistPath = section.getString("propertyBlacklist");
+			propertyBlacklistPath = context == null ? 
+					RESTService.class.getClassLoader().getResource(propertyBlacklistPath).getPath() :
+						context.getRealPath(propertyBlacklistPath);
+			RESTService.blackList = new DefaultPropertyBlackList(new File(propertyBlacklistPath));
+			RESTService.personTypes = Sets.newHashSet(Arrays.asList(section.getStringArray("personTypes")));
+			RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
+			RESTService.cooccurrenceType = Cooccurrence.valueOf(Cooccurrence.class, section.getString("cooccurrenceType").toUpperCase());
+			logger.info("Summarization properties:"
+					+ "\nProperty blacklist:" + propertyBlacklistPath
+					+ "\nPerson types:" + personTypes
+					+ "\nProperty frequency threshold:" + propertyFrequencyThreshold
+					+ "\nProperty cooccurence type:" + cooccurrenceType
+					);
+			
+			
+			qef = SparqlServiceBuilder
+					.http(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs())
+					.withCache(CacheUtilsH2.createCacheFrontend(RESTService.cacheDirectory, false, TimeUnit.DAYS.toMillis(30)))
+					.withDelay(100,  TimeUnit.MILLISECONDS).create();
 			reasoner = new SPARQLReasoner(qef);
 		} catch (ConfigurationException e) {
 			logger.error("Could not load config file.", e);
 		} catch (MalformedURLException e) {
 			logger.error("Illegal endpoint URL.", e);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 	

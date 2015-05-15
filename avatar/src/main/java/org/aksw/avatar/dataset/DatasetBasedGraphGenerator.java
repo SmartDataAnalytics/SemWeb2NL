@@ -400,7 +400,8 @@ public class DatasetBasedGraphGenerator {
     }
 
     private ResultSet executeSelectQuery(String query) {
-        QueryExecution qe = qef.createQueryExecution(query);System.out.println(query);
+    	logger.debug(query);
+        QueryExecution qe = qef.createQueryExecution(query);
         ResultSet rs = qe.execSelect();
         return rs;
     }
