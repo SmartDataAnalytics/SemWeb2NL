@@ -9,8 +9,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.FormParam;
@@ -81,7 +81,7 @@ public class RESTService {
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
-			Set<Triple> triples = new HashSet<Triple>((int) model.size());
+			List<Triple> triples = new ArrayList<>((int) model.size());
 			StmtIterator iterator = model.listStatements();
 			while (iterator.hasNext()) {
 				Statement statement = (Statement) iterator.next();
