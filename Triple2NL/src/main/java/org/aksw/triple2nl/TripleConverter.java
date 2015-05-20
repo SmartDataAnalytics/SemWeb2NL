@@ -5,11 +5,9 @@ package org.aksw.triple2nl;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
@@ -139,13 +137,13 @@ public class TripleConverter {
 	 * @param t the triples to convert
 	 * @return the textual representation
 	 */
-	public String convertTriplesToText(Collection<Triple> triples){
-		//combine with conjunction
+	public String convertTriplesToText(List<Triple> triples){
+		// combine with conjunction
 		CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
 		
-		//get the type triples first 
-		Set<Triple> typeTriples = new HashSet<Triple>();
-		Set<Triple> otherTriples = new HashSet<Triple>();
+		// get the type triples first 
+		List<Triple> typeTriples = new ArrayList<Triple>();
+		List<Triple> otherTriples = new ArrayList<Triple>();
 		
 		for (Triple triple : triples) {
 			if(triple.predicateMatches(RDF.type.asNode())){
@@ -155,19 +153,19 @@ public class TripleConverter {
 			}
 		}
 		
-		//convert the type triples
+		// convert the type triples
 		List<SPhraseSpec> typePhrases = convertTriples(typeTriples);
 		
-		//if there are more than one types, we combine them in a single clause
+		// if there are more than one types, we combine them in a single clause
 		if(typePhrases.size() > 1){
-			//combine all objects in a coordinated phrase
+			// combine all objects in a coordinated phrase
 			CoordinatedPhraseElement combinedObject = nlgFactory.createCoordinatedPhrase();
 			
-			//the last 2 phrases are combined via 'as well as'
+			// the last 2 phrases are combined via 'as well as'
 			if(useAsWellAsCoordination){
 				SPhraseSpec phrase1 = typePhrases.remove(typePhrases.size() - 1);
 				SPhraseSpec phrase2 = typePhrases.get(typePhrases.size() - 1);
-				//combine all objects in a coordinated phrase
+				// combine all objects in a coordinated phrase
 				CoordinatedPhraseElement combinedLastTwoObjects = nlgFactory.createCoordinatedPhrase(phrase1.getObject(), phrase2.getObject());
 				combinedLastTwoObjects.setConjunction("as well as");
 				combinedLastTwoObjects.setFeature(Feature.RAISE_SPECIFIER, false);
@@ -176,7 +174,7 @@ public class TripleConverter {
 			}
 			
 			Iterator<SPhraseSpec> iterator = typePhrases.iterator();
-			//pick first phrase as representative
+			// pick first phrase as representative
 			SPhraseSpec representative = iterator.next();
 			combinedObject.addCoordinate(representative.getObject());
 			
@@ -187,9 +185,9 @@ public class TripleConverter {
 			}
 			
 			combinedObject.setFeature(Feature.RAISE_SPECIFIER, true);
-			//set the coordinated phrase as the object
+			// set the coordinated phrase as the object
 			representative.setObject(combinedObject);
-			//return a single phrase
+			// return a single phrase
 			typePhrases = Lists.newArrayList(representative);
 		}
 		for (SPhraseSpec phrase : typePhrases) {

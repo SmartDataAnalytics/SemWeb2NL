@@ -7,6 +7,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -45,7 +46,7 @@ public class TripleConverterTest {
 	@Test
 	public void testConvertTriplesToText() {
 		//check conversion of set of triples for the same subject
-		Collection<Triple> triples = new ArrayList<Triple>();
+		List<Triple> triples = new ArrayList<Triple>();
 		Node subject = NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein");
 		triples.add(Triple.create(
 				subject,
@@ -53,12 +54,12 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/ontology/Person")));
 		triples.add(Triple.create(
 				subject,
-				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
-				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
-		triples.add(Triple.create(
-				subject,
 				NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
 				NodeFactory.createURI("http://dbpedia.org/resource/Ulm")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthDate"),
+				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate)));
 		
 		String text = converter.convertTriplesToText(triples);
 		System.out.println(triples + "\n-> " + text);
