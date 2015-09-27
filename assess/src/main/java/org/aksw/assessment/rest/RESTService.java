@@ -274,7 +274,7 @@ public class RESTService {
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
-		//extract the domain from the JSON array
+		// extract the domain from the JSON array
 		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
 		try {
 			for(int i = 0; i < domain.length(); i++){
@@ -292,7 +292,7 @@ public class RESTService {
 		}
 		logger.info("Domain:" + domains);
 		
-		//set up the question generators
+		// set up the question generators
 		long start = System.currentTimeMillis();
 		for (String type : questionTypes) {
 			if (type.equals(QuestionType.MC.getName())) {
@@ -310,11 +310,11 @@ public class RESTService {
 		System.out.println("Operation took " + (end - start) + "ms");
 		final List<RESTQuestion> restQuestions = Collections.synchronizedList(new ArrayList<RESTQuestion>(maxNrOfQuestions));
 		
-		//get random numbers for max. computed questions per type
+		// get random numbers for max. computed questions per type
 		final List<Integer> partitionSizes = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
 		
 		ExecutorService tp = Executors.newFixedThreadPool(generators.entrySet().size());
-		//submit a task for each question type
+		// submit a task for each question type
         List<Future<List<RESTQuestion>>> list = new ArrayList<Future<List<RESTQuestion>>>();
 		int i = 0;
 		for (final Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
@@ -374,7 +374,8 @@ public class RESTService {
 		if(classes == null){
 			classes = new ArrayList<String>();
 			for (OWLClass cls : reasoner.getNonEmptyOWLClasses()) {
-				if (!blackList.contains(cls.toStringID())) {
+				if ((namespace != null && cls.toStringID().startsWith(namespace)) && 
+						!blackList.contains(cls.toStringID())) {
 					classes.add(cls.toStringID());
 				}
 			}
@@ -398,6 +399,7 @@ public class RESTService {
 			entities = new LinkedHashMap<>();
 			// get the classes
 			List<String> classes = getClasses(context);
+			
 			// for each class get the properties
 			for (String cls : classes) {
 				List<String> properties = getApplicableProperties(context, cls);
@@ -460,12 +462,15 @@ public class RESTService {
 			logger.info("Get " + maxNrOfQuestions + " questions of type " + questionType.getName() + "...");
 			Set<Question> questions = questionGenerator.getQuestions(null, 1, maxNrOfQuestions);
 			
-			//convert to REST format
+			// convert to REST format
 			List<RESTQuestion> restQuestions = new ArrayList<RESTQuestion>(questions.size());
 			for (Question question : questions) {
+				// convert question
 				RESTQuestion q = new RESTQuestion();
 				q.setQuestion(question.getText());
 				q.setQuestionType(questionType.getName());
+				
+				// convert correct answers
 				List<RESTAnswer> correctAnswers = new ArrayList<>();
 				for (Answer answer : question.getCorrectAnswers()) {
 					RESTAnswer a = new RESTAnswer();
@@ -476,6 +481,8 @@ public class RESTService {
 					correctAnswers.add(a);
 				}
 				q.setCorrectAnswers(correctAnswers);
+				
+				// convert wrong answers
 				List<RESTAnswer> wrongAnswers = new ArrayList<>();
 				for (Answer answer : question.getWrongAnswers()) {
 					RESTAnswer a = new RESTAnswer();
@@ -488,6 +495,5 @@ public class RESTService {
 			}
 			return restQuestions;
 		}
-		
 	}
 }
