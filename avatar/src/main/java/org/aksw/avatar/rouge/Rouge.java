@@ -478,7 +478,7 @@ public class Rouge {
         OWLClass nc = new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/AmericanFootballPlayer"));
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
 //        NamedClass nc = new NamedClass("http://dbpedia.org/ontology/Film");
-        List<NLGElement> text = v.verbalize(ind, nc, 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);
+        List<NLGElement> text = v.verbalize(ind, nc, "http://dbpedia.org/ontology/", 0.5, DatasetBasedGraphGenerator.Cooccurrence.PROPERTIES, HardeningFactory.HardeningType.AVERAGE);
         String reference = v.realize(text);
         String[] summaries = new String[]{"Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School. In April 2011, CNBC listed Ochocinco as #1 on the list of \"Most Influential Athletes In Social Media\". Ochocinco has been selected to the Pro Bowl six times and named an All-Pro three times.",
             "Chad Javon Ochocinco (born Chad Javon Johnson; January 9, 1978) is an American football wide receiver for the New England Patriots of the National Football League (NFL). He was drafted by the Cincinnati Bengals in the second round of the 2001 NFL Draft. He played college football at both Oregon State and Santa Monica College. He also played high school football at Miami Beach Senior High School."};

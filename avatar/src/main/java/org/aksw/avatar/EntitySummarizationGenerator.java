@@ -8,6 +8,7 @@ import java.io.File;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
+import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -46,7 +47,11 @@ public class EntitySummarizationGenerator {
 	
 	public EntitySummarization generateEntitySummarization(Resource entity, OWLClass cls){
 		//generate a graph with the most interesting properties
-		WeightedGraph graph = graphGenerator.generateGraph(cls, propertyFrequencyThreshold);
+		try {
+			WeightedGraph graph = graphGenerator.generateGraph(cls, propertyFrequencyThreshold);
+		} catch (NoGraphAvailableException e) {
+			e.printStackTrace();
+		}
 		
 		return null;
 	}

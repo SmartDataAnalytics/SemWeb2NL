@@ -56,7 +56,7 @@ public class Evaluation {
 	HardeningType hardeningType = HardeningType.AVERAGE;
 	double threshold = 0.5;
 	String abstractProperty = "http://dbpedia.org/ontology/abstract";
-	
+	String namespace = "http://dbpedia.org/ontology/";
 	
 	SPARQLReasoner reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint, cacheDirectory));
 	QueryExecutionFactory qef;
@@ -89,7 +89,7 @@ public class Evaluation {
 			Map<OWLIndividual, String> individualsWithAbstract = getIndividualsWithAbstract(cls);
 			
 			//get the verbalizations
-			Map<OWLIndividual, List<NLGElement>> verbalizations = verbalizer.verbalize(individualsWithAbstract.keySet(), cls, threshold, cooccurrence, hardeningType);
+			Map<OWLIndividual, List<NLGElement>> verbalizations = verbalizer.verbalize(individualsWithAbstract.keySet(), cls, namespace, threshold, cooccurrence, hardeningType);
 		
 			//compare the verbalization with the abstract by using ROUGE
 			for (Entry<OWLIndividual, String> entry : individualsWithAbstract.entrySet()) {

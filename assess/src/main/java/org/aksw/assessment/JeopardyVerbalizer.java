@@ -17,6 +17,7 @@ import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.clustering.hardening.HardeningFactory;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
+import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.gender.Gender;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
@@ -54,35 +55,40 @@ public class JeopardyVerbalizer extends Verbalizer {
      public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
         
-        //first get graph for class
-        WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+        // first get graph for class
+        try {
+			WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
 
-        //then cluster the graph
-        BorderFlowX bf = new BorderFlowX(wg);
-        Set<Set<Node>> clusters = bf.cluster();
-        //then harden the results
-        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
-        logger.info("Clusters:");
-        for (Set<Node> cluster : sortedPropertyClusters) {
-			logger.info(cluster);
-		}
+			//then cluster the graph
+			BorderFlowX bf = new BorderFlowX(wg);
+			Set<Set<Node>> clusters = bf.cluster();
+			//then harden the results
+			List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+			logger.info("Clusters:");
+			for (Set<Node> cluster : sortedPropertyClusters) {
+				logger.info(cluster);
+			}
 
-        Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
 
-        for (OWLIndividual ind : individuals) {
-            //finally generateSentencesFromClusters
-            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
+			for (OWLIndividual ind : individuals) {
+			    //finally generateSentencesFromClusters
+			    List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
 //            Triple t = Triple.create(ResourceFactory.createResource(ind.getName()).asNode(), ResourceFactory.createProperty(RDF.TYPE.toString()).asNode(),
 //                    ResourceFactory.createResource(nc.getName()).asNode());
 //            result = Lists.reverse(result);
 //            result.add(generateSimplePhraseFromTriple(t));
 //            result = Lists.reverse(result);            
-            verbalizations.put(ind, result);
+			    verbalizations.put(ind, result);
 //
 //            resource2Triples.get(ResourceFactory.createResource(ind.getName())).add(t);
-        }
+			}
 
-        return verbalizations;
+			return verbalizations;
+		} catch (NoGraphAvailableException e) {
+			e.printStackTrace();
+		}
+        return null;
     }
      
      

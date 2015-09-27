@@ -4,6 +4,7 @@
  */
 package org.aksw.assessment;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -24,6 +25,7 @@ import org.aksw.assessment.rest.RESTService;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
@@ -77,24 +79,27 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     		//we need the summarizing properties graph first
     		for (OWLClass type : types) {
 				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(type, propertyFrequencyThreshold, namespace, cooccurrenceType);
-				StringBuilder query = new StringBuilder();
-	        	query.append("SELECT DISTINCT ?x WHERE{");
-	        	query.append("?x a <" + type.toStringID() + ">.");
-	        	//add triple pattern for each property in summary graph
-	        	int i = 0;
-				for (org.aksw.avatar.clustering.Node propertyNode : summaryProperties) {
-					query.append((propertyNode.outgoing ? ("?x <" + propertyNode.label + "> ?o" + i++) :  ("?o" + i++ + " <" + propertyNode.label + "> ?x")) + ".");
+				
+				if(summaryProperties != null) {
+					StringBuilder query = new StringBuilder();
+		        	query.append("SELECT DISTINCT ?x WHERE{");
+		        	query.append("?x a <" + type.toStringID() + ">.");
+		        	//add triple pattern for each property in summary graph
+		        	int i = 0;
+					for (org.aksw.avatar.clustering.Node propertyNode : summaryProperties) {
+						query.append((propertyNode.outgoing ? ("?x <" + propertyNode.label + "> ?o" + i++) :  ("?o" + i++ + " <" + propertyNode.label + "> ?x")) + ".");
+					}
+		        	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
+		        	query.append("}");
+		        	SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
+		            query.append(" LIMIT 500");
+		            ResultSet rs = executeSelectQuery(query.toString());
+		            QuerySolution qs;
+		            while (rs.hasNext()) {
+		                qs = rs.next();
+		                result.put(qs.getResource("x"), type);
+		            }
 				}
-	        	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
-	        	query.append("}");
-	        	SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
-	            query.append(" LIMIT 500");
-	            ResultSet rs = executeSelectQuery(query.toString());
-	            QuerySolution qs;
-	            while (rs.hasNext()) {
-	                qs = rs.next();
-	                result.put(qs.getResource("x"), type);
-	            }
 			}
     		return result;
     	} else {
@@ -355,36 +360,28 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		return wrongAnswers;
     }
 
-	public static void main(String args[]) {
-//		Map<OWLClass, Set<ObjectProperty>> restrictions = Maps.newHashMap();
-//		restrictions.put(new OWLClass("http://dbpedia.org/ontology/Writer"), new HashSet<ObjectProperty>());
-//        JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(SparqlEndpoint.getEndpointDBpedia(), "cache", "http://dbpedia.org/ontology/", restrictions);
-//        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
-//        for (Question q : questions) {
-//            if (q != null) {
-//                System.out.println(">>" + q.getText());
-//                List<Answer> correctAnswers = q.getCorrectAnswers();
-//                System.out.println(correctAnswers);
-//                List<Answer> wrongAnswers = q.getWrongAnswers();
-//                System.out.println(wrongAnswers);
-//            }
-//        }
+	public static void main(String args[]) throws Exception{
+		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
+		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dsa.ini")){
+			config.load(is);
+		}
+		RESTService.loadConfig(config);
+
 		RESTService rest = new RESTService();
 		List<String> classes = rest.getClasses(null);
-		classes = Lists.newArrayList("http://dbpedia.org/ontology/Play");
+		
 		for(String cls : classes){
+			System.out.println("Class:" + cls);
 			try {
 				Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
 				SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", 
-						"http://dbpedia.org/ontology/", 
-						restrictions,Sets.newHashSet("http://dbpedia.org/ontology/Person"), new DBpediaPropertyBlackList());
+				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", null, 
+						restrictions,Sets.<String>newHashSet(), new DefaultPropertyBlackList());
 				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
 				if(questions.size() == 0){
-					System.err.println("EMTPY: " + cls);
-					System.exit(0);
+					System.err.println("EMTPY");
 				}
 				for (Question q : questions) {
 					System.out.println(q.getText());
@@ -397,7 +394,6 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.exit(0);
 			}
 		}
 	    

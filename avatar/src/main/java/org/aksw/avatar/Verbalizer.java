@@ -32,6 +32,7 @@ import org.aksw.avatar.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
+import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.gender.Gender;
 import org.aksw.avatar.gender.LexiconBasedGenderDetector;
 import org.aksw.avatar.gender.TypeAwareGenderDetector;
@@ -181,15 +182,20 @@ public class Verbalizer {
         return result;
     }
     
-    public Set<Node> getSummaryProperties(OWLClass cls, double threshold, String namespace, DatasetBasedGraphGenerator.Cooccurrence cooccurrence){
-   	 Set<Node> properties = new HashSet<Node>();
-   	 WeightedGraph wg = graphGenerator.generateGraph(cls, threshold, "http://dbpedia.org/ontology/", cooccurrence);
-   	 return wg.getNodes().keySet();
-//   	 for (Node property : wg.getNodes().keySet()) {
-//			properties.add(property.label);
-//   	 }
-//   	 return properties;
-    }
+	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
+			String namespace,
+			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
+		Set<Node> properties = new HashSet<Node>();
+		WeightedGraph wg;
+		try {
+			wg = graphGenerator.generateGraph(cls, threshold, namespace,
+					cooccurrence);
+			return wg.getNodes().keySet();
+		} catch (NoGraphAvailableException e) {
+			logger.error(e.getMessage());
+		}
+		return null;
+	}
 
     /**
      * Generates the string representation of a verbalization
@@ -425,40 +431,47 @@ public class Verbalizer {
         return nlg.getNLForTriple(triple, outgoing);
     }
 
-    public List<NLGElement> verbalize(OWLIndividual ind, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        return verbalize(Sets.newHashSet(ind), nc, threshold, cooccurrence, hType).get(ind);
+    public List<NLGElement> verbalize(OWLIndividual ind, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+        return verbalize(Sets.newHashSet(ind), nc, namespace, threshold, cooccurrence, hType).get(ind);
     }
 
-    public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         resource2Triples = new HashMap<Resource, Collection<Triple>>();
-        //first get graph for nc
-        WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, "http://dbpedia.org/ontology/", cooccurrence);
+        
+        // first get graph for nc
+        try {
+			WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, namespace, cooccurrence);
 
-        //then cluster the graph
-        BorderFlowX bf = new BorderFlowX(wg);
-        Set<Set<Node>> clusters = bf.cluster();
-        //then harden the results
-        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
-        logger.debug("Cluster = " + sortedPropertyClusters);
+			// then cluster the graph
+			BorderFlowX bf = new BorderFlowX(wg);
+			Set<Set<Node>> clusters = bf.cluster();
+			//then harden the results
+			List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+			logger.debug("Cluster = " + sortedPropertyClusters);
 
-        Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
 
-        for (OWLIndividual ind : individuals) {
-            //finally generateSentencesFromClusters
-            List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
+			for (OWLIndividual ind : individuals) {
+			    //finally generateSentencesFromClusters
+			    List<NLGElement> result = generateSentencesFromClusters(sortedPropertyClusters, ResourceFactory.createResource(ind.toStringID()), nc, true);
 
-            Triple t = Triple.create(ResourceFactory.createResource(ind.toStringID()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
-                    ResourceFactory.createResource(nc.toStringID()).asNode());
-            Collections.reverse(result);
-            result.add(generateSimplePhraseFromTriple(t));
-            Collections.reverse(result);
+			    Triple t = Triple.create(ResourceFactory.createResource(ind.toStringID()).asNode(), ResourceFactory.createProperty(RDF.type.getURI()).asNode(),
+			            ResourceFactory.createResource(nc.toStringID()).asNode());
+			    Collections.reverse(result);
+			    result.add(generateSimplePhraseFromTriple(t));
+			    Collections.reverse(result);
 
-            verbalizations.put(ind, result);
+			    verbalizations.put(ind, result);
 
-            resource2Triples.get(ResourceFactory.createResource(ind.toStringID())).add(t);
-        }
+			    resource2Triples.get(ResourceFactory.createResource(ind.toStringID())).add(t);
+			}
 
-        return verbalizations;
+			return verbalizations;
+		} catch (NoGraphAvailableException e) {
+			e.printStackTrace();
+		}
+        
+        return null;
     }
     
     /**
@@ -488,7 +501,7 @@ public class Verbalizer {
      * @return
      */
     public String getSummary(OWLIndividual individual, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        List<NLGElement> elements = verbalize(individual, nc, threshold, cooccurrence, hType);
+        List<NLGElement> elements = verbalize(individual, nc, null, threshold, cooccurrence, hType);
         String summary = realize(elements);
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
@@ -500,10 +513,10 @@ public class Verbalizer {
      *
      * @return
      */
-    public Map<OWLIndividual, String> getSummaries(Set<OWLIndividual> individuals, OWLClass nc, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
+    public Map<OWLIndividual, String> getSummaries(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         Map<OWLIndividual, String> entity2Summaries = new HashMap<>();
 
-        Map<OWLIndividual, List<NLGElement>> verbalize = verbalize(individuals, nc, threshold, cooccurrence, hType);
+        Map<OWLIndividual, List<NLGElement>> verbalize = verbalize(individuals, nc, namespace, threshold, cooccurrence, hType);
         for (Entry<OWLIndividual, List<NLGElement>> entry : verbalize.entrySet()) {
         	OWLIndividual individual = entry.getKey();
             List<NLGElement> elements = entry.getValue();
@@ -714,7 +727,7 @@ public class Verbalizer {
    
         int maxShownValuesPerProperty = 3;
         v.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
-        List<NLGElement> text = v.verbalize(ind, cls, 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
+        List<NLGElement> text = v.verbalize(ind, cls, "http://dbpedia.org/ontology/", 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
         
         String summary = v.realize(text);
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");

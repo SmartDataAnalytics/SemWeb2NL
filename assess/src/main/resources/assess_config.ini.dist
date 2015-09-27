@@ -1,0 +1,18 @@
+; a dataset can either be a file or an HTTP accessible endpoint
+[endpoint]
+ url = 
+ defaultGraph = 
+ namespace = 
+ cacheDirectory = 
+ 
+ ; properties for the summarization process
+ [summarization]
+ ; a file containing properties that must not occur in the summary (OPTIONAL)
+ propertyBlacklist = 
+ ; a comma separated list of classes that describe persons which are used to determine the correct usage of articles 'he', 'she', 'it' (OPTIONAL)
+ personTypes = 
+ ; a threshold used to ignore properties not used frequently enough by instances of a particular class
+ propertyFrequencyThreshold = 0.2
+ ; the type of method used to cluster properties such that each cluster is verbalized as a separate sentence
+ ; VALUES: properties|triplestore
+ cooccurrenceType = properties
