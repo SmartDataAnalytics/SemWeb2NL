@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
+import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -45,8 +46,13 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		       .maximumSize(1000)
 		       .build(
 		           new CacheLoader<Configuration, WeightedGraph>() {
-		             public WeightedGraph load(Configuration key) {
-		               return buildGraph(key);
+		             public WeightedGraph load(Configuration key) throws Exception {
+		               WeightedGraph graph = buildGraph(key);
+		               if(graph != null) {
+		            	   return graph;
+		               } else {
+		            	   throw new NoGraphAvailableException(key.cls);
+		               }
 		             }
 		           });
 	
@@ -104,11 +110,15 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	 * @see org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator#generateGraph(org.dllearner.core.owl.NamedClass, double, java.lang.String, org.aksw.sparql2nl.entitysummarizer.dataset.DatasetBasedGraphGenerator.Cooccurrence)
 	 */
 	@Override
-	public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace, Cooccurrence c) {
+	public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace, Cooccurrence c) throws NoGraphAvailableException{
 		try {
 			return graphs.get(new Configuration(cls, threshold, namespace, c));
 		} catch (ExecutionException e) {
-			logger.error(e, e);
+			if(e.getCause() instanceof NoGraphAvailableException) {
+				throw (NoGraphAvailableException)e.getCause();
+			} else {
+				logger.error(e, e);
+			}
 		}
 		return null;
 	}
@@ -128,9 +138,11 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 				g = (WeightedGraph) ois.readObject();
 				
 				Set<OWLObjectProperty> outgoingProperties = new HashSet<OWLObjectProperty>();
-				for (Node node : g.getNodes().keySet()) {
-					if(node.outgoing){
-						outgoingProperties.add(new OWLObjectPropertyImpl(IRI.create(node.label)));
+				if(g != null) {
+					for (Node node : g.getNodes().keySet()) {
+						if(node.outgoing){
+							outgoingProperties.add(new OWLObjectPropertyImpl(IRI.create(node.label)));
+						}
 					}
 				}
 				class2OutgoingProperties.put(configuration.cls, outgoingProperties );
@@ -143,7 +155,11 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 			}
 		} else {
 			logger.info("Generating summary graph for type " + configuration.cls + "...");
-			g = super.generateGraph(configuration.cls, configuration.threshold, configuration.namespace, configuration.c);
+			try {
+				g = super.generateGraph(configuration.cls, configuration.threshold, configuration.namespace, configuration.c);
+			} catch (NoGraphAvailableException e1) {
+				e1.printStackTrace();
+			}
 			if(isUseCache()){
 				try(ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))){
 					oos.writeObject(g);
@@ -168,7 +184,11 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 	public void precomputeGraphs(double threshold, String namespace, Cooccurrence c){
 		Set<OWLClass> classes = reasoner.getOWLClasses();
 		for (OWLClass cls : classes) {
-			generateGraph(cls, threshold, namespace, c);
+			try {
+				generateGraph(cls, threshold, namespace, c);
+			} catch (NoGraphAvailableException e) {
+				e.printStackTrace();
+			}
 		}
 	}
 	

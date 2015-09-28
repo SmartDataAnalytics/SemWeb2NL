@@ -4,8 +4,6 @@
 package org.aksw.assessment.rest;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +21,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import javax.servlet.ServletContext;
 import javax.ws.rs.Consumes;
@@ -47,15 +44,16 @@ import org.aksw.assessment.answer.Answer;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
-import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.core.SparqlServiceBuilder;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.jena.riot.RDFDataMgr;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
+import org.dllearner.kb.LocalModelBasedSparqlEndpointKS;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
@@ -65,11 +63,14 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
-import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
-
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 /**
  * @author Lorenz Buehmann
@@ -80,15 +81,15 @@ public class RESTService {
 	
 	private static final Logger logger = LoggerFactory.getLogger(RESTService.class);
 	
-	static SparqlEndpoint endpoint;
+	static SparqlEndpointKS ks;
 	static String namespace;
 	static String cacheDirectory = "cache";
 	static Set<String> personTypes;
 	static BlackList blackList;
 	
-	static Map<SparqlEndpoint, List<String>> classesCache = new HashMap<>();
+	static Map<SparqlEndpointKS, List<String>> classesCache = new HashMap<>();
 	static Map<String, List<String>> propertiesCache = new HashMap<>();
-	static Map<SparqlEndpoint, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
+	static Map<SparqlEndpointKS, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
 
 	private static double propertyFrequencyThreshold;
 	private static Cooccurrence cooccurrenceType;
@@ -99,59 +100,98 @@ public class RESTService {
 	
 	public RESTService() {}
 	
+	/**
+	 * Precompute all applicable classes and for each class its applicable properties.
+	 * @param context
+	 */
+	private void precomputeApplicableEntities(ServletContext context){
+		//get the classes
+		List<String> classes = getClasses(context);
+		//for each class get the properties
+		for (String cls : classes) {
+			List<String> properties = getApplicableProperties(context, cls);
+			
+		}
+	}
+	
+	public static void loadConfig(HierarchicalINIConfiguration config) throws Exception {
+		loadConfig(config, null);
+	}
+	
+	public static void loadConfig(HierarchicalINIConfiguration config, ServletContext context) throws Exception{
+		logger.info("Loading config...");
+		
+		// endpoint settings
+		SubnodeConfiguration section = config.getSection("endpoint");
+		URL url = new URL(section.getString("url"));
+		
+		SparqlEndpointKS ks;
+		if(url.getProtocol().equals("file")) {
+			Model model = ModelFactory.createOntologyModel(OntModelSpec.RDFS_MEM_RDFS_INF);
+			RDFDataMgr.read(model, url.toString());
+			ks = new LocalModelBasedSparqlEndpointKS(model);
+		} else {
+			String defaultGraph = section.getString("defaultGraph");
+			SparqlEndpoint endpoint = new SparqlEndpoint(url, defaultGraph);
+			ks = new SparqlEndpointKS(endpoint);
+		}
+		RESTService.ks = ks;
+		
+		String namespace = section.getString("namespace");
+		RESTService.namespace = namespace;
+		
+		String cacheDirectory = section.getString("cacheDirectory", "cache");
+		if(cacheDirectory.startsWith("/")){
+			RESTService.cacheDirectory = cacheDirectory;
+		} else {
+			RESTService.cacheDirectory = context != null ? context.getRealPath(cacheDirectory) : cacheDirectory;
+		}
+		ks.setCacheDir(cacheDirectory);
+		ks.init();
+		logger.info("Dataset:" + ks);
+		logger.info("Namespace:" + namespace);
+		logger.info("Cache directory: " + RESTService.cacheDirectory);
+
+		// summarization settings
+		section = config.getSection("summarization");
+		String propertyBlacklistPath = section.getString("propertyBlacklist", null);
+		if(propertyBlacklistPath != null && !propertyBlacklistPath.isEmpty()) {
+			propertyBlacklistPath = context == null ? 
+					RESTService.class.getClassLoader().getResource(propertyBlacklistPath).getPath() :
+						context.getRealPath(propertyBlacklistPath);
+
+			RESTService.blackList = new DefaultPropertyBlackList(new File(propertyBlacklistPath));
+		} else {
+			RESTService.blackList = new DefaultPropertyBlackList();
+		}
+		
+		RESTService.personTypes = Sets.newHashSet(Arrays.asList(section.getStringArray("personTypes")));
+		RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
+		RESTService.cooccurrenceType = Cooccurrence.valueOf(Cooccurrence.class, section.getString("cooccurrenceType").toUpperCase());
+		logger.info("Summarization properties:"
+				+ "\nProperty blacklist:" + propertyBlacklistPath
+				+ "\nPerson types:" + personTypes
+				+ "\nProperty frequency threshold:" + propertyFrequencyThreshold
+				+ "\nProperty cooccurence type:" + cooccurrenceType
+				);
+
+		qef = ks.getQueryExecutionFactory();
+		
+		reasoner = new SPARQLReasoner(qef);
+	}
+	
 	public static void init(ServletContext context){
 		try {
 			logger.info("Loading config...");
 			HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
-			config.load(RESTService.class.getClassLoader().getResourceAsStream("assess_config.ini"));
+			config.load(RESTService.class.getClassLoader().getResourceAsStream("assess_config_dbpedia.ini"));
 			
-			// endpoint settings
-			SubnodeConfiguration section = config.getSection("endpoint");
-			String url = section.getString("url");
-			String defaultGraph = section.getString("defaultGraph");
-			String namespace = section.getString("namespace");
-			RESTService.namespace = namespace;
-			RESTService.endpoint = new SparqlEndpoint(new URL(url), defaultGraph);
-			String cacheDirectory = section.getString("cacheDirectory", "cache");
-			if(cacheDirectory.startsWith("/")){
-				RESTService.cacheDirectory = cacheDirectory;
-			} else {
-				RESTService.cacheDirectory = context.getRealPath(cacheDirectory);
-			}
-			logger.info("Endpoint:" + endpoint);
-			logger.info("Namespace:" + namespace);
-			logger.info("Cache directory: " + RESTService.cacheDirectory);
-			
-			// summarization settings
-			section = config.getSection("summarization");
-			String propertyBlacklistPath = section.getString("propertyBlacklist");
-			propertyBlacklistPath = context == null ? 
-					RESTService.class.getClassLoader().getResource(propertyBlacklistPath).getPath() :
-						context.getRealPath(propertyBlacklistPath);
-			RESTService.blackList = new DefaultPropertyBlackList(new File(propertyBlacklistPath));
-			RESTService.personTypes = Sets.newHashSet(Arrays.asList(section.getStringArray("personTypes")));
-			RESTService.propertyFrequencyThreshold = section.getDouble("propertyFrequencyThreshold");
-			RESTService.cooccurrenceType = Cooccurrence.valueOf(Cooccurrence.class, section.getString("cooccurrenceType").toUpperCase());
-			logger.info("Summarization properties:"
-					+ "\nProperty blacklist:" + propertyBlacklistPath
-					+ "\nPerson types:" + personTypes
-					+ "\nProperty frequency threshold:" + propertyFrequencyThreshold
-					+ "\nProperty cooccurence type:" + cooccurrenceType
-					);
-			
-			
-			qef = SparqlServiceBuilder
-					.http(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs())
-					.withCache(CacheUtilsH2.createCacheFrontend(RESTService.cacheDirectory, false, TimeUnit.DAYS.toMillis(30)))
-					.withDelay(100,  TimeUnit.MILLISECONDS).create();
-			reasoner = new SPARQLReasoner(qef);
+			loadConfig(config, context);
 		} catch (ConfigurationException e) {
 			logger.error("Could not load config file.", e);
-		} catch (MalformedURLException e) {
+		} catch (Exception e) {
 			logger.error("Illegal endpoint URL.", e);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		} 
 	}
 	
 	@GET
@@ -329,7 +369,7 @@ public class RESTService {
 	public List<String> getClasses(@Context ServletContext context) {
 		logger.info("REST Request - Get all classes");
 		
-		List<String> classes = classesCache.get(endpoint);
+		List<String> classes = classesCache.get(ks);
 		
 		if(classes == null){
 			classes = new ArrayList<String>();
@@ -340,7 +380,7 @@ public class RESTService {
 				}
 			}
 			Collections.sort(classes); 
-			classesCache.put(endpoint, classes);
+			classesCache.put(ks, classes);
 		}
 		logger.info("Done.");
 		return classes;
@@ -353,7 +393,7 @@ public class RESTService {
 	public Map<String, List<String>> getEntities(@Context ServletContext context) {
 		logger.info("REST Request - Get all applicable entities");
 
-		Map<String, List<String>> entities = applicableEntitesCache.get(endpoint);
+		Map<String, List<String>> entities = applicableEntitesCache.get(ks);
 
 		if(entities == null){
 			entities = new LinkedHashMap<>();
@@ -367,7 +407,7 @@ public class RESTService {
 					entities.put(cls, properties);
 				}
 			}
-			applicableEntitesCache.put(endpoint, entities);
+			applicableEntitesCache.put(ks, entities);
 		}
 		logger.info("Done.");
 		return entities;
@@ -376,7 +416,7 @@ public class RESTService {
 	public void precomputeGraphs(ServletContext context){
 		logger.info("Precomputing graphs...");
 		
-		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(endpoint, cacheDirectory);
+		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
 		
 		Map<String, List<String>> entities = getEntities(null);
 		for (String cls : entities.keySet()) {

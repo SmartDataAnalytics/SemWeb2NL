@@ -5,9 +5,12 @@ package org.aksw.assessment.rest;
 
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import org.aksw.assessment.QuestionType;
+import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -23,8 +26,13 @@ public class RESTServiceTest {
 
 private RESTService restService = new RESTService();
 	
-	public RESTServiceTest() {
-		RESTService.init(null);
+	public RESTServiceTest() throws Exception {
+		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
+		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dsa.ini")){
+			config.load(is);
+		}
+		
+		RESTService.loadConfig(config);
 	}
 
 	/**

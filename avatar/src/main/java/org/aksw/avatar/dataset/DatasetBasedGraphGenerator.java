@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
+import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.log4j.Logger;
@@ -122,28 +123,39 @@ public class DatasetBasedGraphGenerator {
     public Map<OWLClass, WeightedGraph> generateGraphs(double threshold, String namespace) {
         Map<OWLClass, WeightedGraph> graphs = new HashMap<OWLClass, WeightedGraph>();
 
-        //get all classes in knowledge base with given prefix
-        Set<OWLClass> classes = reasoner.getTypes(namespace);
+        // get all classes in knowledge base with given prefix
+        Set<OWLClass> classes = reasoner.getTypes(namespace, true);
 
-        //generate a weighted graph for each class
-        WeightedGraph wg;
+        // generate a weighted graph for each class
         for (OWLClass cls : classes) {
-            wg = generateGraph(cls, threshold, namespace);
-            graphs.put(cls, wg);
+            try {
+            	WeightedGraph wg = generateGraph(cls, threshold, namespace);
+				graphs.put(cls, wg);
+			} catch (NoGraphAvailableException e) {
+				e.printStackTrace();
+			}
         }
 
         return graphs;
     }
 
-    public WeightedGraph generateGraph(OWLClass cls, double threshold) {
+    public WeightedGraph generateGraph(OWLClass cls, double threshold) throws NoGraphAvailableException {
         return generateGraph(cls, threshold, null);
     }
 
-    public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace) {
+    public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace) throws NoGraphAvailableException {
         return generateGraph(cls, threshold, namespace, Cooccurrence.TRIPLESTORE);
     }
 
-    public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace, Cooccurrence c) {
+    public WeightedGraph generateGraph(OWLClass cls, double threshold, String namespace, Cooccurrence c) throws NoGraphAvailableException {
+    	
+    	// check if class is empty
+    	int individualsCount = reasoner.getIndividualsCount(cls);
+    	
+    	if(individualsCount == 0) {
+    		return null;
+    	}
+    	
         //get the outgoing properties with a prominence score above threshold
         final SortedSet<OWLObjectProperty> outgoingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.OUTGOING);
         class2OutgoingProperties.put(cls, outgoingProperties);
@@ -281,13 +293,15 @@ public class DatasetBasedGraphGenerator {
         Map<OWLObjectProperty, Integer> properties = new HashMap<OWLObjectProperty, Integer>();
         String query;
         if(propertyDirection == Direction.OUTGOING){
-        	 query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+        	 query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+        	 		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
              		+ "?s a <" + cls.toStringID() + ">."
              		+ " {?p a owl:ObjectProperty.} UNION {?p a owl:DatatypeProperty.} "
              		+ "?s ?p ?o."
              		+ "} GROUP BY ?p";
         } else {
-        	 query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+        	 query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+        	 		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
              		+ "?s a <" + cls.toStringID() + ">."
              		+ " {?p a owl:ObjectProperty.} UNION {?p a owl:DatatypeProperty.} "
              		+ "?o ?p ?s."
@@ -295,9 +309,10 @@ public class DatasetBasedGraphGenerator {
         }
         
         //split into 2 queries because triple stores sometimes do not answer the query above
-        query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+        query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+        		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
          		+ "?s a <" + cls.toStringID() + "> ."
-         		+ " ?p a owl:ObjectProperty . "
+         		+ "?p a owl:ObjectProperty . "
          		+ "?s ?p ?o ."
          		+ "} GROUP BY ?p";
 
@@ -311,7 +326,8 @@ public class DatasetBasedGraphGenerator {
             }
         }
         
-        query = "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+        query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+        		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
          		+ "?s a <" + cls.toStringID() + "> ."
          		+ " ?p a owl:DatatypeProperty . "
          		+ "?s ?p ?o ."

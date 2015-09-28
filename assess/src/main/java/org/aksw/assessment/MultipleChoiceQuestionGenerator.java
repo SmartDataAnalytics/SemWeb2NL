@@ -337,7 +337,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		
 		// create the summary
 		OWLNamedIndividualImpl ind = new OWLNamedIndividualImpl(IRI.create(entityURI));
-		List<NLGElement> text = verbalizer.verbalize(ind, type, propertyFrequencyThreshold, cooccurrenceType, hardeningType);
+		List<NLGElement> text = verbalizer.verbalize(ind, type, namespace, propertyFrequencyThreshold, cooccurrenceType, hardeningType);
 		if (text == null)
 			return null;
 		String summary = verbalizer.realize(text);

@@ -78,7 +78,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<assess.warFile.name>assess</assess.warFile.name>
 		<jena.sparql.api.version>2.12.1-3</jena.sparql.api.version>
-		<dllearner.version>1.1-SNAPSHOT</dllearner.version>
+		<dllearner.version>1.2-SNAPSHOT</dllearner.version>
 	</properties>
 
 	<repositories>

@@ -6,6 +6,7 @@ package org.aksw.assessment;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 
 import com.google.common.base.Charsets;
@@ -22,6 +23,10 @@ import com.hp.hpl.jena.rdf.model.Resource;
 public class DefaultPropertyBlackList implements BlackList{
 
 	public final Set<String> blacklist;
+	
+	public DefaultPropertyBlackList() {
+		this(Collections.EMPTY_SET);
+	}
 	
 	public DefaultPropertyBlackList(File file) throws IOException {
 		this(Files.readLines(file, Charsets.UTF_8));
