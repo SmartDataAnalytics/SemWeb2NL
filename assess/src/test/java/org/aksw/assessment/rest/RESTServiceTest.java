@@ -66,7 +66,8 @@ private RESTService restService = new RESTService();
 	 */
 	@Test
 	public void testGetClasses() {
-		restService.getClasses(null);
+		List<String> classes = restService.getClasses(null);
+		System.out.println(classes.size());
 	}
 
 	/**
