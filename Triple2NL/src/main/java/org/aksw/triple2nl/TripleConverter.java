@@ -77,6 +77,10 @@ public class TripleConverter {
 		this(endpoint, null);
 	}
 	
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+		this(qef, null, null, cacheDirectory, wordnetDirectory, null);
+	}
+	
 	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory) {
 		this(endpoint, cacheDirectory, null);
 	}
@@ -106,7 +110,7 @@ public class TripleConverter {
 		this.uriConverter = uriConverter;
 		
 		if(propertyVerbalizer == null){
-			propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
+			propertyVerbalizer = new PropertyVerbalizer(uriConverter, cacheDirectory, wordnetDirectory);
 		}
 		pp = propertyVerbalizer;
 		

@@ -176,7 +176,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
-        propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
+        propertyVerbalizer = new PropertyVerbalizer(uriConverter, cacheDirectory, wordnetDirectory);
 
         functionalityDetector = new SPARQLFunctionalityDetector(qef);
         

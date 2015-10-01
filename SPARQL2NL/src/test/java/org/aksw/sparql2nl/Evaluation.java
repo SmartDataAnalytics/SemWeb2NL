@@ -28,6 +28,7 @@ import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.log4j.Logger;
+import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -311,7 +312,7 @@ public class Evaluation {
 	
 	public void bla(SparqlEndpoint endpoint){
 		TriplePatternExtractor tp = new TriplePatternExtractor();
-		PropertyVerbalizer pp = new PropertyVerbalizer(endpoint, "cache", null);
+		PropertyVerbalizer pp = new PropertyVerbalizer(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), "cache", null);
 		
 		 Map<String, Integer> uri2Count = new HashMap<String, Integer>();
 		readSPARQLQueriesFromXML(new File("resources/qald2-dbpedia-test.xml"));

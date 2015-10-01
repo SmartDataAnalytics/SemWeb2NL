@@ -69,19 +69,11 @@ public class PropertyVerbalizer {
 
 	private IRIConverter uriConverter;
 	
-    public PropertyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDictionary) {
-        this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), wordnetDictionary);
-    }
-    
-    public PropertyVerbalizer(Model model, String wordnetDictionary) {
-        this(new QueryExecutionFactoryModel(model), wordnetDictionary);
-    }
-    
-    public PropertyVerbalizer(QueryExecutionFactory qef, String wordnetDictionary) {
-        this(new DefaultIRIConverter(qef), wordnetDictionary);
-    }
-    
-    public PropertyVerbalizer(IRIConverter uriConverter, String wordnetDictionary) {
+	public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDictionary) {
+		this(new DefaultIRIConverter(qef), cacheDirectory, wordnetDictionary);
+	}
+	
+    public PropertyVerbalizer(IRIConverter uriConverter, String cacheDirectory, String wordnetDictionary) {
         this.uriConverter = uriConverter;
         if (wordnetDictionary == null) {
 			try {
@@ -371,7 +363,7 @@ public class PropertyVerbalizer {
 	}
 	
     public static void main(String args[]) {
-        PropertyVerbalizer pp = new PropertyVerbalizer(SparqlEndpoint.getEndpointDBpedia(), "cache", null);
+        PropertyVerbalizer pp = new PropertyVerbalizer(new QueryExecutionFactoryHttp("http://dbpedia.org/sparql"), "cache", null);
         
         String propertyURI = "http://dbpedia.org/ontology/birthPlace";
         System.out.println(pp.verbalize(propertyURI));

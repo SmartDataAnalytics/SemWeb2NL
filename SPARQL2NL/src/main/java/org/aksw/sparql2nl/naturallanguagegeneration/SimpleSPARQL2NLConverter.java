@@ -367,6 +367,9 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 //				"PREFIX : <http://sparql2nl.aksw.org/> SELECT DISTINCT  ?uri			"
 //				+ "	WHERE				  { ?uri :isLocatedIn :Germany .				    ?uri a :City				  }");
 		
+		query = QueryFactory.create(
+				"PREFIX : <http://sparql2nl.aksw.org/> SELECT DISTINCT  ?uri WHERE { :Mike :isKnownFor ?uri .}");
+		
 		Lexicon lexicon = new NIHDBLexicon("/home/me/tools/lexAccess2013lite/data/HSqlDb/lexAccess2013.data");
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 		SimpleSPARQL2NLConverter sparql2nlConverter = new SimpleSPARQL2NLConverter(endpoint, "cache/sparql2nl", lexicon);

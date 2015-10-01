@@ -3,6 +3,8 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
+import java.util.List;
+
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.triple2nl.DefaultIRIConverter;
@@ -17,7 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import simplenlg.features.Feature;
+import simplenlg.features.Form;
 import simplenlg.features.InternalFeature;
+import simplenlg.features.InterrogativeType;
 import simplenlg.features.Tense;
 import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
@@ -29,8 +33,10 @@ import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
+import com.clarkparsia.sparqlowl.parser.antlr.SparqlOwlParser.verbObjectListPair_return;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
@@ -47,7 +53,7 @@ public class TriplePatternConverter {
 	private Realiser realiser;
 
 	private TripleConverter tripleConverter;
-	private PropertyVerbalizer pp;
+	private PropertyVerbalizer propertyVerbalizer;
 
 	private boolean useCompactOfVerbalization = true;
 
@@ -60,6 +66,10 @@ public class TriplePatternConverter {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), 
 				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
+	
+	public TriplePatternConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+		this(qef, null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
+	}
 
 	public TriplePatternConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
 		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
@@ -70,12 +80,13 @@ public class TriplePatternConverter {
 	}
 	
 	public TriplePatternConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+		if(propertyVerbalizer == null){
+			propertyVerbalizer = new PropertyVerbalizer(qef, cacheDirectory, wordnetDirectory);
+		}
+		this.propertyVerbalizer = propertyVerbalizer;
+		
 		tripleConverter = new TripleConverter(qef, propertyVerbalizer, uriConverter, cacheDirectory, wordnetDirectory, lexicon);
 		
-		if(propertyVerbalizer == null){
-			propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
-		}
-		pp = propertyVerbalizer;
 		
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
@@ -93,7 +104,7 @@ public class TriplePatternConverter {
 	 */
 	public NPPhraseSpec convertTriplePatternCompactOfForm(Triple t, NLGElement objectElement) {
 		// handle the predicate
-		PropertyVerbalization propertyVerbalization = pp.verbalize(t.getPredicate().getURI());
+		PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(t.getPredicate().getURI());
 		String predicateAsString = propertyVerbalization.getVerbalizationText();
 
 		NPPhraseSpec np = nlgFactory.createNounPhrase(predicateAsString);
@@ -117,9 +128,14 @@ public class TriplePatternConverter {
 		Node predicate = t.getPredicate();
 		Node object = t.getObject();
 		
+		//if there is no subject element we convert it into the existence of the triple pattern
+		if (subjectElement == null && subject.isConcrete()) {
+			subjectElement = processNode(subject);
+		}
+		
 		//if there is no object element we convert it into the existence of the triple pattern
-		if(objectElement == null){
-//			objectElement = processObject(object, false);
+		if(objectElement == null && object.isConcrete()){
+			objectElement = processNode(object);
 		}
 
 		// process predicate
@@ -129,10 +145,10 @@ public class TriplePatternConverter {
 		} // more interesting case. Predicate is not a variable
 			// then check for noun and verb. If the predicate is a noun or a
 			// verb, then
-			// use possessive or verbal form, else simply get the boa pattern
+			// use possessive or verbal form, else simply get the BOA pattern
 		else {
 			// handle the predicate
-			PropertyVerbalization propertyVerbalization = pp.verbalize(predicate.getURI());
+			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(predicate.getURI());
 			String predicateAsString = propertyVerbalization.getVerbalizationText();
 
 			// get the lexicalization type of the predicate
@@ -213,8 +229,21 @@ public class TriplePatternConverter {
 				}
 			}// if the predicate is a verb
 			else if (type == PropertyVerbalizationType.VERB) {
-				clause.setVerb(predicateAsString);
-				clause.setObject(objectElement);
+				if(reverse) {
+					// passive verb phrase
+					VPPhraseSpec verb = nlgFactory.createVerbPhrase("known");
+			        verb.setPostModifier(nlgFactory.createPrepositionPhrase("for"));
+			        verb.setFeature(Feature.PASSIVE, true);
+			        verb = nlgFactory.createVerbPhrase(realiser.realise(verb).getRealisation());
+					
+					clause.setSubject(objectElement);
+					clause.setVerb(verb);
+//					clause.setFeature(Feature.FORM, Form.PAST_PARTICIPLE);
+//					clause.setFeature(Feature.PASSIVE, true);
+				} else {
+					clause.setVerb(predicateAsString);
+					clause.setObject(objectElement);
+				}
 			}
 		}
 		
@@ -238,7 +267,9 @@ public class TriplePatternConverter {
 		//set present time as tense
 		clause.setFeature(Feature.TENSE, Tense.PRESENT);
 		np.setPlural(plural);
-		clause.setPlural(plural);
+		if(!reverse) {
+			clause.setPlural(plural);
+		}
 
 		return np;
 	}
@@ -265,6 +296,82 @@ public class TriplePatternConverter {
 	 */
 	public void setConsiderLiteralLanguage(boolean considerLiteralLanguage) {
 		this.tripleConverter.setConsiderLiteralLanguage(considerLiteralLanguage);
+	}
+	
+	public static void main(String[] args) throws Exception {
+		QueryExecutionFactory qef = new QueryExecutionFactoryHttp("http://dbpedia.org/sparql", "http://dbpedia.org");
+		
+		String wordNetDir = "wordnet/" + (SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux") + "/dict";
+        wordNetDir = TriplePatternConverter.class.getClassLoader().getResource(wordNetDir).getPath();
+		
+        Lexicon lexicon = Lexicon.getDefaultLexicon();
+        NLGFactory nlgFactory = new NLGFactory(lexicon);
+        Realiser realiser = new Realiser(lexicon);
+        
+        NPPhraseSpec subject = nlgFactory.createNounPhrase("Oldfield Thomas");
+        
+        VPPhraseSpec verb = nlgFactory.createVerbPhrase("known");
+        verb.setPostModifier(nlgFactory.createPrepositionPhrase("for"));
+//        verb.setFeature(Feature.FORM, Form.PAST_PARTICIPLE);
+        verb.setFeature(Feature.PASSIVE, true);
+        verb = nlgFactory.createVerbPhrase(realiser.realise(verb).getRealisation());
+//        verb.setFeature(Feature.PASSIVE, true);
+        
+        NPPhraseSpec object = nlgFactory.createNounPhrase("Mammalogy");
+        
+        NLGElement clause = nlgFactory.createClause(subject, verb, object);
+        System.out.println(realiser.realise(clause).getRealisation());
+        clause.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.WHAT_OBJECT);
+        System.out.println(realiser.realise(clause).getRealisation());
+        
+//        System.exit(0);
+        
+        TriplePatternConverter tpConverter = new TriplePatternConverter(qef, "/tmp/cache", wordNetDir);
+		
+        Triple t1 = Triple.create(
+				NodeFactory.createVariable("s"), 
+				NodeFactory.createURI("http://dbpedia.org/ontology/knownFor"), 
+				NodeFactory.createURI("http://dbpedia.org/resource/Oldfield_Thomas"));
+        
+        NLGElement subjectElement = nlgFactory.createNLGElement("entity", LexicalCategory.NOUN);
+		NLGElement objectElement = nlgFactory.createNLGElement(t1.getObject().toString(), LexicalCategory.NOUN);
+        
+		NPPhraseSpec phrase = tpConverter.convertTriplePattern(t1, subjectElement, null, false, false, true);
+		
+		List<NLGElement> clauses = phrase.getFeatureAsElementList(InternalFeature.COMPLEMENTS);
+		clause = clauses.get(0);
+		clause.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.WHAT_OBJECT);
+		String question = realiser.realise(clause).getRealisation();
+		
+		System.out.println(question);
+		
+		Triple t2 = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Oldfield_Thomas"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/knownFor"), 
+				NodeFactory.createVariable("s")
+				);
+		
+		objectElement = nlgFactory.createNLGElement("entity", LexicalCategory.NOUN);
+		subjectElement = nlgFactory.createNLGElement(t2.getSubject().toString(), LexicalCategory.NOUN);
+        
+		phrase = tpConverter.convertTriplePattern(t2, subjectElement, null, false, false, true);
+		
+		clauses = phrase.getFeatureAsElementList(InternalFeature.COMPLEMENTS);
+		question = realiser.realise(clauses.get(0)).getRealisation();
+		
+		System.out.println(question);
+		
+		Triple t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Oldfield_Thomas"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/knownFor"), 
+				NodeFactory.createURI("http://dbpedia.org/resource/Mammalogy")
+				);
+		
+		TripleConverter conv = new TripleConverter(qef, "tmp/cache", wordNetDir);
+		SPhraseSpec p = conv.convertTriple(t);
+		System.out.println(realiser.realise(p));
+		p.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.WHAT_OBJECT);
+		System.out.println(realiser.realise(p));
 	}
 	
 }

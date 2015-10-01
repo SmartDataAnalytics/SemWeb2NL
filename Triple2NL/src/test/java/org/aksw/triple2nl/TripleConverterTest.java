@@ -22,6 +22,8 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
+import simplenlg.lexicon.Lexicon;
+
 /**
  * @author Lorenz Buehmann
  *
@@ -37,7 +39,7 @@ public class TripleConverterTest {
 	public static void init() throws Exception {
 		KS.init();
 		
-		converter = new TripleConverter(KS.getQueryExecutionFactory(), "cache", null);
+		converter = new TripleConverter(KS.getQueryExecutionFactory(), "cache", (Lexicon)null);
 	}
 	
 	/**

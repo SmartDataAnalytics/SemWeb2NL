@@ -7,6 +7,10 @@ import java.util.Locale;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
+import org.joda.time.format.DateTimeParser;
+import org.joda.time.format.ISODateTimeFormat;
 import org.semanticweb.owlapi.model.OWLLiteral;
 import org.semanticweb.owlapi.vocab.XSDVocabulary;
 import org.slf4j.Logger;
@@ -100,8 +104,21 @@ public class LiteralConverter {
 		} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
 			logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());
 			//fallback
-			DateTime time = new DateTime(lit.getLexicalForm());
-			s = time.toString("MMMM dd, yyyy");
+//			DateTime time = ISODateTimeFormat.dateTime
+			DateTime time;
+			try {
+				time = ISODateTimeFormat.dateTimeParser().parseDateTime(lit.getLexicalForm());
+				s = time.toString("MMMM dd, yyyy");
+			} catch (Exception e1) {
+				try {
+					time = ISODateTimeFormat.localDateParser().parseDateTime(lit.getLexicalForm());
+					s = time.toString("MMMM dd, yyyy");
+				} catch (Exception e2) {
+					e2.printStackTrace();
+					time = ISODateTimeFormat.dateParser().parseDateTime(lit.getLexicalForm());
+					s = time.toString("MMMM dd, yyyy");
+				}
+			}
 		}
     	return s;
     }
