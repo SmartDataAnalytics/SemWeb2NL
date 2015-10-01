@@ -42,9 +42,11 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 /**
@@ -375,8 +377,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 			try {
 				Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
-				SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-		        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
+		        QueryExecutionFactory qef = RESTService.qef;
+		        
 				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", null, 
 						restrictions,Sets.<String>newHashSet(), new DefaultPropertyBlackList());
 				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);

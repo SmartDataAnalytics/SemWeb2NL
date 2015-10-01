@@ -159,7 +159,7 @@ public class JeopardyVerbalizer extends Verbalizer {
                 sphrase.setSubject("It");
             }
         }
-        return phrase;
+        return sphrase;
     }
 
 	/**

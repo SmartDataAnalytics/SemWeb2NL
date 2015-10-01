@@ -320,10 +320,14 @@ public class DatasetBasedGraphGenerator {
         QuerySolution qs;
         while (rs.hasNext()) {
             qs = rs.next();
-            String uri = qs.getResource("p").getURI();
-            if (!blacklist.contains(uri)) {
-                properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), qs.getLiteral("cnt").getInt());
+            int frequency = qs.getLiteral("cnt").getInt();
+            if(frequency > 0) {
+                String uri = qs.getResource("p").getURI();
+                if (!blacklist.contains(uri)) {
+                    properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+                }
             }
+            
         }
         
         query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
@@ -332,13 +336,16 @@ public class DatasetBasedGraphGenerator {
          		+ " ?p a owl:DatatypeProperty . "
          		+ "?s ?p ?o ."
          		+ "} GROUP BY ?p";
-
+        logger.info(query);
         rs = executeSelectQuery(query);
         while (rs.hasNext()) {
             qs = rs.next();
-            String uri = qs.getResource("p").getURI();
-            if (!blacklist.contains(uri)) {
-                properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), qs.getLiteral("cnt").getInt());
+            int frequency = qs.getLiteral("cnt").getInt();
+            if(frequency > 0) {
+	            String uri = qs.getResource("p").getURI();
+	            if (!blacklist.contains(uri)) {
+	                properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+	            }
             }
         }
         return properties;

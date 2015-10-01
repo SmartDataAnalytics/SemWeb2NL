@@ -96,7 +96,7 @@ public class RESTService {
 
 	private static SPARQLReasoner reasoner;
 
-	private static QueryExecutionFactory qef;
+	public static QueryExecutionFactory qef;
 	
 	public RESTService() {}
 	
