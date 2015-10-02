@@ -21,15 +21,16 @@ import org.aksw.avatar.clustering.hardening.HardeningFactory.HardeningType;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.jena_sparql_api.utils.TripleUtils;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.sparql2nl.naturallanguagegeneration.TriplePatternConverter;
 import org.aksw.sparqltools.util.SPARQLEndpointType;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.aksw.triple2nl.DefaultIRIConverter;
 import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.TripleConverter;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.apache.log4j.Logger;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
@@ -37,9 +38,7 @@ import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.NodeFactory;
@@ -51,13 +50,10 @@ import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 
 import simplenlg.features.Feature;
-import simplenlg.features.InternalFeature;
 import simplenlg.features.InterrogativeType;
-import simplenlg.framework.LexicalCategory;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
-import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
@@ -132,8 +128,94 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         
         nlg = verbalizer.nlg;
     }
+	
+	@Override
+    public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int numberOfQuestions) {
+    	 usedWrongAnswers = new HashSet<>();
+        Set<Question> questions = new HashSet<>();
+        
+        RandomGenerator rndGen = RandomGeneratorFactory.createRandomGenerator(new Random(123));
+        
+        // 1. we generate possible resources
+        Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
+        
+        //  2. we generate question(s) as long as we have resources or we got the maximum number of questions
+        Iterator<Entry<Resource, OWLClass>> iterator = resources.entrySet().iterator();
+        
+        while(questions.size() < numberOfQuestions && iterator.hasNext()){
+        	Entry<Resource, OWLClass> entry = iterator.next();
+        	
+        	Resource focusEntity = entry.getKey();
+        	OWLClass cls = entry.getValue();
+        	
+        	// whether target entity is in subject or object position
+            boolean inSubjectPosition = true;//rndGen.nextBoolean();
+            
+            // hide subject or object in question
+            boolean hideSubject = false;//rndGen.nextBoolean();
+        	
+            // generate a question
+        	Question q = generateQuestion(focusEntity, cls, inSubjectPosition, hideSubject);
+            if (q != null) {
+                questions.add(q);
+            } else {
+            	logger.warn("Could not generate question.");
+            }
+        }
+        
+        return questions;
+    }
+	
+	public Question generateQuestion(Resource r, OWLClass type, boolean inSubjectPosition, boolean hideSubject) {
+        logger.info("Generating question for resource " + r + "...");
+        
+        // select the property used in the question
+        String property = selectQuestionProperty(r, type, inSubjectPosition);
+        
+        // generate correct answers
+        Set<RDFNode> correctAnswers = generateCorrectAnswerCandidates(r, property, inSubjectPosition);
+        
+        // if there is no correct answer, we stop
+        if(correctAnswers.isEmpty()){
+        	logger.warn("Could not find a correct answer.");
+        	return null;
+        }
+        
+        // choose one triple as focus
+        Triple focusTriple = Triple.create(r.asNode(), NodeFactory.createURI(property), correctAnswers.iterator().next().asNode());
+        
+        // generate the question text
+        String questionText = generateQuestionText(focusTriple, inSubjectPosition, hideSubject);
+        
+        // generate wrong answer candidates
+        Set<RDFNode> wrongAnswerCandidates = generateWrongAnswerCandidates(r, property, correctAnswers);
+        wrongAnswerCandidates.removeAll(usedWrongAnswers);
+        
+        // we pick at least 1 and at most N correct answers randomly
+        Random rnd = new Random(123);
+        List<RDFNode> correctAnswerList = new ArrayList<RDFNode>(correctAnswers);
+        Collections.shuffle(correctAnswerList, rnd);
+        int maxNumberOfCorrectAnswers = rnd.nextInt((maxNrOfAnswersPerQuestion - 1) + 1) + 1;
+        correctAnswerList = correctAnswerList.subList(0, Math.min(correctAnswerList.size(), maxNumberOfCorrectAnswers));
+        
+        // we pick (N - #correctAnswers) wrong answers randomly
+        rnd = new Random(123);
+        List<RDFNode> wrongAnswerList = new ArrayList<RDFNode>(wrongAnswerCandidates);
+        Collections.shuffle(wrongAnswerList, rnd);
+        wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion - correctAnswerList.size()));
+        usedWrongAnswers.addAll(wrongAnswerList);
+        logger.info("...got " + wrongAnswerList);
+        
+        return new SimpleQuestion(
+        		questionText, 
+        		generateAnswers(correctAnswerList, generateHints), 
+        		generateAnswers(wrongAnswerList, false), 
+        		DIFFICULTY, 
+        		null, 
+        		QuestionType.MC);
+    }
     
-    private String selectQuestionProperty(Resource r, OWLClass type) {
+    private String selectQuestionProperty(Resource r, OWLClass type, boolean subjectPosition) {
     	// generate the property candidates
     	Set<String> propertyCandidates = new HashSet<String>();
     	
@@ -143,7 +225,12 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 			// i.e. whether there are interesting triples
 			// this is done by getting all properties for the given resource and filter out the black listed ones
             logger.info("Getting property candidates...");
-            String query = "select distinct ?p where {<" + r.getURI() + "> ?p ?o. }";//FILTER(isURI(?o))
+            String query;
+            if(subjectPosition) {
+            	 query = String.format("select distinct ?p where {<%s> ?p [] . }", r.getURI());
+            } else {
+            	query = String.format("select distinct ?p where { [] ?p <%s> . }", r.getURI());
+            }
             
             ResultSet rs = executeSelectQuery(query);
          
@@ -175,20 +262,72 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         return property;
     }
     
-    private Set<RDFNode> generateCorrectAnswerCandidates(Resource r, String property) {
+    private String generateQuestionText(Triple t, boolean inSubjectPosition, boolean hideSubject) {
+    	logger.info("Generating question...");
+    	
+    	// convert to phrase
+    	SPhraseSpec p = tripleConverter.convertTriple(t);
+    	
+    	// decide which interrogative type to use
+    	InterrogativeType interrogativeType;
+    	if(hideSubject) {
+    		interrogativeType = InterrogativeType.WHAT_OBJECT;
+    	} else {
+    		interrogativeType = InterrogativeType.WHAT_SUBJECT;
+    	}
+    	
+    	// use 'who' instead of which if type is person
+    	if(hideSubject) {
+    		OWLClassExpression range = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+        	if(isPersonType(range.asOWLClass())) {
+        		interrogativeType = InterrogativeType.WHO_OBJECT;
+        	}
+    	} else {
+    		OWLClassExpression domain = reasoner.getDomain(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+        	if(isPersonType(domain.asOWLClass())) {
+        		interrogativeType = InterrogativeType.WHO_SUBJECT;
+        	}
+    	}
+		
+		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
+		String question = realiser.realiseSentence(p);
+		
+        
+//        NLGElement subjectElement = nlgFactory.createNLGElement("entity", LexicalCategory.NOUN);
+//		NLGElement objectElement = nlgFactory.createNLGElement(tp.getObject().toString(), LexicalCategory.NOUN);
+//		
+//		NPPhraseSpec phrase = tripleConverter.convertTriplePattern(tp, subjectElement, objectElement, true, false, true);
+//		List<NLGElement> clauses = phrase.getFeatureAsElementList(InternalFeature.COMPLEMENTS);
+//		String question = realiser.realise(clauses.get(0)).getRealisation();
+		
+//		boolean functional = reasoner.isFunctional(new OWLObjectPropertyImpl(IRI.create(property)));
+//		
+//        String[] questionHeaders = new String[]{"What are", "Please select", "Please choose"};
+//        question = questionHeaders[0] + " " + question;
+        logger.info("Question:" + question);
+        return question;
+    }
+    
+    private Set<RDFNode> generateCorrectAnswerCandidates(Resource r, String property, boolean inSubjectPosition) {
     	 logger.info("Generating correct answers...");
     	 Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
     	 
     	// get values for property, i.e. the correct answers
-        String query = "select distinct ?o where {<" + r.getURI() + "> <" + property + "> ?o}";
+    	String query;
+    	if(inSubjectPosition) {
+    		query = String.format("select distinct ?x where {<%s> <%s> ?x}", r.getURI(), property);
+    	} else {
+    		query = String.format("select distinct ?x where {?x <%s> <%s>}", property, r.getURI());
+    	}
+        
         ResultSet rs = executeSelectQuery(query);
         
         while (rs.hasNext()) {
         	QuerySolution qs = rs.next();
-            if (qs.get("o").isLiteral()) {
-                correctAnswers.add(qs.get("o").asLiteral());
+            if (qs.get("x").isLiteral()) {
+                correctAnswers.add(qs.get("x").asLiteral());
             } else {
-                correctAnswers.add(qs.get("o").asResource());
+                correctAnswers.add(qs.get("x").asResource());
             }
         }
         logger.info("...got " + correctAnswers);
@@ -224,117 +363,6 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 			}
 		}
     	return false;
-    }
-    
-    private String generateQuestionText(Resource r, String property) {
-    	logger.info("Generating question...");
-    	
-    	Triple t = Triple.create(r.asNode(), NodeFactory.createURI(property), NodeFactory.createURI(""));
-    	
-    	// convert to phrase
-    	SPhraseSpec p = tripleConverter.convertTriple(t);
-    	
-    	// decide whether to use 'what' or 'who'
-    	InterrogativeType interrogativeType = InterrogativeType.WHAT_OBJECT;
-    	
-    	// get range of property
-    	OWLClassExpression range = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(property)));
-    	if(isPersonType(range.asOWLClass())) {
-    		interrogativeType = InterrogativeType.WHO_OBJECT;
-    	}
-		
-		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
-		String question = realiser.realiseSentence(p);
-		
-        
-//        NLGElement subjectElement = nlgFactory.createNLGElement("entity", LexicalCategory.NOUN);
-//		NLGElement objectElement = nlgFactory.createNLGElement(tp.getObject().toString(), LexicalCategory.NOUN);
-//		
-//		NPPhraseSpec phrase = tripleConverter.convertTriplePattern(tp, subjectElement, objectElement, true, false, true);
-//		List<NLGElement> clauses = phrase.getFeatureAsElementList(InternalFeature.COMPLEMENTS);
-//		String question = realiser.realise(clauses.get(0)).getRealisation();
-		
-//		boolean functional = reasoner.isFunctional(new OWLObjectPropertyImpl(IRI.create(property)));
-//		
-//        String[] questionHeaders = new String[]{"What are", "Please select", "Please choose"};
-//        question = questionHeaders[0] + " " + question;
-        logger.info("Question:" + question);
-        return question;
-    }
-
-    public Question generateQuestion(Resource r, OWLClass type) {
-        logger.info("Generating question for resource " + r + "...");
-        
-        // select the property used in the question
-        String property = selectQuestionProperty(r, type);
-        
-        // generate the question text
-        String questionText = generateQuestionText(r, property);
-
-        // generate correct answers
-        Set<RDFNode> correctAnswers = generateCorrectAnswerCandidates(r, property);
-        
-        // if there is no correct answer, we stop
-        if(correctAnswers.isEmpty()){
-        	logger.warn("Could not find a correct answer.");
-        	return null;
-        }
-        
-        // generate wrong answer candidates
-        Set<RDFNode> wrongAnswerCandidates = generateWrongAnswerCandidates(r, property, correctAnswers);
-        wrongAnswerCandidates.removeAll(usedWrongAnswers);
-        
-        // we pick at least 1 and at most N correct answers randomly
-        Random rnd = new Random(123);
-        List<RDFNode> correctAnswerList = new ArrayList<RDFNode>(correctAnswers);
-        Collections.shuffle(correctAnswerList, rnd);
-        int maxNumberOfCorrectAnswers = rnd.nextInt((maxNrOfAnswersPerQuestion - 1) + 1) + 1;
-        correctAnswerList = correctAnswerList.subList(0, Math.min(correctAnswerList.size(), maxNumberOfCorrectAnswers));
-        
-        // we pick (N - #correctAnswers) wrong answers randomly
-        rnd = new Random(123);
-        List<RDFNode> wrongAnswerList = new ArrayList<RDFNode>(wrongAnswerCandidates);
-        Collections.shuffle(wrongAnswerList, rnd);
-        wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion - correctAnswerList.size()));
-        usedWrongAnswers.addAll(wrongAnswerList);
-        logger.info("...got " + wrongAnswerList);
-        
-        return new SimpleQuestion(
-        		questionText, 
-        		generateAnswers(correctAnswerList, generateHints), 
-        		generateAnswers(wrongAnswerList, false), 
-        		DIFFICULTY, 
-        		null, 
-        		QuestionType.MC);
-    }
-    
-    @Override
-    public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int numberOfQuestions) {
-    	 usedWrongAnswers = new HashSet<>();
-        Set<Question> questions = new HashSet<>();
-        
-        // 1. we generate possible resources
-        Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
-        
-        //  2. we generate question(s) as long as we have resources or we got the maximum number of questions
-        //  Collections.shuffle(resources, new Random(123));
-        Iterator<Entry<Resource, OWLClass>> iterator = resources.entrySet().iterator();
-        
-        while(questions.size() < numberOfQuestions && iterator.hasNext()){
-        	Entry<Resource, OWLClass> entry = iterator.next();
-        	
-        	Resource ind = entry.getKey();
-        	OWLClass cls = entry.getValue();
-        	
-        	Question q = generateQuestion(ind, cls);
-            if (q != null) {
-                questions.add(q);
-            } else {
-            	logger.warn("Could not generate question.");
-            }
-        }
-        
-        return questions;
     }
     
     /**
@@ -487,7 +515,8 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 	}
     
     /**
-	 * @param blackList the blackList to set
+	 * @param blackList a list of properties that must not be used in the 
+	 * questions
 	 */
 	public void setBlackList(BlackList blackList) {
 		this.blackList = blackList;
@@ -508,20 +537,24 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 //        		new HashSet<OWLObjectProperty>()
         		new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Person")), 
         		Sets.<OWLObjectProperty>newHashSet(
-        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace")), 
-        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthDate")),
-        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/knownFor")),
-        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/influencedBy"))
+        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace")) 
+//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthDate")),
+//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/knownFor")),
+//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/influencedBy"))
         				)
         );
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        QueryExecutionFactory qef = new QueryExecutionFactoryHttp("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");
+        SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");
+        SparqlEndpointKS ks = new SparqlEndpointKS(endpoint);
+        ks.setCacheDir("/tmp/cache");
+        ks.init();
+        QueryExecutionFactory qef = ks.getQueryExecutionFactory();
 //        MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
 //        		new SparqlEndpoint(new URL("http://vtentacle.techfak.uni-bielefeld.de:443/sparql"), "http://biomed.de/diseasome"), 
 //        		"cache", 
 //        		"http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/", 
 //        		restrictions,
 //        		new HashSet<String>(), null);
+        
         		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
         				qef, 
         				"cache", "http://dbpedia.org/ontology/", 

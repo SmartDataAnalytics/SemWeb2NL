@@ -22,8 +22,8 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>simplenlg</groupId>
-			<artifactId>simplenlg</artifactId>
+			<groupId>uk.ac.abdn</groupId>
+			<artifactId>SimpleNLG</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>jaws</groupId>

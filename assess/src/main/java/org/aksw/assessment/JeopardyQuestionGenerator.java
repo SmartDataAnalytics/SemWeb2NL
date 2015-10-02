@@ -109,7 +109,6 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     	}
     }
 
-    @Override
     public Question generateQuestion(Resource r, OWLClass type) {
         
         //generate the question in forms of a summary describing the resource

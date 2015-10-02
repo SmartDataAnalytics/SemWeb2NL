@@ -89,7 +89,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	Realiser realiser;
 	
 	IRIConverter iriConverter = new SimpleIRIConverter();
-	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
+	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
 	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
 	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
 	

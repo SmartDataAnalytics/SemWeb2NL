@@ -15,8 +15,8 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>simplenlg</groupId>
-			<artifactId>simplenlg</artifactId>
+			<groupId>uk.ac.abdn</groupId>
+			<artifactId>SimpleNLG</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>net.sourceforge.owlapi</groupId>

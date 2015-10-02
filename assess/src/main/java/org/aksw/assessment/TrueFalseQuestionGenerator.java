@@ -45,7 +45,6 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 		
 	}
 
-    @Override
     public Question generateQuestion(Resource r, OWLClass type) {
         logger.info("Generating question for resource " + r + "...");
         //get properties
