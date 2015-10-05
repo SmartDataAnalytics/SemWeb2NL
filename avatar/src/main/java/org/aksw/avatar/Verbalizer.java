@@ -92,7 +92,7 @@ public class Verbalizer {
     public SimpleNLGwithPostprocessing nlg;
     SparqlEndpoint endpoint;
     String language = "en";
-    Realiser realiser;
+    protected Realiser realiser;
     Map<Resource, String> labels;
     NumericLiteralFilter litFilter;
     TypeAwareGenderDetector gender;
@@ -264,7 +264,8 @@ public class Verbalizer {
 				buffer.addAll(or.apply(phraseSpecs, subsetShown));
                 allTriples.addAll(triples);
             }
-            result.addAll(sr.apply(or.apply(buffer), g));
+            List<NLGElement> mergedElement = sr.apply(or.apply(buffer), g);
+			result.addAll(mergedElement);
         }
 
         resource2Triples.put(resource, allTriples);
@@ -274,7 +275,7 @@ public class Verbalizer {
 
             for (int i = 0; i < result.size(); i++) {
                 NLGElement phrase = result.get(i);
-				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);
+				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);System.out.println(realiser.realiseSentence(replacedPhrase));
 				phrases.add(replacedPhrase);
             }
             return phrases;
@@ -447,7 +448,7 @@ public class Verbalizer {
 			Set<Set<Node>> clusters = bf.cluster();
 			//then harden the results
 			List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
-			logger.debug("Cluster = " + sortedPropertyClusters);
+			logger.info("Cluster = " + sortedPropertyClusters);
 
 			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
 

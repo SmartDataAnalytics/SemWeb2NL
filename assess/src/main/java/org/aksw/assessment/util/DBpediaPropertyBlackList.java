@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.assessment;
+package org.aksw.assessment.util;
 
 import java.io.File;
 import java.util.Set;

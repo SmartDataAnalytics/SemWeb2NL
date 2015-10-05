@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.aksw.assessment;
+package org.aksw.assessment.question;
 
 import java.util.List;
 

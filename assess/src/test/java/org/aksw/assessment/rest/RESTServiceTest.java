@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import org.aksw.assessment.QuestionType;
+import org.aksw.assessment.question.QuestionType;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;

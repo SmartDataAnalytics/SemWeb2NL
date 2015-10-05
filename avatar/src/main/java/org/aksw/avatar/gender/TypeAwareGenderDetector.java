@@ -48,7 +48,7 @@ public class TypeAwareGenderDetector implements GenderDetector{
 		//get the inferred sub types as well
 		if(useInference){
 			Set<String> inferredTypes = new HashSet<>();
-			String queryTemplate = "select ?sub where{?sub rdfs:subClassOf* <%s>.}";
+			String queryTemplate = "select ?sub where{?sub <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <%s>.}";
 			for (String type : personTypes) {
 				String query = String.format(queryTemplate, type);
 				ResultSet rs = qef.createQueryExecution(query).execSelect();

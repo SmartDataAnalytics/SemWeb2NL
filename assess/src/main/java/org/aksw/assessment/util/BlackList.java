@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.assessment;
+package org.aksw.assessment.util;
 
 import com.hp.hpl.jena.rdf.model.Resource;
 

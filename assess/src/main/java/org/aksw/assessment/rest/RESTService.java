@@ -32,15 +32,17 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
-import org.aksw.assessment.BlackList;
-import org.aksw.assessment.DefaultPropertyBlackList;
+import org.aksw.assessment.AbstractQuestionGenerator;
 import org.aksw.assessment.JeopardyQuestionGenerator;
 import org.aksw.assessment.MultipleChoiceQuestionGenerator;
-import org.aksw.assessment.Question;
 import org.aksw.assessment.QuestionGenerator;
-import org.aksw.assessment.QuestionType;
 import org.aksw.assessment.TrueFalseQuestionGenerator;
 import org.aksw.assessment.answer.Answer;
+import org.aksw.assessment.question.Question;
+import org.aksw.assessment.question.QuestionType;
+import org.aksw.assessment.util.BlackList;
+import org.aksw.assessment.util.DBpediaPropertyBlackList;
+import org.aksw.assessment.util.DefaultPropertyBlackList;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
@@ -69,6 +71,7 @@ import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 
+import uk.ac.manchester.cs.jfact.kernel.AbsorptionActions;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
@@ -206,19 +209,24 @@ public class RESTService {
 		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
 		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<OWLObjectProperty>());
 		
-		//set up the question generators
+		// set up the question generators
 		for (String type : questionTypes) {
+			AbstractQuestionGenerator generator = null;
 			if(type.equals(QuestionType.MC.getName())){
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generator = new MultipleChoiceQuestionGenerator(qef, cacheDirectory, domains);
 			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generator = new JeopardyQuestionGenerator(qef, cacheDirectory, domains);
 			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(qef, cacheDirectory, namespace, domains, personTypes, blackList));
+				generator = new TrueFalseQuestionGenerator(qef, cacheDirectory, domains);
 			}
+			generator.setPersonTypes(personTypes);
+			generator.setEntityBlackList(blackList);
+			generator.setNamespace(namespace);
+			generators.put(generator.getQuestionType(), generator);
 		}
 		List<RESTQuestion> restQuestions = new ArrayList<>();
 		
-		//get random numbers for max. computed questions per type
+		// get random numbers for max. computed questions per type
 		List<Integer> randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
 		
 		int i = 0;
@@ -294,18 +302,21 @@ public class RESTService {
 		
 		// set up the question generators
 		long start = System.currentTimeMillis();
+		// set up the question generators
 		for (String type : questionTypes) {
+			AbstractQuestionGenerator generator = null;
 			if (type.equals(QuestionType.MC.getName())) {
-				generators.put(QuestionType.MC, new MultipleChoiceQuestionGenerator(qef, cacheDirectory,
-						namespace, domains, personTypes, blackList));
+				generator = new MultipleChoiceQuestionGenerator(qef, cacheDirectory, domains);
 			} else if (type.equals(QuestionType.JEOPARDY.getName())) {
-				generators.put(QuestionType.JEOPARDY, new JeopardyQuestionGenerator(qef, cacheDirectory,
-						namespace, domains, personTypes, blackList));
+				generator = new JeopardyQuestionGenerator(qef, cacheDirectory, domains);
 			} else if (type.equals(QuestionType.TRUEFALSE.getName())) {
-				generators.put(QuestionType.TRUEFALSE, new TrueFalseQuestionGenerator(qef, cacheDirectory,
-						namespace, domains, personTypes, blackList));
+				generator = new TrueFalseQuestionGenerator(qef, cacheDirectory, domains);
 			}
-		} 
+			generator.setPersonTypes(personTypes);
+			generator.setEntityBlackList(blackList);
+			generator.setNamespace(namespace);
+			generators.put(generator.getQuestionType(), generator);
+		}
 		long end = System.currentTimeMillis();
 		System.out.println("Operation took " + (end - start) + "ms");
 		final List<RESTQuestion> restQuestions = Collections.synchronizedList(new ArrayList<RESTQuestion>(maxNrOfQuestions));

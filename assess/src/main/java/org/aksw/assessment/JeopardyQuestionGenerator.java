@@ -21,20 +21,25 @@ import java.util.regex.Pattern;
 
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.answer.SimpleAnswer;
+import org.aksw.assessment.question.Question;
+import org.aksw.assessment.question.QuestionType;
+import org.aksw.assessment.question.SimpleQuestion;
 import org.aksw.assessment.rest.RESTService;
+import org.aksw.assessment.util.BlackList;
+import org.aksw.assessment.util.DBpediaPropertyBlackList;
+import org.aksw.assessment.util.DefaultPropertyBlackList;
+import org.aksw.assessment.util.PermutationsOfN;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.math3.random.RandomGenerator;
+import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.apache.log4j.Logger;
+import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-
-import simplenlg.framework.NLGElement;
-import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
-import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
@@ -42,20 +47,22 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.query.ResultSetFormatter;
 import com.hp.hpl.jena.rdf.model.Resource;
 
+import simplenlg.framework.NLGElement;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
+
 /**
- *
- * @author ngonga
+ * A generator for Jeopardy like questions.
+ * @author Axel Ngonga
  */
 public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
-    private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
+    private static final Logger logger = Logger.getLogger(JeopardyQuestionGenerator.class.getName());
    
     private Map<OWLClass, List<Resource>> wrongAnswersByType = new HashMap<>();
     
@@ -65,8 +72,13 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
 	private boolean useCompleteResourcesOnly = true;
 	
-    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace, Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-        super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
+    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+        super(qef, cacheDirectory, restrictions);
+        
+        verbalizer = new JeopardyVerbalizer(qef, cacheDirectory, wordNetDir);
+        verbalizer.setPersonTypes(personTypes);
+        verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
+        verbalizer.setOmitContentInBrackets(true);
     }
     
     /* (non-Javadoc)
@@ -108,25 +120,54 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     		return super.getMostProminentResources(types);
     	}
     }
-
-    public Question generateQuestion(Resource r, OWLClass type) {
+    
+    @Override
+    public Set<Question> getQuestions(Map<Triple, Double> informativenessMap, int difficulty, int numberOfQuestions) {
+    	 usedWrongAnswers = new HashSet<>();
+        Set<Question> questions = new HashSet<>();
         
-        //generate the question in forms of a summary describing the resource
+        // 1. we generate possible resources
+        Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
+        
+        //  2. we generate question(s) as long as we have resources or we got the maximum number of questions
+        Iterator<Entry<Resource, OWLClass>> iterator = resources.entrySet().iterator();
+        
+        while(questions.size() < numberOfQuestions && iterator.hasNext()){
+        	Entry<Resource, OWLClass> entry = iterator.next();
+        	
+        	Resource focusEntity = entry.getKey();
+        	OWLClass cls = entry.getValue();
+        	
+            // generate a question
+        	Question q = generateQuestion(focusEntity, cls);
+            if (q != null) {
+                questions.add(q);
+            } else {
+            	logger.warn("Could not generate question.");
+            }
+        }
+        
+        return questions;
+    }
+
+    private Question generateQuestion(Resource r, OWLClass type) {
+        
+        // generate the question in forms of a summary describing the resource
         String summary = getEntitySummary(r.getURI());
         
         if(summary == null){
         	return null;
         }
         
-        //get properties of the resource
+        // get properties of the resource
         String query = "DESCRIBE <" + r.getURI() + ">";
         
-        //the correct answer is just the resource itself
+        // the correct answer is just the resource itself
         List<Answer> correctAnswers = new ArrayList<>();
         Answer correctAnswer = new SimpleAnswer(getTextualRepresentation(r));
         correctAnswers.add(correctAnswer);
         
-        //generate the wrong answers
+        // generate the wrong answers
 		List<Answer> wrongAnswers = generateWrongAnswers(r, type);
 
 		NLGElement npPhrase = nlg.getNPPhrase(type.toStringID(), false);
@@ -363,25 +404,34 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
 	public static void main(String args[]) throws Exception{
 		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
-		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dsa.ini")){
+		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dbpedia.ini")){
 			config.load(is);
 		}
 		RESTService.loadConfig(config);
 
 		RESTService rest = new RESTService();
 		List<String> classes = rest.getClasses(null);
-		
-		for(String cls : classes){
+		classes = Lists.newArrayList("http://dbpedia.org/ontology/Actor");
+		for (String cls : classes) {
 			System.out.println("Class:" + cls);
 			try {
 				Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
-		        QueryExecutionFactory qef = RESTService.qef;
-		        
-				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", null, 
-						restrictions,Sets.<String>newHashSet(), new DefaultPropertyBlackList());
+				
+				
+				SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");
+		        endpoint = SparqlEndpoint.getEndpointDBpedia();
+		        SparqlEndpointKS ks = new SparqlEndpointKS(endpoint);
+		        ks.setCacheDir("/tmp/cache");
+		        ks.init();
+		        QueryExecutionFactory qef = ks.getQueryExecutionFactory();//RESTService.qef;
+
+				JeopardyQuestionGenerator sqg = new JeopardyQuestionGenerator(qef, "cache", restrictions);
+				sqg.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+				sqg.setEntityBlackList(new DBpediaPropertyBlackList());
+				sqg.setNamespace("http://dbpedia.org/ontology/");
 				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
-				if(questions.size() == 0){
+				if (questions.size() == 0) {
 					System.err.println("EMTPY");
 				}
 				for (Question q : questions) {

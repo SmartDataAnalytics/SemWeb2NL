@@ -11,6 +11,11 @@ import java.util.Set;
 
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.answer.SimpleAnswer;
+import org.aksw.assessment.question.Question;
+import org.aksw.assessment.question.QuestionType;
+import org.aksw.assessment.question.SimpleQuestion;
+import org.aksw.assessment.util.DBpediaPropertyBlackList;
+import org.aksw.assessment.util.GeneralPropertyBlackList;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.log4j.Logger;
@@ -18,9 +23,6 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-
-import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
-import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -31,18 +33,19 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
 
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
+import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
+
 /**
- *
- * @author ngonga
+ * A generator for Yes/No questions.
+ * @author Axel Ngonga
  */
 public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator {
 	
-	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
+	private static final Logger logger = Logger.getLogger(TrueFalseQuestionGenerator.class.getName());
 
-	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace,
-			Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-		super(qef, cacheDirectory, namespace, restrictions, personTypes, blackList);
-		
+	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+		super(qef, cacheDirectory, restrictions);
 	}
 
     public Question generateQuestion(Resource r, OWLClass type) {
@@ -105,28 +108,29 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         }
     }
 
-    public static void main(String args[]) {
-    	Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
-        restrictions.put(new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Writer")), 
-        		Sets.<OWLObjectProperty>newHashSet(new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace"))));
-        SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
-        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
-        TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(
-        		qef, 
-        		"cache", 
-        		"http://dbpedia.org/ontology/", 
-        		restrictions, 
-        		Sets.newHashSet("http://dbpedia.org/ontology/Person"),
-        		new DBpediaPropertyBlackList());
-        Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
-        for (Question q : questions) {
-            if (q != null) {
-                System.out.println(">>" + q.getText());
-                List<Answer> correctAnswers = q.getCorrectAnswers();
-                System.out.println(correctAnswers);
-                List<Answer> wrongAnswers = q.getWrongAnswers();
-                System.out.println(wrongAnswers);
-            }
-        }
-    }
+	public static void main(String args[]) {
+		Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
+		restrictions.put(new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Writer")),
+				Sets.<OWLObjectProperty> newHashSet(
+						new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace"))));
+		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
+		QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(),
+				endpoint.getDefaultGraphURIs());
+		
+		TrueFalseQuestionGenerator sqg = new TrueFalseQuestionGenerator(qef, "cache", restrictions);
+		sqg.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+		sqg.setEntityBlackList(new DBpediaPropertyBlackList());
+		sqg.setNamespace("http://dbpedia.org/ontology/");
+		
+		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
+		for (Question q : questions) {
+			if (q != null) {
+				System.out.println(">>" + q.getText());
+				List<Answer> correctAnswers = q.getCorrectAnswers();
+				System.out.println(correctAnswers);
+				List<Answer> wrongAnswers = q.getWrongAnswers();
+				System.out.println(wrongAnswers);
+			}
+		}
+	}
 }

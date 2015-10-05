@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.assessment;
+package org.aksw.assessment.question;
 
 /**
  * @author Lorenz Buehmann

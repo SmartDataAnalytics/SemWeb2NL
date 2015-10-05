@@ -14,15 +14,15 @@ import java.util.TreeSet;
 
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.answer.SimpleAnswer;
+import org.aksw.assessment.question.Question;
+import org.aksw.assessment.question.QuestionType;
+import org.aksw.assessment.question.SimpleQuestion;
+import org.aksw.assessment.util.BlackList;
+import org.aksw.assessment.util.DBpediaPropertyBlackList;
+import org.aksw.assessment.util.GeneralPropertyBlackList;
 import org.aksw.assessment.util.RDFNodeComparator;
-import org.aksw.avatar.Verbalizer;
-import org.aksw.avatar.clustering.hardening.HardeningFactory;
-import org.aksw.avatar.clustering.hardening.HardeningFactory.HardeningType;
-import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.sparqltools.util.SPARQLEndpointType;
 import org.aksw.sparqltools.util.SPARQLQueryUtils;
 import org.aksw.triple2nl.DefaultIRIConverter;
 import org.aksw.triple2nl.LiteralConverter;
@@ -65,68 +65,21 @@ import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
  * @author Lorenz Buehmann
  * @author Axel Ngonga
  */
-public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
+public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 
 	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
-    static int DIFFICULTY = 1;
-    
-    protected SimpleNLGwithPostprocessing nlg;
-    
-    private LiteralConverter literalConverter;
-    protected int maxNrOfAnswersPerQuestion = 5;
-    
-    private QueryExecutionFactory qef;
-    private SPARQLReasoner reasoner;
-    
-    //configuration of verbalizer
-    protected Verbalizer verbalizer; 
-    final int maxShownValuesPerProperty = 3;
-    protected double propertyFrequencyThreshold = 0.2; 
-    protected Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
-    protected HardeningType hardeningType = HardeningFactory.HardeningType.SMALLEST;
-    protected String namespace;
-    
-    protected BlackList blackList;
-    
-	protected Map<OWLClass, Set<OWLObjectProperty>> restrictions;
-	protected Set<RDFNode> usedWrongAnswers;
 	
-	protected SPARQLEndpointType endpointType = SPARQLEndpointType.Virtuoso;
-	private TripleConverter tripleConverter;
-	private NLGFactory nlgFactory;
-	private Realiser realiser;
-	private Set<String> personTypes;
-	
-	private boolean generateHints = false;
-	
-	public MultipleChoiceQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, String namespace,
-			Map<OWLClass, Set<OWLObjectProperty>> restrictions, Set<String> personTypes, BlackList blackList) {
-		this.qef = qef;
-		this.namespace = namespace;
-		this.restrictions = restrictions;
-		this.personTypes = personTypes;
-		this.blackList = blackList;
-		
-        literalConverter = new LiteralConverter(new DefaultIRIConverter(qef, cacheDirectory));
-        
-        reasoner = new SPARQLReasoner(qef);
-        
-        String wordNetDir = "wordnet/" + (SimpleNLGwithPostprocessing.isWindows() ? "windows" : "linux") + "/dict";
-        wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
-        System.setProperty("wordnet.database.dir", "/home/rusbeck/wordnet/linux/dict");
-        
-        tripleConverter = new TripleConverter(qef, cacheDirectory, wordNetDir);
-        
-        Lexicon lexicon = Lexicon.getDefaultLexicon();
-        nlgFactory = new NLGFactory(lexicon);
-        realiser = new Realiser(lexicon);
- 
-        verbalizer = new JeopardyVerbalizer(qef, cacheDirectory, wordNetDir);
-        verbalizer.setPersonTypes(personTypes);
-        verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
-        verbalizer.setOmitContentInBrackets(true);
-        
-        nlg = verbalizer.nlg;
+    public MultipleChoiceQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory,
+			Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+    	super(qef, cacheDirectory, restrictions);
+    }
+    
+    /* (non-Javadoc)
+     * @see org.aksw.assessment.AbstractQuestionGenerator#getQuestionType()
+     */
+    @Override
+    public QuestionType getQuestionType() {
+    	return QuestionType.MC;
     }
 	
 	@Override
@@ -291,19 +244,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		
 		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
 		String question = realiser.realiseSentence(p);
-		
         
-//        NLGElement subjectElement = nlgFactory.createNLGElement("entity", LexicalCategory.NOUN);
-//		NLGElement objectElement = nlgFactory.createNLGElement(tp.getObject().toString(), LexicalCategory.NOUN);
-//		
-//		NPPhraseSpec phrase = tripleConverter.convertTriplePattern(tp, subjectElement, objectElement, true, false, true);
-//		List<NLGElement> clauses = phrase.getFeatureAsElementList(InternalFeature.COMPLEMENTS);
-//		String question = realiser.realise(clauses.get(0)).getRealisation();
-		
-//		boolean functional = reasoner.isFunctional(new OWLObjectPropertyImpl(IRI.create(property)));
-//		
-//        String[] questionHeaders = new String[]{"What are", "Please select", "Please choose"};
-//        question = questionHeaders[0] + " " + question;
         logger.info("Question:" + question);
         return question;
     }
@@ -415,7 +356,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
     protected String getTextualRepresentation(RDFNode node){
     	String s;
     	if (node.isURIResource()) {
-			s = nlg.realiser.realise(nlg.getNPPhrase(node.asResource().getURI(), false, false)).getRealisation();
+			s = realiser.realise(nlg.getNPPhrase(node.asResource().getURI(), false, false)).getRealisation();
 		} else if (node.isLiteral()) {
 			s = literalConverter.convert(node.asLiteral());
 		} else {
@@ -443,28 +384,6 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		}
 	}
     
-    /**
-     * Returns a textual summary for a given individual and its type.
-     * @param ind
-     * @return
-     */
-	protected String getEntitySummary(String entityURI, OWLClass type) {
-		logger.info("Generating summary for " + entityURI + " of type " + type + "...");
-		
-		// create the summary
-		OWLNamedIndividualImpl ind = new OWLNamedIndividualImpl(IRI.create(entityURI));
-		List<NLGElement> text = verbalizer.verbalize(ind, type, namespace, propertyFrequencyThreshold, cooccurrenceType, hardeningType);
-		if (text == null)
-			return null;
-		String summary = verbalizer.realize(text);
-		if (summary == null)
-			return null;
-		summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
-		summary = summary.replace(" , among others,", ", among others,");
-		logger.info("...finished generating summary.");
-		return summary;
-	}
-	
 	 protected Map<Resource, OWLClass> getMostProminentResources(Set<OWLClass> types) {
         logger.info("Getting possible resources for types " + types + " ranked by prominence...");
         if (types == null || types.isEmpty()) {
@@ -514,22 +433,6 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 		return verbalizer.getSummaryTriples(new OWLNamedIndividualImpl(IRI.create(entityURI)));
 	}
     
-    /**
-	 * @param blackList a list of properties that must not be used in the 
-	 * questions
-	 */
-	public void setBlackList(BlackList blackList) {
-		this.blackList = blackList;
-	}
-	
-	/**
-	 * @param generateHints whether to generate hints in forms if short
-	 *            descriptions for the correct answers
-	 */
-	public void setGenerateHints(boolean generateHints) {
-		this.generateHints = generateHints;
-	}
-    
     public static void main(String args[]) throws Exception{
         Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(
@@ -544,6 +447,7 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
         				)
         );
         SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");
+        endpoint = SparqlEndpoint.getEndpointDBpedia();
         SparqlEndpointKS ks = new SparqlEndpointKS(endpoint);
         ks.setCacheDir("/tmp/cache");
         ks.init();
@@ -555,15 +459,15 @@ public class MultipleChoiceQuestionGenerator implements QuestionGenerator {
 //        		restrictions,
 //        		new HashSet<String>(), null);
         
-        		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(
-        				qef, 
-        				"cache", "http://dbpedia.org/ontology/", 
-        				restrictions,
-        				Sets.newHashSet("http://dbpedia.org/ontology/Person"), new DBpediaPropertyBlackList());
-        		long start = System.currentTimeMillis();
-        		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
-        		long end = System.currentTimeMillis();
-        		System.out.println("Operation took " + (end - start) + "ms");
+		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(qef, "cache", restrictions);
+		sqg.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+		sqg.setEntityBlackList(new DBpediaPropertyBlackList());
+		sqg.setNamespace("http://dbpedia.org/ontology/");
+
+		long start = System.currentTimeMillis();
+		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
+		long end = System.currentTimeMillis();
+		System.out.println("Operation took " + (end - start) + "ms");
         		
         for (Question q : questions) {
             if (q != null) {
