@@ -5,7 +5,7 @@
 	<parent>
 		<groupId>org.aksw.semweb2nl</groupId>
 		<artifactId>semweb2nl-parent</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>sparql2nl</artifactId>
 	<name>SPARQL2NL</name>
@@ -40,16 +40,18 @@
 			<artifactId>simpack</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>simplenlg</groupId>
-			<artifactId>simplenlg</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.solr</groupId>
 			<artifactId>solr-solrj</artifactId>
+			<exclusions>
+				<exclusion>
+					<artifactId>httpclient</artifactId>
+					<groupId>org.apache.httpcomponents</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.jgrapht</groupId>

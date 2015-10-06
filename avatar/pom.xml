@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.aksw.semweb2nl</groupId>
     <artifactId>semweb2nl-parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
   </parent>
   <artifactId>avatar</artifactId>
   <name>AVATAR</name>

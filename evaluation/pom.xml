@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.aksw.semweb2nl</groupId>
 		<artifactId>semweb2nl-parent</artifactId>
-		<version>0.0.1-SNAPSHOT</version>
+		<version>0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>evaluation</artifactId>
 	<name>Evaluation</name>
@@ -13,7 +13,7 @@
 		<dependency>
 			<groupId>org.aksw.semweb2nl</groupId>
 			<artifactId>owl2nl</artifactId>
-			<version>0.0.1-SNAPSHOT</version>
+			<version>0.1-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>net.sf.trove4j</groupId>
