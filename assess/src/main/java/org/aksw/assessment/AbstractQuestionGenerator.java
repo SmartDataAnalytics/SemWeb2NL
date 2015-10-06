@@ -1,10 +1,15 @@
 package org.aksw.assessment;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.aksw.assessment.answer.Answer;
+import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.util.BlackList;
 import org.aksw.assessment.util.DefaultPropertyBlackList;
@@ -25,12 +30,17 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
 
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.realiser.english.Realiser;
+import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
 /**
@@ -103,6 +113,11 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	}
 	
 	/**
+	 * @return the type of question supported by the generator
+	 */
+	public abstract QuestionType getQuestionType();
+	
+	/**
 	 * @param personTypes a set of classes that contain persons
 	 */
 	public void setPersonTypes(Set<String> personTypes) {
@@ -148,31 +163,169 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	}
 	
 	/**
-	 * @return the type of question supported by the generator
+	 * @param restrictions the restrictions to set
 	 */
-	public abstract QuestionType getQuestionType();
+	public void setRestrictions(Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+		this.restrictions = restrictions;
+	}
 	
-	 /**
-     * Returns a textual summary for a given individual and its type.
-     * @param ind the individual
-     * @param type the type of the individual
-     * @return a textual summary for a given individual and its type
-     */
+	/**
+	 * Whether the given class denotes persons.
+	 * 
+	 * @param cls the class to check
+	 * @return <code>true</code> if it's a person type, otherwise
+	 *         <code>false</code>
+	 */
+	protected boolean isPersonType(String cls) {
+		for (String personType : personTypes) {
+			if (cls.equals(personType)) {
+				return true;
+			} else if (reasoner.isSuperClassOf(
+					new OWLClassImpl(IRI.create(personType)),
+					new OWLClassImpl(IRI.create(cls)))) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * Whether the given class denotes locations.
+	 * 
+	 * @param cls the class to check
+	 * @return <code>true</code> if it's a location type, otherwise
+	 *         <code>false</code>
+	 */
+	protected boolean isLocationType(String cls) {
+		for (String locationType : locationTypes) {
+			if (cls.equals(locationType)) {
+				return true;
+			} else if (reasoner.isSuperClassOf(
+					new OWLClassImpl(IRI.create(locationType)),
+					new OWLClassImpl(IRI.create(cls)))) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	protected ResultSet executeSelectQuery(String query) {
+		logger.debug("Sending query \n" + query);
+        QueryExecution qe = qef.createQueryExecution(query);
+        ResultSet rs = null;
+        try {
+            rs = qe.execSelect();
+        } catch (Exception e) {
+            logger.error("Error when executing query\n" + query, e);
+        }
+        return rs;
+    }
+	
+	/**
+	 * Returns the triples used for summarization of <code>entity</code> 
+	 * @param entity the entity to summarize
+	 * @return a set of triples
+	 */
+	protected Collection<Triple> getSummaryTriples(String entity) {
+		return verbalizer.getSummaryTriples(new OWLNamedIndividualImpl(IRI.create(entity)));
+	}
+	
+	/**
+	 * Returns a textual summary for a given individual and its type.
+	 * 
+	 * @param ind the individual
+	 * @param type the type of the individual
+	 * @return a textual summary for a given individual and its type
+	 */
 	protected String getEntitySummary(String entityURI, OWLClass type) {
 		logger.info("Generating summary for " + entityURI + " of type " + type + "...");
-		
+
 		// create the summary
 		OWLNamedIndividualImpl ind = new OWLNamedIndividualImpl(IRI.create(entityURI));
-		List<NLGElement> text = verbalizer.verbalize(ind, type, namespace, propertyFrequencyThreshold, cooccurrenceType, hardeningType);
-		if (text == null)
+		List<NLGElement> text = verbalizer.verbalize(ind, type, namespace, propertyFrequencyThreshold, cooccurrenceType,
+				hardeningType);
+		if (text == null) {
 			return null;
+		}
 		String summary = verbalizer.realize(text);
-		if (summary == null)
+		if (summary == null) {
 			return null;
+		}
 		summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
 		summary = summary.replace(" , among others,", ", among others,");
 		logger.info("...finished generating summary.");
 		return summary;
+	}
+	
+	 /**
+     * Returns a textual summary for a given individual.
+     * @param ind
+     * @return
+     */
+	protected String getEntitySummary(String entityURI) {
+		//get the most specific type(s) of the individual
+		Set<OWLClass> mostSpecificTypes = getMostSpecificTypes(entityURI);
+		
+		// pick the most prominent type
+		if (mostSpecificTypes.iterator().hasNext()) {
+			// return the summary
+			OWLClass mostSpecificType = mostSpecificTypes.iterator().next();
+			return getEntitySummary(entityURI, mostSpecificType);
+		} else {
+			return "No hint available";
+		}
+	}
+	
+	protected List<Answer> generateAnswers(Collection<RDFNode> resources, boolean addHint) {
+		List<Answer> answers = new ArrayList<Answer>();
+
+		for (RDFNode node : resources) {
+			// get a textual representation of the resource
+			String textualRepresentation = getTextualRepresentation(node);
+
+			// if answer is a resource, additionally generate a summary which can be used as hint 
+			String hint = null;
+			if (addHint && node.isURIResource()) {
+				hint = generateHint(node.asResource());
+			}
+			Answer answer = new SimpleAnswer(textualRepresentation, hint);
+			answers.add(answer);
+		}
+		return answers;
+	}
+	
+	protected String generateHint(Resource r) {
+		String hint = getEntitySummary(r.getURI());
+		return hint;
+	}
+
+	/**
+	 * Generate textual representation of RDFNode object.
+	 * 
+	 * @param node
+	 * @return
+	 */
+	protected String getTextualRepresentation(RDFNode node) {
+		String s;
+		if (node.isURIResource()) {
+			s = realiser.realise(nlg.getNPPhrase(node.asResource().getURI(), false, false)).getRealisation();
+		} else if (node.isLiteral()) {
+			s = literalConverter.convert(node.asLiteral());
+		} else {
+			throw new IllegalArgumentException("Conversion of blank node " + node + " not supported yet!");
+		}
+		return s;
+	}
+	
+	protected Set<OWLClass> getMostSpecificTypes(String uri) {
+		Set<OWLClass> types = reasoner.getMostSpecificTypes(new OWLNamedIndividualImpl(IRI.create(uri)));
+		for (Iterator<OWLClass> iter = types.iterator(); iter.hasNext();) {
+			OWLClass cls = iter.next();
+			if (namespace != null && !cls.toStringID().startsWith(namespace)) {
+				iter.remove();
+			}
+		}
+		return types;
 	}
 
 }

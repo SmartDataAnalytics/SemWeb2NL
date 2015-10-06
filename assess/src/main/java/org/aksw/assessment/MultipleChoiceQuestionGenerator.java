@@ -17,25 +17,22 @@ import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.SimpleQuestion;
-import org.aksw.assessment.util.BlackList;
 import org.aksw.assessment.util.DBpediaPropertyBlackList;
 import org.aksw.assessment.util.GeneralPropertyBlackList;
 import org.aksw.assessment.util.RDFNodeComparator;
+import org.aksw.assessment.util.SPARQLQueryUtils;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.sparqltools.util.SPARQLQueryUtils;
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.TripleConverter;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.dllearner.reasoning.SPARQLReasoner;
+import org.dllearner.utilities.OwlApiJenaUtils;
+import org.semanticweb.owlapi.model.EntityType;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLClassExpression;
+import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.google.common.base.Joiner;
@@ -43,19 +40,17 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.Query;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.sparql.core.Var;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InterrogativeType;
-import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
-import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
-import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
@@ -125,8 +120,14 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         // select the property used in the question
         String property = selectQuestionProperty(r, type, inSubjectPosition);
         
+        // generate a focus triple
+        Triple focusTriple = generateFocusTriple(r, property, inSubjectPosition);
+        
+        // generate the question text
+        String questionText = generateQuestionText(focusTriple, inSubjectPosition, hideSubject);
+        
         // generate correct answers
-        Set<RDFNode> correctAnswers = generateCorrectAnswerCandidates(r, property, inSubjectPosition);
+        Set<RDFNode> correctAnswers = generateCorrectAnswerCandidates(focusTriple, inSubjectPosition, hideSubject);
         
         // if there is no correct answer, we stop
         if(correctAnswers.isEmpty()){
@@ -134,14 +135,8 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         	return null;
         }
         
-        // choose one triple as focus
-        Triple focusTriple = Triple.create(r.asNode(), NodeFactory.createURI(property), correctAnswers.iterator().next().asNode());
-        
-        // generate the question text
-        String questionText = generateQuestionText(focusTriple, inSubjectPosition, hideSubject);
-        
         // generate wrong answer candidates
-        Set<RDFNode> wrongAnswerCandidates = generateWrongAnswerCandidates(r, property, correctAnswers);
+        Set<RDFNode> wrongAnswerCandidates = generateWrongAnswerCandidates(focusTriple, inSubjectPosition, hideSubject);
         wrongAnswerCandidates.removeAll(usedWrongAnswers);
         
         // we pick at least 1 and at most N correct answers randomly
@@ -224,21 +219,23 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     	// decide which interrogative type to use
     	InterrogativeType interrogativeType;
     	if(hideSubject) {
-    		interrogativeType = InterrogativeType.WHAT_OBJECT;
-    	} else {
     		interrogativeType = InterrogativeType.WHAT_SUBJECT;
+    	} else {
+    		interrogativeType = InterrogativeType.WHAT_OBJECT;
     	}
     	
     	// use 'who' instead of which if type is person
     	if(hideSubject) {
-    		OWLClassExpression range = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
-        	if(isPersonType(range.asOWLClass())) {
-        		interrogativeType = InterrogativeType.WHO_OBJECT;
-        	}
-    	} else {
     		OWLClassExpression domain = reasoner.getDomain(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
-        	if(isPersonType(domain.asOWLClass())) {
+        	if(isPersonType(domain.asOWLClass().toStringID())) {
         		interrogativeType = InterrogativeType.WHO_SUBJECT;
+        	} 
+    	} else {
+    		OWLClassExpression range = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+        	if(isPersonType(range.asOWLClass().toStringID())) {
+        		interrogativeType = InterrogativeType.WHO_OBJECT;
+        	} else if(isLocationType(range.asOWLClass().toStringID())) {
+        		interrogativeType = InterrogativeType.WHERE_OBJECT;
         	}
     	}
 		
@@ -249,16 +246,94 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         return question;
     }
     
-    private Set<RDFNode> generateCorrectAnswerCandidates(Resource r, String property, boolean inSubjectPosition) {
+    private String generateQuestionText2(Triple t, boolean inSubjectPosition, boolean hideSubject) {
+    	logger.info("Generating question...");
+    	
+    	// convert to phrase
+    	SPhraseSpec p = tripleConverter.convertTriple(t);
+    	
+    	// get the type of the hidden entity
+    	OWLNamedIndividual entity;
+    	if(hideSubject) {
+    		entity = OwlApiJenaUtils.asOWLEntity(t.getSubject(), EntityType.NAMED_INDIVIDUAL);
+    	} else {
+    		entity = OwlApiJenaUtils.asOWLEntity(t.getObject(), EntityType.NAMED_INDIVIDUAL);
+    	}
+    	Set<OWLClass> types = reasoner.getMostSpecificTypes(entity);
+    	
+    	
+    	
+    	// decide which interrogative type to use
+    	InterrogativeType interrogativeType;
+    	if(hideSubject) {
+    		interrogativeType = InterrogativeType.WHAT_SUBJECT;
+    	} else {
+    		interrogativeType = InterrogativeType.WHAT_OBJECT;
+    	}
+    	
+    	// use 'who' instead of which if type is person
+    	if(hideSubject) {
+    		OWLClassExpression range = reasoner.getDomain(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+        	if(isPersonType(range.asOWLClass().toStringID())) {
+        		interrogativeType = InterrogativeType.WHO_SUBJECT;
+        	}
+    	} else {
+    		OWLClassExpression domain = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+        	if(isPersonType(domain.asOWLClass().toStringID())) {
+        		interrogativeType = InterrogativeType.WHO_OBJECT;
+        	}
+    	}
+		
+		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
+		String question = realiser.realiseSentence(p);
+        
+        logger.info("Question:" + question);
+        return question;
+    }
+    
+	private Triple generateFocusTriple(Resource r, String property, boolean inSubjectPosition) {
+		logger.info("Generating focus triple...");
+		Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
+
+		Query query;
+		if (inSubjectPosition) {
+			query = QueryFactory.create(String.format("select distinct ?x where {<%s> <%s> ?x}", r.getURI(), property));
+		} else {
+			query = QueryFactory.create(String.format("select distinct ?x where {?x <%s> <%s>}", property, r.getURI()));
+		}
+		query.setLimit(500);
+
+		Var var = Var.alloc("x");
+		
+		SPARQLQueryUtils.addRanking(endpointType, query, var);
+
+		ResultSet rs = executeSelectQuery(query.toString());
+
+		while (rs.hasNext()) {
+			QuerySolution qs = rs.next();
+			RDFNode node = qs.get(var.getName());
+			if (node.isLiteral()) {
+				correctAnswers.add(node.asLiteral());
+			} else {
+				correctAnswers.add(node.asResource());
+			}
+			return Triple.create(r.asNode(), NodeFactory.createURI(property), node.asNode());
+		}
+		logger.info("...got " + correctAnswers);
+
+		return null;
+	}
+    
+    private Set<RDFNode> generateCorrectAnswerCandidates(Triple focusTriple, boolean inSubjectPosition, boolean hideSubject) {
     	 logger.info("Generating correct answers...");
     	 Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
     	 
     	// get values for property, i.e. the correct answers
     	String query;
-    	if(inSubjectPosition) {
-    		query = String.format("select distinct ?x where {<%s> <%s> ?x}", r.getURI(), property);
+    	if(hideSubject) {
+    		query = String.format("select distinct ?x where {?x <%s> <%s>}", focusTriple.getPredicate().getURI(), focusTriple.getObject().getURI());
     	} else {
-    		query = String.format("select distinct ?x where {?x <%s> <%s>}", property, r.getURI());
+    		query = String.format("select distinct ?x where {<%s> <%s> ?x}", focusTriple.getSubject().getURI(), focusTriple.getPredicate().getURI());
     	}
         
         ResultSet rs = executeSelectQuery(query);
@@ -276,113 +351,39 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         return correctAnswers;
     }
     
-    private Set<RDFNode> generateWrongAnswerCandidates(Resource r, String property, Set<RDFNode> correctAnswers) {
-        logger.info("Generating wrong answers...");
+    private Set<RDFNode> generateWrongAnswerCandidates(Triple focusTriple, boolean inSubjectPosition, boolean hideSubject) {
+        logger.info("Generating wrong answer candidates...");
         Set<RDFNode> wrongAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
+   	 
+    	Query query;
+    	if(hideSubject) {
+    		query = QueryFactory.create(
+	    				String.format("select distinct ?x where {?x <%s> ?o . FILTER NOT EXISTS {?x <%s> <%s>}}", 
+	    						focusTriple.getPredicate().getURI(), focusTriple.getPredicate().getURI(), focusTriple.getObject().getURI()));
+    	} else {
+    		query = QueryFactory.create(
+    					String.format("select distinct ?x where {?s <%s> ?x . FILTER NOT EXISTS {<%s> <%s> ?x}}", 
+    								focusTriple.getPredicate().getURI(), focusTriple.getSubject().getURI(), focusTriple.getPredicate().getURI()));
+    	}
+    	query.setLimit(1000);
+    	
+    	// take the most popular entities
+    	SPARQLQueryUtils.addRanking(endpointType, query, Var.alloc("x"));
+    	
+        ResultSet rs = executeSelectQuery(query.toString());
         
-        // get similar of nature but wrong answers by using resources in object position using the same property as for the correct answers
-        // TODO: some ranking for the wrong answers could be done in the same way as for the subjects
-		String query = "select distinct ?o where {?x <" + property + "> ?o. } LIMIT 1000";
-		ResultSet rs = executeSelectQuery(query);
-		while (rs.hasNext()) {
-			QuerySolution qs = rs.next();
-			RDFNode node = qs.get("o");
-			
-			if (!correctAnswers.contains(node)) {
-				wrongAnswers.add(node);
-			}
-		}
+        while (rs.hasNext()) {
+        	QuerySolution qs = rs.next();
+            if (qs.get("x").isLiteral()) {
+            	wrongAnswers.add(qs.get("x").asLiteral());
+            } else {
+            	wrongAnswers.add(qs.get("x").asResource());
+            }
+        }
+		logger.info("...got " + wrongAnswers);
+		
 		return wrongAnswers;
     }
-    
-    private boolean isPersonType(OWLClass cls) {
-    	for (String type : personTypes) {
-    		if(cls.toStringID().equals(type)) {
-    			return true;
-    		} else if(reasoner.isSuperClassOf(new OWLClassImpl(IRI.create(type)), cls)) {
-				return true;
-			}
-		}
-    	return false;
-    }
-    
-    /**
-	 * @param restrictions the restrictions to set
-	 */
-	public void setRestrictions(Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
-		this.restrictions = restrictions;
-	}
-    
-	protected ResultSet executeSelectQuery(String query) {
-		logger.debug("Sending query \n" + query);
-        QueryExecution qe = qef.createQueryExecution(query);
-        ResultSet rs = null;
-        try {
-            rs = qe.execSelect();
-        } catch (Exception e) {
-            logger.error("Error when executing query\n" + query, e);
-        }
-        return rs;
-    }
-
-    protected List<Answer> generateAnswers(Collection<RDFNode> resources, boolean addHint) {
-		List<Answer> answers = new ArrayList<Answer>();
-		
-		for (RDFNode node : resources) {
-			// get a textual representation of the resource
-			String textualRepresentation = getTextualRepresentation(node);
-			
-			// if answer is a resource, additionally generate a summary which can be used as hint 
-			String hint = null;
-			if (addHint && node.isURIResource()) {
-				hint = generateHint(node.asResource());
-			}
-			Answer answer = new SimpleAnswer(textualRepresentation, hint);
-			answers.add(answer);
-		}
-		return answers;
-	}
-    
-    protected String generateHint(Resource r){
-    	String hint = getEntitySummary(r.getURI());
-    	return hint;
-    }
-    
-    /**
-     * Generate textual representation of RDFNode object.
-     * @param node
-     * @return
-     */
-    protected String getTextualRepresentation(RDFNode node){
-    	String s;
-    	if (node.isURIResource()) {
-			s = realiser.realise(nlg.getNPPhrase(node.asResource().getURI(), false, false)).getRealisation();
-		} else if (node.isLiteral()) {
-			s = literalConverter.convert(node.asLiteral());
-		} else {
-			throw new IllegalArgumentException("Conversion of blank node " + node + " not supported yet!");
-		}
-    	return s;
-    }
-    
-    /**
-     * Returns a textual summary for a given individual.
-     * @param ind
-     * @return
-     */
-	protected String getEntitySummary(String entityURI) {
-		//get the most specific type(s) of the individual
-		Set<OWLClass> mostSpecificTypes = getMostSpecificTypes(entityURI);
-		
-		// pick the most prominent type
-		if (mostSpecificTypes.iterator().hasNext()) {
-			// return the summary
-			OWLClass mostSpecificType = mostSpecificTypes.iterator().next();
-			return getEntitySummary(entityURI, mostSpecificType);
-		} else {
-			return "No hint available";
-		}
-	}
     
 	 protected Map<Resource, OWLClass> getMostProminentResources(Set<OWLClass> types) {
         logger.info("Getting possible resources for types " + types + " ranked by prominence...");
@@ -396,9 +397,9 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         	query.append("SELECT DISTINCT ?x WHERE{");
         	query.append("?x a <" + type.toStringID() + ">.");
         	query.append("?x ?p ?o . VALUES ?p {" + Joiner.on(" ").join(restrictions.get(type)) + "}");
-        	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
+        	org.aksw.sparqltools.util.SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
         	query.append("}");
-        	SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
+        	org.aksw.sparqltools.util.SPARQLQueryUtils.addRankingOrder(endpointType, query, "x");
             query.append(" LIMIT 500");
             ResultSet rs = executeSelectQuery(query.toString());
             QuerySolution qs;
@@ -418,22 +419,8 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         return result;
     }
 	
-	protected Set<OWLClass> getMostSpecificTypes(String uri) {
-		Set<OWLClass> types = reasoner.getMostSpecificTypes(new OWLNamedIndividualImpl(IRI.create(uri)));
-		for (Iterator<OWLClass> iter = types.iterator(); iter.hasNext();) {
-			OWLClass cls = iter.next();
-			if (namespace != null && !cls.toStringID().startsWith(namespace)) {
-				iter.remove();
-			}
-		}
-		return types;
-	}
-
-    protected Collection<Triple> getSummaryTriples(String entityURI){
-		return verbalizer.getSummaryTriples(new OWLNamedIndividualImpl(IRI.create(entityURI)));
-	}
-    
     public static void main(String args[]) throws Exception{
+    	
         Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
         restrictions.put(
 //        		new OWLClassImpl(IRI.create("http://www4.wiwiss.fu-berlin.de/diseasome/resource/diseasome/diseases")),
@@ -461,11 +448,12 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         
 		MultipleChoiceQuestionGenerator sqg = new MultipleChoiceQuestionGenerator(qef, "cache", restrictions);
 		sqg.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
+		sqg.setLocationTypes(Sets.newHashSet("http://dbpedia.org/ontology/Place"));
 		sqg.setEntityBlackList(new DBpediaPropertyBlackList());
 		sqg.setNamespace("http://dbpedia.org/ontology/");
 
 		long start = System.currentTimeMillis();
-		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 20);
+		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 5);
 		long end = System.currentTimeMillis();
 		System.out.println("Operation took " + (end - start) + "ms");
         		
