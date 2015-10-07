@@ -1,7 +1,6 @@
 package org.aksw.assessment;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -13,7 +12,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.aksw.assessment.answer.Answer;
-import org.aksw.assessment.answer.SimpleAnswer;
 import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.question.SimpleQuestion;
@@ -27,6 +25,7 @@ import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.utilities.OWLAPIUtils;
 import org.dllearner.utilities.OwlApiJenaUtils;
 import org.semanticweb.owlapi.model.EntityType;
 import org.semanticweb.owlapi.model.IRI;
@@ -36,6 +35,7 @@ import org.semanticweb.owlapi.model.OWLNamedIndividual;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.graph.NodeFactory;
@@ -49,10 +49,14 @@ import com.hp.hpl.jena.rdf.model.Resource;
 import com.hp.hpl.jena.sparql.core.Var;
 
 import simplenlg.features.Feature;
+import simplenlg.features.InternalFeature;
 import simplenlg.features.InterrogativeType;
+import simplenlg.framework.LexicalCategory;
+import simplenlg.framework.NLGElement;
+import simplenlg.phrasespec.NPPhraseSpec;
+import simplenlg.phrasespec.PPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
-import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 /**
@@ -63,6 +67,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 
 	private static final Logger logger = Logger.getLogger(MultipleChoiceQuestionGenerator.class.getName());
+	private RandomGenerator rndGen;
 	
     public MultipleChoiceQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory,
 			Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
@@ -82,7 +87,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     	 usedWrongAnswers = new HashSet<>();
         Set<Question> questions = new HashSet<>();
         
-        RandomGenerator rndGen = RandomGeneratorFactory.createRandomGenerator(new Random(123));
+        rndGen = RandomGeneratorFactory.createRandomGenerator(new Random(123));
         
         // 1. we generate possible resources
         Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
@@ -100,7 +105,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
             boolean inSubjectPosition = true;//rndGen.nextBoolean();
             
             // hide subject or object in question
-            boolean hideSubject = false;//rndGen.nextBoolean();
+            boolean hideSubject = rndGen.nextBoolean();
         	
             // generate a question
         	Question q = generateQuestion(focusEntity, cls, inSubjectPosition, hideSubject);
@@ -124,7 +129,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         Triple focusTriple = generateFocusTriple(r, property, inSubjectPosition);
         
         // generate the question text
-        String questionText = generateQuestionText(focusTriple, inSubjectPosition, hideSubject);
+        String questionText = generateQuestionText2(focusTriple, inSubjectPosition, hideSubject);
         
         // generate correct answers
         Set<RDFNode> correctAnswers = generateCorrectAnswerCandidates(focusTriple, inSubjectPosition, hideSubject);
@@ -152,7 +157,6 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         Collections.shuffle(wrongAnswerList, rnd);
         wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion - correctAnswerList.size()));
         usedWrongAnswers.addAll(wrongAnswerList);
-        logger.info("...got " + wrongAnswerList);
         
         return new SimpleQuestion(
         		questionText, 
@@ -167,34 +171,34 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     	// generate the property candidates
     	Set<String> propertyCandidates = new HashSet<String>();
     	
-    	 // if there are no restrictions on the class we randomly select a property based on the existing instance data
-        if(restrictions.get(type).isEmpty()){
-			// first of all, we check if there exists any meaningful information about the given resource, 
-			// i.e. whether there are interesting triples
-			// this is done by getting all properties for the given resource and filter out the black listed ones
-            logger.info("Getting property candidates...");
-            String query;
-            if(subjectPosition) {
-            	 query = String.format("select distinct ?p where {<%s> ?p [] . }", r.getURI());
-            } else {
-            	query = String.format("select distinct ?p where { [] ?p <%s> . }", r.getURI());
-            }
-            
-            ResultSet rs = executeSelectQuery(query);
-         
-            while (rs.hasNext()) {
-            	QuerySolution qs = rs.next();
-                String property = qs.getResource("p").getURI();
-                // filter by black list
-                if (!GeneralPropertyBlackList.getInstance().contains(property)) {
-                	propertyCandidates.add(property);
-                }
-            }
-        } else {
-        	for (OWLObjectProperty p : restrictions.get(type)) {
-				propertyCandidates.add(p.toStringID());
+		// first of all, we check if there exists any meaningful information about the given resource, 
+		// i.e. whether there are interesting triples
+		// this is done by getting all properties for the given resource and filter out the black listed ones
+		logger.info("Getting property candidates...");
+		String query;
+		if (subjectPosition) {
+			query = String.format("select distinct ?p where {<%s> ?p [] . }", r.getURI());
+		} else {
+			query = String.format("select distinct ?p where { [] ?p <%s> . }", r.getURI());
+		}
+
+		ResultSet rs = executeSelectQuery(query);
+
+		while (rs.hasNext()) {
+			QuerySolution qs = rs.next();
+			String property = qs.getResource("p").getURI();
+			// filter by black list
+			if (!GeneralPropertyBlackList.getInstance().contains(property)) {
+				propertyCandidates.add(property);
 			}
-        }
+		}
+    	            
+    	 // apply the restrictions
+		Set<String> tmp = new HashSet<>();
+    	for (OWLObjectProperty p : restrictions.get(type)) {
+			tmp.add(p.toStringID());
+		}
+    	propertyCandidates.retainAll(tmp);
         logger.info("Property candidates: " + propertyCandidates);
         
         // early termination if resource has no meaningful properties
@@ -249,43 +253,74 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     private String generateQuestionText2(Triple t, boolean inSubjectPosition, boolean hideSubject) {
     	logger.info("Generating question...");
     	
+    	String question;
+    	
     	// convert to phrase
     	SPhraseSpec p = tripleConverter.convertTriple(t);
     	
     	// get the type of the hidden entity
-    	OWLNamedIndividual entity;
+    	OWLClass type;
     	if(hideSubject) {
-    		entity = OwlApiJenaUtils.asOWLEntity(t.getSubject(), EntityType.NAMED_INDIVIDUAL);
+    		type = reasoner.getDomain(OwlApiJenaUtils.asOWLEntity(t.getPredicate(), EntityType.OBJECT_PROPERTY)).asOWLClass();
     	} else {
-    		entity = OwlApiJenaUtils.asOWLEntity(t.getObject(), EntityType.NAMED_INDIVIDUAL);
-    	}
-    	Set<OWLClass> types = reasoner.getMostSpecificTypes(entity);
-    	
-    	
-    	
-    	// decide which interrogative type to use
-    	InterrogativeType interrogativeType;
-    	if(hideSubject) {
-    		interrogativeType = InterrogativeType.WHAT_SUBJECT;
-    	} else {
-    		interrogativeType = InterrogativeType.WHAT_OBJECT;
+    		type = reasoner.getRange(OwlApiJenaUtils.asOWLEntity(t.getPredicate(), EntityType.OBJECT_PROPERTY)).asOWLClass();
     	}
     	
-    	// use 'who' instead of which if type is person
-    	if(hideSubject) {
-    		OWLClassExpression range = reasoner.getDomain(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
-        	if(isPersonType(range.asOWLClass().toStringID())) {
-        		interrogativeType = InterrogativeType.WHO_SUBJECT;
+    	boolean useOfWhich = rndGen.nextBoolean();
+    	
+    	if(useOfWhich && hideSubject) {
+    		NLGElement subjectElt = p.getSubject();
+    		
+    		SPhraseSpec questionPhrase;
+        	
+        	if(subjectElt.hasFeature(InternalFeature.SPECIFIER)) {// NNP's NP 'be' 'NP'
+        		subjectElt.removeFeature(InternalFeature.SPECIFIER);
+        		
+        		NPPhraseSpec npPhrase = nlg.getNPPhrase(type.toStringID(), false);
+        		npPhrase.setSpecifier(nlgFactory.createWord("which", LexicalCategory.PRONOUN));
+        		
+        		PPPhraseSpec pp = nlgFactory.createPrepositionPhrase("of");
+        		pp.setComplement(npPhrase);
+        		
+        		subjectElt.setFeature(InternalFeature.COMPLEMENTS, Lists.newArrayList(pp));
+        		
+        		questionPhrase = nlgFactory.createClause(subjectElt, p.getVerbPhrase(), p.getObject());
+        		
+        	} else {// NNP VP NP
+        		NPPhraseSpec subject = nlg.getNPPhrase(type.toStringID(), false);
+        		subject.setSpecifier(nlgFactory.createWord("which", LexicalCategory.PRONOUN));
+        		
+        		questionPhrase = nlgFactory.createClause(subject, p.getVerbPhrase(), p.getObject());
         	}
+
+    		question = realiser.realiseSentence(questionPhrase);
     	} else {
-    		OWLClassExpression domain = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
-        	if(isPersonType(domain.asOWLClass().toStringID())) {
-        		interrogativeType = InterrogativeType.WHO_OBJECT;
+    		// decide which interrogative type to use
+        	InterrogativeType interrogativeType;
+        	if(hideSubject) {
+        		interrogativeType = InterrogativeType.WHAT_SUBJECT;
+        	} else {
+        		interrogativeType = InterrogativeType.WHAT_OBJECT;
         	}
+        	
+        	// use 'who' instead of which if type is person
+        	if(hideSubject) {
+        		OWLClassExpression range = reasoner.getDomain(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+            	if(isPersonType(range.asOWLClass().toStringID())) {
+            		interrogativeType = InterrogativeType.WHO_SUBJECT;
+            	}
+        	} else {
+        		OWLClassExpression range = reasoner.getRange(new OWLObjectPropertyImpl(IRI.create(t.getPredicate().getURI())));
+            	if(isPersonType(range.asOWLClass().toStringID())) {
+            		interrogativeType = InterrogativeType.WHO_OBJECT;
+            	} else if(isLocationType(range.asOWLClass().toStringID())) {
+            		interrogativeType = InterrogativeType.WHERE_OBJECT;
+            	}
+        	}
+    		
+    		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
+    		question = realiser.realiseSentence(p);
     	}
-		
-		p.setFeature(Feature.INTERROGATIVE_TYPE, interrogativeType);
-		String question = realiser.realiseSentence(p);
         
         logger.info("Question:" + question);
         return question;
@@ -319,7 +354,8 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 			}
 			return Triple.create(r.asNode(), NodeFactory.createURI(property), node.asNode());
 		}
-		logger.info("...got " + correctAnswers);
+		
+		logger.warn("got no focus triple. query:\n" + query);
 
 		return null;
 	}
@@ -427,10 +463,10 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 //        		new HashSet<OWLObjectProperty>()
         		new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Person")), 
         		Sets.<OWLObjectProperty>newHashSet(
-        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace")) 
-//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthDate")),
-//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/knownFor")),
-//        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/influencedBy"))
+        				new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace"))
+//        				,new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthDate")),
+        				,new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/knownFor"))
+//        				,new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/influencedBy"))
         				)
         );
         SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");
@@ -453,7 +489,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 		sqg.setNamespace("http://dbpedia.org/ontology/");
 
 		long start = System.currentTimeMillis();
-		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 5);
+		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 50);
 		long end = System.currentTimeMillis();
 		System.out.println("Operation took " + (end - start) + "ms");
         		
