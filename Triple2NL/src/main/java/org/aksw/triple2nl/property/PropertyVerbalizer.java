@@ -228,12 +228,15 @@ public class PropertyVerbalizer {
         String[] split = word.split(" ");
         String verb = split[0];
 
-        //check for past construction that simply need an auxilliary
-        if (verb.endsWith("ed") || verb.endsWith("un") || verb.endsWith("wn") || verb.endsWith("en")) {
-            return "be " + word;
+        if(verb.endsWith("ed") && split.length == 1) { 
+        	// probably past tense
+        	
+        } else if (verb.endsWith("ed") || verb.endsWith("un") || verb.endsWith("wn") || verb.endsWith("en")) { 
+        	// check for past construction that simply need an auxiliary
+        	return "be " + word;
         }
 
-        ArrayList<String> synset = new ArrayList<String>();
+        List<String> synset = new ArrayList<String>();
         WordNetDatabase database = WordNetDatabase.getFileInstance();
         Synset[] synsets = database.getSynsets(verb, SynsetType.VERB, true);
         double min = verb.length();
