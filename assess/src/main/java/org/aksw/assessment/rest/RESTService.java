@@ -60,6 +60,7 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 //import org.apache.log4j.Logger;
 import org.slf4j.Logger;
@@ -206,7 +207,7 @@ public class RESTService {
 		
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
-		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
+		Map<OWLEntity, Set<OWLObjectProperty>> domains = new HashMap<>();
 		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<OWLObjectProperty>());
 		
 		// set up the question generators
@@ -283,7 +284,7 @@ public class RESTService {
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
 		// extract the domain from the JSON array
-		Map<OWLClass, Set<OWLObjectProperty>> domains = new HashMap<OWLClass, Set<OWLObjectProperty>>();
+		Map<OWLEntity, Set<OWLObjectProperty>> domains = new HashMap<>();
 		try {
 			for(int i = 0; i < domain.length(); i++){
 				JSONObject entry = domain.getJSONObject(i);

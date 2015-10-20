@@ -22,6 +22,7 @@ import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.google.common.collect.Maps;
@@ -33,6 +34,9 @@ import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.Resource;
 
+import simplenlg.features.Feature;
+import simplenlg.features.InterrogativeType;
+import simplenlg.phrasespec.SPhraseSpec;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
@@ -44,11 +48,11 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 	
 	private static final Logger logger = Logger.getLogger(TrueFalseQuestionGenerator.class.getName());
 
-	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+	public TrueFalseQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
 		super(qef, cacheDirectory, restrictions);
 	}
 
-    public Question generateQuestion(Resource r, OWLClass type) {
+    public Question generateQuestion(Resource r, OWLEntity domain, boolean inSubjectPosition, boolean hideSubject) {
         logger.info("Generating question for resource " + r + "...");
         //get properties
         logger.info("Getting statement for resource");
@@ -87,6 +91,9 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         if (Math.random() <= 0.5) {
             //true answer
             Triple t = new Triple(r.asNode(), property.asNode(), object.asNode());
+            SPhraseSpec p = tripleConverter.convertTriple(t);
+            p.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.YES_NO);
+            System.err.println(realiser.realiseSentence(p));
             return new SimpleQuestion("Is the following statement correct:\n"+nlg.realiser.realiseSentence(nlg.getNLForTriple(t)), trueAsAnswer, falseAsAnswer, DIFFICULTY, questionQuery, QuestionType.TRUEFALSE);
         } else {
             //get values for property, i.e. the correct answers
@@ -109,7 +116,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
     }
 
 	public static void main(String args[]) {
-		Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
+		Map<OWLEntity, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 		restrictions.put(new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Writer")),
 				Sets.<OWLObjectProperty> newHashSet(
 						new OWLObjectPropertyImpl(IRI.create("http://dbpedia.org/ontology/birthPlace"))));
@@ -122,7 +129,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 		sqg.setEntityBlackList(new DBpediaPropertyBlackList());
 		sqg.setNamespace("http://dbpedia.org/ontology/");
 		
-		Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
+		Set<Question> questions = sqg.getQuestions(null, 1, 10);
 		for (Question q : questions) {
 			if (q != null) {
 				System.out.println(">>" + q.getText());

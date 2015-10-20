@@ -39,6 +39,7 @@ import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.google.common.collect.HashMultimap;
@@ -72,7 +73,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 
 	private boolean useCompleteResourcesOnly = true;
 	
-    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
         super(qef, cacheDirectory, restrictions);
         
         verbalizer = new JeopardyVerbalizer(qef, cacheDirectory, wordNetDir);
@@ -85,14 +86,14 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
      * @see org.aksw.assessment.question.MultipleChoiceQuestionGenerator#getMostProminentResources(java.util.Set)
      */
     @Override
-    protected Map<Resource, OWLClass> getMostProminentResources(Set<OWLClass> types) {
+    protected Map<Resource, OWLEntity> getMostProminentResources(Set<OWLEntity> types) {
     	//INFO for this type of questions it might makes sense to use only resources having all properties of the summary graph
         //as this makes the summary more fancy
     	if(useCompleteResourcesOnly ){
-    		Map<Resource, OWLClass> result = Maps.newLinkedHashMap();
+    		Map<Resource, OWLEntity> result = Maps.newLinkedHashMap();
     		//we need the summarizing properties graph first
-    		for (OWLClass type : types) {
-				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(type, propertyFrequencyThreshold, namespace, cooccurrenceType);
+    		for (OWLEntity type : types) {
+				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(type.asOWLClass(), propertyFrequencyThreshold, namespace, cooccurrenceType);
 				
 				if(summaryProperties != null) {
 					StringBuilder query = new StringBuilder();
@@ -111,7 +112,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		            QuerySolution qs;
 		            while (rs.hasNext()) {
 		                qs = rs.next();
-		                result.put(qs.getResource("x"), type);
+		                result.put(qs.getResource("x"), type.asOWLClass());
 		            }
 				}
 			}
@@ -127,16 +128,16 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         Set<Question> questions = new HashSet<>();
         
         // 1. we generate possible resources
-        Map<Resource, OWLClass> resources = getMostProminentResources(restrictions.keySet());
+        Map<Resource, OWLEntity> resources = getMostProminentResources(restrictions.keySet());
         
         //  2. we generate question(s) as long as we have resources or we got the maximum number of questions
-        Iterator<Entry<Resource, OWLClass>> iterator = resources.entrySet().iterator();
+        Iterator<Entry<Resource, OWLEntity>> iterator = resources.entrySet().iterator();
         
         while(questions.size() < numberOfQuestions && iterator.hasNext()){
-        	Entry<Resource, OWLClass> entry = iterator.next();
+        	Entry<Resource, OWLEntity> entry = iterator.next();
         	
         	Resource focusEntity = entry.getKey();
-        	OWLClass cls = entry.getValue();
+        	OWLClass cls = entry.getValue().asOWLClass();
         	
             // generate a question
         	Question q = generateQuestion(focusEntity, cls);
@@ -415,7 +416,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		for (String cls : classes) {
 			System.out.println("Class:" + cls);
 			try {
-				Map<OWLClass, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
+				Map<OWLEntity, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
 				
 				
@@ -430,7 +431,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 				sqg.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
 				sqg.setEntityBlackList(new DBpediaPropertyBlackList());
 				sqg.setNamespace("http://dbpedia.org/ontology/");
-				Set<Question> questions = sqg.getQuestions(null, DIFFICULTY, 10);
+				Set<Question> questions = sqg.getQuestions(null, 1, 10);
 				if (questions.size() == 0) {
 					System.err.println("EMTPY");
 				}
