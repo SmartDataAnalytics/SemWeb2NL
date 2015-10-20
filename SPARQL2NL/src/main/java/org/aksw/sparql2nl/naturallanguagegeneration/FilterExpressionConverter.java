@@ -4,17 +4,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.Stack;
 
-import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.DefaultIRIConverter;
-
-import simplenlg.features.Feature;
-import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.LexicalCategory;
-import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
-import simplenlg.lexicon.Lexicon;
-import simplenlg.phrasespec.SPhraseSpec;
-import simplenlg.realiser.english.Realiser;
+import org.aksw.triple2nl.LiteralConverter;
 
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.datatypes.RDFDatatype;
@@ -44,6 +35,7 @@ import com.hp.hpl.jena.sparql.expr.ExprFunction2;
 import com.hp.hpl.jena.sparql.expr.ExprFunction3;
 import com.hp.hpl.jena.sparql.expr.ExprFunctionN;
 import com.hp.hpl.jena.sparql.expr.ExprFunctionOp;
+import com.hp.hpl.jena.sparql.expr.ExprList;
 import com.hp.hpl.jena.sparql.expr.ExprVar;
 import com.hp.hpl.jena.sparql.expr.ExprVisitor;
 import com.hp.hpl.jena.sparql.expr.NodeValue;
@@ -57,6 +49,15 @@ import com.hp.hpl.jena.sparql.expr.aggregate.AggMin;
 import com.hp.hpl.jena.sparql.expr.aggregate.AggMinDistinct;
 import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
 import com.hp.hpl.jena.vocabulary.XSD;
+
+import simplenlg.features.Feature;
+import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.LexicalCategory;
+import simplenlg.framework.NLGElement;
+import simplenlg.framework.NLGFactory;
+import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.realiser.english.Realiser;
 
 public class FilterExpressionConverter implements ExprVisitor{
 	
@@ -370,7 +371,8 @@ public class FilterExpressionConverter implements ExprVisitor{
 	@Override
 	public void visit(ExprAggregator eAgg) {
 		Aggregator aggregator = eAgg.getAggregator();
-        Expr expr = aggregator.getExpr();
+        ExprList exprList = aggregator.getExprList();
+        Expr expr = exprList.get(0);
         expr.visit(this);
         String s = convertAggregator(aggregator);
 		NLGElement element = nlgFactory.createNounPhrase(s + realiser.realise(stack.pop()));
@@ -417,7 +419,8 @@ public class FilterExpressionConverter implements ExprVisitor{
 	}
 	
 	public String convertAggregator(Aggregator aggregator){
-        Expr expr = aggregator.getExpr();
+        ExprList exprList = aggregator.getExprList();
+        Expr expr = exprList.get(0);
         expr.visit(this);
         String s = null;
         if (aggregator instanceof AggCountVar) {

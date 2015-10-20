@@ -88,7 +88,7 @@ public class QueryRewriter {
 		if(expr instanceof ExprAggregator){
 			// get the var which is used
 			Aggregator aggregator = ((ExprAggregator) expr).getAggregator();
-			ExprVar exprVar = aggregator.getExpr().getExprVar();
+			ExprVar exprVar = aggregator.getExprList().get(0).getExprVar();
 			logger.debug("rewriting "  + aggregator);
 			logger.debug("anchor var: " + exprVar);
 			

@@ -979,7 +979,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
         SPhraseSpec p = nlgFactory.createClause();
         Aggregator aggregator = aggregationExpr.getAggregator();
-        Expr expr = aggregator.getExpr();
+        Expr expr = aggregator.getExprList().get(0);
         if (aggregator instanceof AggCountVar) {
             p.setSubject("the number of " + expr);
         } else if (aggregator instanceof AggSum) {
