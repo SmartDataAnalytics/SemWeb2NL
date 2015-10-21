@@ -325,7 +325,7 @@ public class TripleConverter {
 				} else {
 					type = propertyVerbalization.getVerbalizationType();
 				}
-
+				
 				/*-
 				 * if the predicate is a noun we generate a possessive form, i.e. 'SUBJECT'S PREDICATE be OBJECT'
 				 */
@@ -371,7 +371,7 @@ public class TripleConverter {
 			        	p.setObject(objectElement);
 					}
 				}// if the predicate is a verb 
-				else if (type == PropertyVerbalizationType.VERB) { 
+				else if (type == PropertyVerbalizationType.VERB) {
 					p.setSubject(subjectElement);
 					p.setVerb(pp.getInfinitiveForm(predicateAsString));
 					p.setObject(objectElement);
