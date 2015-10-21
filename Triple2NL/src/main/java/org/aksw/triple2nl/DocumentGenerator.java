@@ -78,7 +78,7 @@ public class DocumentGenerator {
 		Set<Triple> triples = new HashSet<Triple>((int) model.size());
 		StmtIterator iterator = model.listStatements();
 		while (iterator.hasNext()) {
-			Statement statement = (Statement) iterator.next();
+			Statement statement = iterator.next();
 			triples.add(statement.asTriple());
 		}
 		return triples;

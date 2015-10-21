@@ -1,9 +1,10 @@
 package org.aksw.triple2nl.nlp.relation;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -19,7 +20,6 @@ import java.util.regex.Matcher;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.HttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -130,11 +130,8 @@ public class BoaPatternSelector {
         wordTokensList.remove("?R?");
 
         // check if the patterns contains a verb other than be verbs
-        if ((posTagTokens.contains("VB") || posTagTokens.contains("VBZ") || posTagTokens.contains("VBP") || posTagTokens.contains("VBN") || posTagTokens.contains("VBD") || posTagTokens
-                .contains("VBG")) && wordTokensList.size() > 0)
-            return true;
+        return posTagTokens.contains("VB") && wordTokensList.size() > 0;
 
-        return false;
     }
 
     /**
@@ -239,23 +236,9 @@ public class BoaPatternSelector {
     }
 
     private static void createPropertyDistribution() throws IOException {
+        Path filePath = Paths.get("resources/qald2-dbpedia-train.xml");
 
-        String filePath = "resources/qald2-dbpedia-train.xml";
-        byte[] buffer = new byte[(int) new File(filePath).length()];
-        BufferedInputStream f = null;
-        try {
-            f = new BufferedInputStream(new FileInputStream(filePath));
-            f.read(buffer);
-        }
-        finally {
-            if (f != null)
-                try {
-                    f.close();
-                }
-                catch (IOException ignored) {
-                }
-        }
-        String queryString = new String(buffer);
+        String queryString = new String (Files.readAllBytes(filePath),Charset.forName("UTF-8"));
 
         Map<String, Integer> distribution = new HashMap<String, Integer>();
         Matcher matcher = java.util.regex.Pattern.compile("db[op]:\\p{Lower}\\w+\\s").matcher(queryString);

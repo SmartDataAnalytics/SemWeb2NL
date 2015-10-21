@@ -1,18 +1,17 @@
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.converter;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
-import org.aksw.triple2nl.URIDereferencer.DereferencingFailedException;
+import org.aksw.triple2nl.converter.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections15.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.jena.web.HttpSC;
@@ -49,7 +48,6 @@ public class DefaultIRIConverter implements IRIConverter{
 	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
 	
 	private QueryExecutionFactory qef;
-	private String cacheDirectory;// = "cache/sparql";
 	
 	private List<String> labelProperties = Lists.newArrayList(
 			"http://www.w3.org/2000/01/rdf-schema#label",
@@ -81,7 +79,6 @@ public class DefaultIRIConverter implements IRIConverter{
 	
 	public DefaultIRIConverter(QueryExecutionFactory qef, String cacheDirectory) {
 		this.qef = qef;
-		this.cacheDirectory = cacheDirectory;
 		
 		// use tmp as default cache directory
 		if(cacheDirectory == null) {
@@ -161,7 +158,7 @@ public class DefaultIRIConverter implements IRIConverter{
 				}
             }
             
-            // 5. use the IRI
+            // 5. use the IRI itself
             if(label == null){
             	label = iri;
             }
@@ -281,7 +278,7 @@ public class DefaultIRIConverter implements IRIConverter{
 					
 					// language check
 					String language = literal.getLanguage();
-					if(language != null && language.equals(language)){
+					if(language != null && language.equals(this.language)){
 						return literal.getLexicalForm();
 					}
 				}
@@ -308,7 +305,7 @@ public class DefaultIRIConverter implements IRIConverter{
         return s;
 	}
     
-    public static String splitCamelCase(String s) {
+    private static String splitCamelCase(String s) {
     	StringBuilder sb = new StringBuilder();
     	for (String token : s.split(" ")) {
 			sb.append(StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(token), ' ')).append(" ");

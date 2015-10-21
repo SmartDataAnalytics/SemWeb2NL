@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.converter;
 
 import org.apache.commons.lang3.StringUtils;
 import org.semanticweb.owlapi.model.IRI;

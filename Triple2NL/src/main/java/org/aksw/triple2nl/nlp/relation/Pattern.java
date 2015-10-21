@@ -18,23 +18,12 @@ public class Pattern {
     /* (non-Javadoc)
      * @see java.lang.Object#toString()
      */
-    @Override
-    public String toString() {
-
-        StringBuilder builder = new StringBuilder();
-        builder.append("Pattern [features=");
-        builder.append(features);
-        builder.append(", naturalLanguageRepresentation=");
-        builder.append(naturalLanguageRepresentation);
-        builder.append(", boaScore=");
-        builder.append(boaScore);
-        builder.append(", naturalLanguageScore=");
-        builder.append(naturalLanguageScore);
-        builder.append(", POS=");
-        builder.append(posTags);
-        builder.append("]");
-        return builder.toString();
-    }
+	@Override
+	public String toString() {
+		return "Pattern [features=" + features + ", naturalLanguageRepresentation=" + naturalLanguageRepresentation
+				+ ", boaScore=" + boaScore + ", naturalLanguageScore=" + naturalLanguageScore + ", POS=" + posTags
+				+ "]";
+	}
     
     /* (non-Javadoc)
      * @see java.lang.Object#hashCode()

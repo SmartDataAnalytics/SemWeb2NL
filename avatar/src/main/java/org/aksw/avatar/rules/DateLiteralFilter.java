@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import org.aksw.triple2nl.LiteralConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 import org.apache.log4j.Logger;
 
 import com.google.common.collect.Lists;

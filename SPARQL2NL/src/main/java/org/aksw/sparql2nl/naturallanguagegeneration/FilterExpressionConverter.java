@@ -4,8 +4,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.Stack;
 
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.LiteralConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 
 import com.google.common.collect.Sets;
 import com.hp.hpl.jena.datatypes.RDFDatatype;

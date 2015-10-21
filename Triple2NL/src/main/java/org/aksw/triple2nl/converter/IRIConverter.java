@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.converter;
 
 /**
  * Converts IRIs into natural language.

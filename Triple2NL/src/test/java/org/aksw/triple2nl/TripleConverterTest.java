@@ -286,6 +286,14 @@ public class TripleConverterTest {
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
 		assertEquals("Usain Bolt is not gold medal winner", text);
+		
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Albury_railway_station"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/isHandicappedAccessible"),
+				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
+		text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+		assertEquals("Albury railway station is not handicapped accessible", text);
 	}
 	
 	@Test

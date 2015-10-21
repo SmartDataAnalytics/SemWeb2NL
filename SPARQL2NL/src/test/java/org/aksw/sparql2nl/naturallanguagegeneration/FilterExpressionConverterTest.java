@@ -5,7 +5,7 @@ package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.Calendar;
 
-import org.aksw.triple2nl.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Assert;
 import org.junit.Test;

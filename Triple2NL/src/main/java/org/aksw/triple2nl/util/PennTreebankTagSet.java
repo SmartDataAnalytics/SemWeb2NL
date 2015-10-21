@@ -1,9 +1,10 @@
 /**
  * 
  */
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.util;
 
 /**
+ * The part-of-speech tags used in the Penn Treebank Project.
  * @author Lorenz Buehmann
  *
  */
@@ -123,7 +124,7 @@ public enum PennTreebankTagSet {
 
 	private final String tag;
 
-	private PennTreebankTagSet(String tag) {
+	PennTreebankTagSet(String tag) {
 		this.tag = tag;
 	}
 
@@ -137,6 +138,9 @@ public enum PennTreebankTagSet {
 		return getTag();
 	}
 
+	/**
+	 * @return the part-of-speech tag
+	 */
 	public String getTag() {
 		return this.tag;
 	}

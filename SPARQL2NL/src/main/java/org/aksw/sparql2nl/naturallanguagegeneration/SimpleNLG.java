@@ -16,8 +16,8 @@ import java.util.regex.Pattern;
 
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
-import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import simplenlg.features.Feature;

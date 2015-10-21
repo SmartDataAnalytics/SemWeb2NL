@@ -1,8 +1,4 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.util;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -11,7 +7,7 @@ import java.util.HashSet;
 
 /**
  * Class holds a set of prepositions.
- * @author ngonga
+ * @author Axel Ngonga
  */
 public class Preposition extends HashSet<String> {
 
@@ -33,6 +29,11 @@ public class Preposition extends HashSet<String> {
 		this(Preposition.class.getClassLoader().getResourceAsStream(filename));
 	}
 
+	/**
+	 * Determines whether the given token is contained in the list of prepositions.
+	 * @param s the input token
+	 * @return TRUE if the token is a preposition, otherwise FALSE
+	 */
 	public boolean isPreposition(String s) {
 		return contains(s);
 	}
