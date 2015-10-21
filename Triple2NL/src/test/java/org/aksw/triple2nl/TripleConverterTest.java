@@ -264,7 +264,7 @@ public class TripleConverterTest {
 	@Test
 	public void testConvertBooleanValueTriples() throws Exception {
 		Triple t = Triple.create(
-				NodeFactory.createURI("http://dbpedia.org/page/Mathematics_of_Computation"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Mathematics_of_Computation"),
 				NodeFactory.createURI("http://dbpedia.org/ontology/isPeerReviewed"),
 				NodeFactory.createLiteral("true", XSDDatatype.XSDboolean));
 		String text = converter.convertTripleToText(t);
@@ -286,5 +286,33 @@ public class TripleConverterTest {
 		text = converter.convertTripleToText(t);
 		System.out.println(t + " -> " + text);
 		assertEquals("Usain Bolt is not gold medal winner", text);
+		
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Albury_railway_station"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/isHandicappedAccessible"),
+				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
+		text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+		assertEquals("Albury railway station is not handicapped accessible", text);
+	}
+	
+	@Test
+	public void testPassiveTriples() throws Exception {
+		Triple t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Baruch_Spinoza"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/influenced"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Albert_Einstein"));
+		String text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+//		assertEquals("Mathematics of Computation is peer reviewed", text);
+		
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Baruch_Spinoza"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/influencedBy"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Albert_Einstein"));
+		text = converter.convertTripleToText(t);
+		System.out.println(t + " -> " + text);
+//		assertEquals("Living Bird is not peer reviewed", text);
+		
 	}
 }

@@ -18,7 +18,7 @@ import opennlp.tools.parser.ParserModel;
 import opennlp.tools.util.InvalidFormatException;
 
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.triple2nl.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.hp.hpl.jena.query.QueryFactory;

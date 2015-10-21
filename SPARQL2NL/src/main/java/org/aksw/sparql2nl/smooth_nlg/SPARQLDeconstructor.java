@@ -7,6 +7,7 @@ import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.query.SortCondition;
 import com.hp.hpl.jena.sparql.core.Var;
 import com.hp.hpl.jena.sparql.expr.ExprAggregator;
+import com.hp.hpl.jena.sparql.serializer.SerializationContext;
 import com.hp.hpl.jena.sparql.syntax.Element;
 import com.hp.hpl.jena.sparql.syntax.ElementGroup;
 import com.hp.hpl.jena.sparql.syntax.ElementOptional;
@@ -116,7 +117,8 @@ public class SPARQLDeconstructor {
             // Is it like COUNT(?v) ?
             count = false;
             for (ExprAggregator agg : query.getAggregators()) {
-                if (agg.asSparqlExpr().equals("count(?"+v+")") || agg.asSparqlExpr().equals("count(distinct ?"+v+")")) {
+                SerializationContext sCxt = new SerializationContext();
+				if (agg.asSparqlExpr(sCxt).equals("count(?"+v+")") || agg.asSparqlExpr(sCxt).equals("count(distinct ?"+v+")")) {
                    count = true;
                 } 
             }           

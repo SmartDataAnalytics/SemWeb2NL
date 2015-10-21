@@ -1,17 +1,13 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.aksw.triple2nl.property;
 
-import static org.aksw.triple2nl.PennTreebankTagSet.DETERMINER;
-import static org.aksw.triple2nl.PennTreebankTagSet.FRAGMENT;
-import static org.aksw.triple2nl.PennTreebankTagSet.NOUN_PHRASE;
-import static org.aksw.triple2nl.PennTreebankTagSet.S;
-import static org.aksw.triple2nl.PennTreebankTagSet.SBAR;
-import static org.aksw.triple2nl.PennTreebankTagSet.SBARQ;
-import static org.aksw.triple2nl.PennTreebankTagSet.SINV;
-import static org.aksw.triple2nl.PennTreebankTagSet.VERB_PHRASE;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.DETERMINER;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.FRAGMENT;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.NOUN_PHRASE;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.S;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.SBAR;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.SBARQ;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.SINV;
+import static org.aksw.triple2nl.util.PennTreebankTagSet.VERB_PHRASE;
 
 import java.io.File;
 import java.net.URISyntaxException;
@@ -21,18 +17,16 @@ import java.util.Properties;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.IRIConverter;
-import org.aksw.triple2nl.Preposition;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.util.Preposition;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
-import org.dllearner.kb.sparql.SparqlEndpoint;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.hp.hpl.jena.rdf.model.Model;
 
+import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.smu.tspell.wordnet.Synset;
 import edu.smu.tspell.wordnet.SynsetType;
 import edu.smu.tspell.wordnet.WordNetDatabase;
@@ -63,7 +57,7 @@ public class PropertyVerbalizer {
     
     private final String VERB_PATTERN = "^((VP)|(have NP)|(be NP P)|(be VP P)|(VP NP)).*";
 	private StanfordCoreNLP pipeline;
-	private boolean useLinguistics = true;
+	private boolean useLinguisticalAnalysis = true;
 	
 	private final List<String> auxiliaryVerbs = Lists.newArrayList("do", "have", "be", "shall", "can", "may");
 
@@ -99,11 +93,11 @@ public class PropertyVerbalizer {
     public PropertyVerbalization verbalize(String propertyURI){
     	logger.debug("Getting lexicalization type for \"" + propertyURI + "\"...");
     	
-    	//get textual representation for the property URI
-    	String propertyText = uriConverter.convert(propertyURI);
-    	
-    	//normalize the text, e.g. to lower case
-    	propertyText = normalize(propertyText);
+		//get textual representation for the property URI
+		String propertyText = uriConverter.convert(propertyURI);
+
+		//normalize the text, e.g. to lower case
+		propertyText = normalize(propertyText);
     	
     	//try to use linguistic information
     	PropertyVerbalization propertyVerbalization = getTypeByLinguisticAnalysis(propertyURI, propertyText);
@@ -123,6 +117,13 @@ public class PropertyVerbalizer {
     	return propertyVerbalization;
     }
     
+	/**
+	 * Determine the verbalization type of a property, i.e. whether it is a verb
+	 * or a noun, by using WordNet statistics.
+	 * 
+	 * @param property the property
+	 * @return the type of verbalization
+	 */
     public PropertyVerbalizationType getTypeByWordnet(String property){
     	 //length is > 1
         if (property.contains(" ")) {
@@ -163,6 +164,14 @@ public class PropertyVerbalizer {
     public void setThreshold(double threshold) {
 		this.threshold = threshold;
 	}
+    
+    /**
+     * Whether to apply an analysis based in linguistic features in addition to WordNet.
+	 * @param useLinguisticalAnalysis the useLinguisticalAnalysis to set
+	 */
+	public void setUseLinguisticalAnalysis(boolean useLinguisticalAnalysis) {
+		this.useLinguisticalAnalysis = useLinguisticalAnalysis;
+	}
 
     /**
      * Returns log(nounCount/verbCount), i.e., positive for noun, negative for
@@ -176,12 +185,12 @@ public class PropertyVerbalizer {
         double verbCount = 0;
         logger.debug("Checking " + word);
         Synset[] synsets = database.getSynsets(word, SynsetType.NOUN);
-        for (int i = 0; i < synsets.length; i++) {
-            String[] s = synsets[i].getWordForms();
-            for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
-                nounCount = nounCount + Math.log(synsets[i].getTagCount(s[j]) + 1.0);
-            }
-        }
+		for (Synset synset : synsets) {
+			String[] s = synset.getWordForms();
+			for (String value : s) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
+				nounCount = nounCount + Math.log(synset.getTagCount(value) + 1.0);
+			}
+		}
 
         synsets = database.getSynsets(word, SynsetType.VERB);
         for (int i = 0; i < synsets.length; i++) {
@@ -207,8 +216,8 @@ public class PropertyVerbalizer {
         }
     }
 
-    public ArrayList<String> getAllSynsets(String word) {
-        ArrayList<String> synset = new ArrayList<String>();
+    private List<String> getAllSynsets(String word) {
+        List<String> synset = new ArrayList<String>();
 
         WordNetDatabase database = WordNetDatabase.getFileInstance();
         Synset[] synsets = database.getSynsets(word, SynsetType.NOUN, true);
@@ -222,18 +231,27 @@ public class PropertyVerbalizer {
 
         return synset;
     }
-
+    
+	/**
+	 * Returns the infinitive form for a given word.
+	 * 
+	 * @param word the word
+	 * @return the infinitive form
+	 */
     public String getInfinitiveForm(String word) {
 
         String[] split = word.split(" ");
         String verb = split[0];
 
-        //check for past construction that simply need an auxilliary
-        if (verb.endsWith("ed") || verb.endsWith("un") || verb.endsWith("wn") || verb.endsWith("en")) {
-            return "be " + word;
+        if(verb.endsWith("ed") && split.length == 1) { 
+        	// probably past tense
+        	
+        } else if (verb.endsWith("ed") || verb.endsWith("un") || verb.endsWith("wn") || verb.endsWith("en")) { 
+        	// check for past construction that simply need an auxiliary
+        	return "be " + word;
         }
 
-        ArrayList<String> synset = new ArrayList<String>();
+        List<String> synset = new ArrayList<String>();
         WordNetDatabase database = WordNetDatabase.getFileInstance();
         Synset[] synsets = database.getSynsets(verb, SynsetType.VERB, true);
         double min = verb.length();
@@ -304,7 +322,7 @@ public class PropertyVerbalizer {
 			Tree tree = sentence.get(TreeAnnotation.class);
 			//skip ROOT tag
 			tree = tree.skipRoot();
-			logger.debug("Parse tree:" + tree.pennString());
+			logger.info("Parse tree:" + tree.pennString());
 //			tree.pennPrint();
 			//check if VP is directly followed by NP
 			//sometimes parent node is S,SINV,etc.
@@ -322,6 +340,11 @@ public class PropertyVerbalizer {
 						break;
 					}
 				}
+			}
+			// add determiner tag
+			if(useDeterminer) {
+				String[] split = pattern.split(" ");
+				pattern = split[0] + " DET " + Joiner.on(" ").join(Arrays.copyOfRange(split, 1, split.length));
 			}
 		}
 		pattern = pattern.trim();
@@ -353,11 +376,14 @@ public class PropertyVerbalizer {
 		
 		//get POS tag of property verbalization
 		String pos = propertyVerbalization.getPOSTags();
+		System.out.println(pos);
 		
 		//VBN IN
 		if(pos.equals("VBN IN")){
 			expandedForm = "is" + " " + text;
-		} 
+		} else if(pos.startsWith("BE DET")) {
+			expandedForm = "is" + " a " + text;
+		}
 		
 		propertyVerbalization.setExpandedVerbalizationText(expandedForm);
 	}
@@ -396,6 +422,9 @@ public class PropertyVerbalizer {
         System.out.println(pp.verbalize(propertyURI));
         
         propertyURI = "http://dbpedia.org/ontology/name";
+        System.out.println(pp.verbalize(propertyURI));
+        
+        propertyURI = "http://dbpedia.org/ontology/isGoldMedalWinner";
         System.out.println(pp.verbalize(propertyURI));
     }
 }

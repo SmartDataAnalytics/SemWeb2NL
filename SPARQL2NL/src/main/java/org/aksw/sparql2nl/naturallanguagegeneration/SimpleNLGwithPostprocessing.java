@@ -19,9 +19,9 @@ import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.GenericType;
 import org.aksw.sparql2nl.queryprocessing.TypeExtractor;
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.TripleConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 import org.aksw.triple2nl.functionality.FunctionalityDetector;
 import org.aksw.triple2nl.functionality.SPARQLFunctionalityDetector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
@@ -979,7 +979,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private NLGElement getNLGFromAggregation(ExprAggregator aggregationExpr) {
         SPhraseSpec p = nlgFactory.createClause();
         Aggregator aggregator = aggregationExpr.getAggregator();
-        Expr expr = aggregator.getExpr();
+        Expr expr = aggregator.getExprList().get(0);
         if (aggregator instanceof AggCountVar) {
             p.setSubject("the number of " + expr);
         } else if (aggregator instanceof AggSum) {

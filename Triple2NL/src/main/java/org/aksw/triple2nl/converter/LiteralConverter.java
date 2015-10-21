@@ -1,4 +1,4 @@
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.converter;
 
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
@@ -7,12 +7,10 @@ import java.util.Locale;
 
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.DateTimeFormatterBuilder;
-import org.joda.time.format.DateTimeParser;
 import org.joda.time.format.ISODateTimeFormat;
+import org.semanticweb.owlapi.model.OWLDatatype;
 import org.semanticweb.owlapi.model.OWLLiteral;
-import org.semanticweb.owlapi.vocab.XSDVocabulary;
+import org.semanticweb.owlapi.vocab.Namespaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,19 +40,25 @@ public class LiteralConverter {
     
     public String convert(OWLLiteral lit) {
     	RDFDatatype datatype;
-    	String uri = lit.getDatatype().getIRI().toString();
-    	if(uri != null && uri.startsWith(XSD.getURI())){
-    		datatype = new XSDDatatype(uri.substring(uri.indexOf("#")+1));
+
+    	OWLDatatype owlDatatype = lit.getDatatype();
+
+    	if(Namespaces.XSD.inNamespace(owlDatatype.getIRI())){
+    		datatype = new XSDDatatype(owlDatatype.getIRI().getRemainder().get());
     	} else {
     		datatype = new BaseDatatype(lit.getDatatype().toStringID());
     	}
-        return convert(NodeFactory.createLiteral(lit.getLiteral(), lit.getLang(),
-                datatype).getLiteral());
+        return convert(NodeFactory.createLiteral(
+		        			lit.getLiteral(), 
+			        		lit.getLang(),
+			                datatype).getLiteral());
     }
 
     public String convert(Literal lit) {
-        return convert(NodeFactory.createLiteral(lit.getLexicalForm(), lit.getLanguage(),
-                lit.getDatatype()).getLiteral());
+        return convert(NodeFactory.createLiteral(
+		        		lit.getLexicalForm(), 
+		        		lit.getLanguage(),
+		                lit.getDatatype()).getLiteral());
     }
 
     public String convert(LiteralLabel lit) {

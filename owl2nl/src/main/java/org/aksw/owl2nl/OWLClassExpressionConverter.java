@@ -9,9 +9,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
-import org.aksw.triple2nl.IRIConverter;
-import org.aksw.triple2nl.LiteralConverter;
-import org.aksw.triple2nl.SimpleIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
+import org.aksw.triple2nl.converter.SimpleIRIConverter;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizer;

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.converter;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -37,7 +37,7 @@ public class URIDereferencer {
 	
 	//settings for file based caching
 	private File cacheDirectory;
-	private boolean useCache = false;
+	private boolean useCache = true;
 	private Lang cacheFileLanguage = Lang.TURTLE;
 	private String cacheFileExtension = cacheFileLanguage.getFileExtensions().get(0);
 
@@ -70,10 +70,9 @@ public class URIDereferencer {
 		logger.debug("Dereferencing " + uri + "...");
 		Model model = null;
 		
-		//check if already cached
+		// check if already cached
 		if(useCache()){
 			model = loadFromDisk(uri);
-			return model;
 		}
 		
 		// if we got nothing from cache
@@ -119,22 +118,26 @@ public class URIDereferencer {
 	}
 	
 	private Model loadFromDisk(URI uri){
-		Model model = ModelFactory.createDefaultModel();
-		
     	File cachedFile = getCacheFile(uri);
+    	
     	if(cachedFile.exists()){
+    		Model model = ModelFactory.createDefaultModel();
     		try(InputStream is = new BufferedInputStream(new FileInputStream(cachedFile))){
     			model.read(is, null, cacheFileLanguage.getLabel());
+    			return model;
     		} catch (IOException e) {
 				logger.error("Failed loading from disk.", e);
 			}
     		
     	}
-    	return model;
+    	return null;
 	}
 	
 	private void writeToDisk(URI uri, Model model){
+		logger.debug("Writing model for " + uri + "to disk.");
+		
 		File cacheFile = getCacheFile(uri);
+		
 		try (OutputStream os = new BufferedOutputStream(new FileOutputStream(cacheFile))) {
 			model.write(os, cacheFileLanguage.getLabel());
 		} catch (IOException e) {
@@ -144,6 +147,8 @@ public class URIDereferencer {
 	
 	class DereferencingFailedException extends Exception{
 		
+		private static final long serialVersionUID = -1830907519484713882L;
+
 		public DereferencingFailedException(URI uri, Exception cause) {
 			super("Dereferencing " + uri + " failed.", cause);
 		}

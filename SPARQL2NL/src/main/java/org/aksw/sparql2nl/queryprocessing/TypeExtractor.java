@@ -102,7 +102,7 @@ public class TypeExtractor extends ElementVisitorBase {
 					Aggregator aggr = ((ExprAggregator) expr).getAggregator();
 					if(aggr instanceof AggCountVar || aggr instanceof AggCountVarDistinct){
 						projectionVars.remove(v);
-						projectionVars.add(aggr.getExpr().asVar());
+						projectionVars.add(aggr.getExprList().get(0).asVar());
 						isCount = true;
 					}
 				}

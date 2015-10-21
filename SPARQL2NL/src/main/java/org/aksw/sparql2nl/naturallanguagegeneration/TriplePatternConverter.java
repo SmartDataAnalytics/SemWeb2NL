@@ -7,9 +7,9 @@ import java.util.List;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.IRIConverter;
 import org.aksw.triple2nl.TripleConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.property.PredicateAsNounConversionType;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizationType;

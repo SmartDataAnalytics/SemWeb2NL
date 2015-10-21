@@ -14,8 +14,13 @@ import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.ResultSet;
 
 /**
- * Computes the informativeness of a given triple by executing two SPARQL queries to get the number of incoming and outgoing links.
- * Given a triple t we get informativeness = log(|incomingLinks(t_s)| + |outgoingLinks(t_o)|) 
+ * Computes the informativeness of a given triple by executing two SPARQL
+ * queries to get the number of incoming and outgoing links. Given a triple t we
+ * get informativeness = log(|incomingLinks(t_s)| + |outgoingLinks(t_o)|)
+ * 
+ * This is based on the work of Giuseppe Pirro in REWOrD: Semantic Relatedness
+ * in the Web of Data, AAAI 2012.
+ * 
  * @author Lorenz Buehmann
  *
  */
@@ -23,9 +28,11 @@ public class StatisticalInformativenessGenerator implements InformativenessGener
 	
 	private QueryExecutionFactory qef;
 	
-	private static final ParameterizedSparqlString incomingLinksTemplate = new ParameterizedSparqlString("SELECT (COUNT(*) AS ?cnt) WHERE {?s ?p ?o}");
-	private static final ParameterizedSparqlString outgoingLinksTemplate = new ParameterizedSparqlString("SELECT (COUNT(*) AS ?cnt) WHERE {?s ?p ?o}");
-	
+	private static final ParameterizedSparqlString incomingLinksTemplate = new ParameterizedSparqlString(
+			"SELECT (COUNT(*) AS ?cnt) WHERE {?s ?p ?o}");
+	private static final ParameterizedSparqlString outgoingLinksTemplate = new ParameterizedSparqlString(
+			"SELECT (COUNT(*) AS ?cnt) WHERE {?s ?p ?o}");
+
 	public StatisticalInformativenessGenerator(SparqlEndpoint endpoint) {
 		qef = new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs());
 	}

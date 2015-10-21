@@ -26,12 +26,15 @@ import org.aksw.triple2nl.TripleConverter;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
+import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
@@ -51,7 +54,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	
 	private static final Logger logger = LoggerFactory.getLogger(AbstractQuestionGenerator.class);
 	
-	protected static int DIFFICULTY = 1;
+	protected int DIFFICULTY = 1;
 	protected SimpleNLGwithPostprocessing nlg;
 	protected LiteralConverter literalConverter;
 	protected int maxNrOfAnswersPerQuestion = 5;
@@ -68,7 +71,8 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	protected Cooccurrence cooccurrenceType = Cooccurrence.PROPERTIES;
 	protected HardeningType hardeningType = HardeningFactory.HardeningType.SMALLEST;
 	
-	protected Map<OWLClass, Set<OWLObjectProperty>> restrictions;
+	
+	protected Map<OWLEntity, Set<OWLObjectProperty>> restrictions;
 	protected Set<RDFNode> usedWrongAnswers;
 	
 	protected TripleConverter tripleConverter;
@@ -87,7 +91,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	protected boolean generateHints = false;
 	
 	public AbstractQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory,
-				Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+				Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
 		this.qef = qef;
 		this.cacheDirectory = cacheDirectory;
 		this.restrictions = restrictions;
@@ -165,7 +169,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	/**
 	 * @param restrictions the restrictions to set
 	 */
-	public void setRestrictions(Map<OWLClass, Set<OWLObjectProperty>> restrictions) {
+	public void setRestrictions(Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
 		this.restrictions = restrictions;
 	}
 	

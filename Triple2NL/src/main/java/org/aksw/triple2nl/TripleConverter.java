@@ -11,11 +11,15 @@ import java.util.Locale;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 import org.aksw.triple2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizationType;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
+import org.aksw.triple2nl.util.GenericType;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
@@ -127,6 +131,12 @@ public class TripleConverter {
 		reasoner = new SPARQLReasoner(qef);
 	}
 	
+	/**
+	 * Converts a collection of triples into a list of phrases.
+	 * 
+	 * @param triples the triples
+	 * @return a list of phrases
+	 */
 	public List<SPhraseSpec> convertTriples(Collection<Triple> triples) {
 		List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
 		for (Triple triple : triples) {
@@ -138,7 +148,8 @@ public class TripleConverter {
 	/**
 	 * Return a textual representation for the given triples.
 	 * Currently we assume that all triples have the same subject!
-	 * @param t the triples to convert
+	 * 
+	 * @param triples the triples to convert
 	 * @return the textual representation
 	 */
 	public String convertTriplesToText(List<Triple> triples){
@@ -226,6 +237,7 @@ public class TripleConverter {
 	
 	/**
 	 * Return a textual representation for the given triple.
+	 * 
 	 * @param t the triple to convert
 	 * @return the textual representation
 	 */
@@ -235,8 +247,9 @@ public class TripleConverter {
 	
 	/**
 	 * Return a textual representation for the given triple.
+	 * 
 	 * @param t the triple to convert
-	 * @param negated if phrase is negated 
+	 * @param negated if phrase is negated
 	 * @return the textual representation
 	 */
 	public String convertTripleToText(Triple t, boolean negated){
@@ -247,6 +260,7 @@ public class TripleConverter {
 	
 	/**
 	 * Convert a triple into a phrase object
+	 * 
 	 * @param t the triple
 	 * @return the phrase
 	 */
@@ -256,6 +270,7 @@ public class TripleConverter {
 	
 	/**
 	 * Convert a triple into a phrase object
+	 * 
 	 * @param t the triple
 	 * @return the phrase
 	 */
@@ -413,12 +428,12 @@ public class TripleConverter {
 			}
 		}
 		
-		//set negation
+		// set negation
 		if(negated){
 			p.setFeature(Feature.NEGATED, negated);
 		}
 		
-		//set present time as tense
+		// set present time as tense
 		p.setFeature(Feature.TENSE, Tense.PRESENT);
 //		System.out.println(realiser.realise(p));
 		return p;
@@ -426,7 +441,9 @@ public class TripleConverter {
 	
 	
 	/**
-	 * @param encapsulateStringLiterals the encapsulateStringLiterals to set
+	 * Whether to encapsulate the value of string literals in "".
+	 * {@see LiteralConverter#setEncapsulateStringLiterals(boolean)}
+	 * @param encapsulateStringLiterals TRUE if string has to be wrapped in "", otherwise FALSE
 	 */
 	public void setEncapsulateStringLiterals(boolean encapsulateStringLiterals) {
 		this.literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
@@ -451,9 +468,17 @@ public class TripleConverter {
 				&& !(reasoner.isFunctional(
 						new OWLObjectPropertyImpl(IRI.create(triple.getPredicate().getURI()))) 
 					|| reasoner.getRange(
-							new OWLDataPropertyImpl(IRI.create(triple.getPredicate().getURI()))).equals(OWL2Datatype.XSD_BOOLEAN));
+							new OWLDataPropertyImpl(IRI.create(triple.getPredicate().getURI()))).asOWLDatatype().getIRI().equals(OWL2Datatype.XSD_BOOLEAN.getIRI()));
 	}
 	
+	/**
+	 * Process the node and return an NLG element that contains the textual
+	 * representation. The output depends on the node type, i.e.
+	 * variable, URI or literal.
+	 * 
+	 * @param node the node to process
+	 * @return the NLG element containing the textual representation of the node
+	 */
 	public NLGElement processNode(Node node) {
 		NLGElement element;
 		if (node.isVariable()) {
@@ -468,15 +493,21 @@ public class TripleConverter {
 		return element;
 	}
 	
+	/**
+	 * Converts the node that is supposed to represent a class in the knowledge base into an NL phrase.
+	 * @param node the node
+	 * @param plural whether the plural form should be used
+	 * @return the NL phrase
+	 */
 	public NPPhraseSpec processClassNode(Node node, boolean plural) {
 		NPPhraseSpec object = null;
 		if (node.equals(OWL.Thing.asNode())) {
 			object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
-		} else if (node.equals(RDFS.Literal.getURI())) {
+		} else if (node.equals(RDFS.Literal.asNode())) {
 			object = nlgFactory.createNounPhrase(GenericType.VALUE.getNlr());
-		} else if (node.equals(RDF.Property.getURI())) {
+		} else if (node.equals(RDF.Property.asNode())) {
 			object = nlgFactory.createNounPhrase(GenericType.RELATION.getNlr());
-		} else if (node.equals(RDF.type.getURI())) {
+		} else if (node.equals(RDF.type.asNode())) {
 			object = nlgFactory.createNounPhrase(GenericType.TYPE.getNlr());
 		} else {
 			String label = uriConverter.convert(node.getURI());
@@ -552,13 +583,10 @@ public class TripleConverter {
 	/**
 	 * Takes a URI and returns a noun phrase for it
 	 * 
-	 * @param uri
-	 *            the URI to convert
-	 * @param plural
-	 *            whether is it is in plural form
-	 * @param isClass
-	 *            if URI is supposed to be a class
-	 * @return
+	 * @param uri the URI to convert
+	 * @param plural whether it is in plural form
+	 * @param isClass if URI is supposed to be a class
+	 * @return the noun phrase
 	 */
 	public NPPhraseSpec getNPPhrase(String uri, boolean plural, boolean isClass) {
 		NPPhraseSpec object = null;

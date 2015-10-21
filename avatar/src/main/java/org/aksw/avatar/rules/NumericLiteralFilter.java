@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.aksw.commons.util.Pair;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.triple2nl.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;

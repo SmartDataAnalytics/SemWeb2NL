@@ -1,5 +1,10 @@
-package org.aksw.triple2nl;
+package org.aksw.triple2nl.util;
 
+/**
+ * Generic types and its textual represnatation.
+ * @author Lorenz Buehmann
+ *
+ */
 public enum GenericType {
 	ENTITY("entity"),
 	VALUE("value"),
@@ -13,6 +18,9 @@ public enum GenericType {
 		this.nlr = nlr;
 	}
 
+	/**
+	 * @return the textual representation
+	 */
 	public String getNlr() {
 		return nlr;
 	}
