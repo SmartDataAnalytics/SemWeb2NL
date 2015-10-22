@@ -10,6 +10,7 @@ import static org.aksw.triple2nl.util.PennTreebankTagSet.SINV;
 import static org.aksw.triple2nl.util.PennTreebankTagSet.VERB_PHRASE;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -23,7 +24,6 @@ import org.apache.log4j.Logger;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
 import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
