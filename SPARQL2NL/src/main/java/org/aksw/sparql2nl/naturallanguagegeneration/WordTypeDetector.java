@@ -1,18 +1,19 @@
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.util.Arrays;
+import java.util.List;
 
-import net.didion.jwnl.JWNL;
-import net.didion.jwnl.JWNLException;
-import net.didion.jwnl.data.IndexWord;
-import net.didion.jwnl.data.POS;
-import net.didion.jwnl.data.Synset;
-import net.didion.jwnl.data.Word;
-import net.didion.jwnl.dictionary.Dictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 public class WordTypeDetector {
+	
+	private static final Logger logger = LoggerFactory.getLogger(WordTypeDetector.class);
 	
 	public Dictionary dict;	
 	
@@ -21,12 +22,9 @@ public class WordTypeDetector {
 	
 	public WordTypeDetector() {
 		try {
-			JWNL.initialize(new FileInputStream("resources/wordnet/wordnet_properties.xml"));
-			dict = Dictionary.getInstance();
+			dict = Dictionary.getDefaultResourceInstance();
 		} catch (JWNLException e) {
-			e.printStackTrace();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			logger.error("Failed to load WordNet.", e);
 		}
 	}
 	
@@ -37,7 +35,8 @@ public class WordTypeDetector {
 			
 			int nrOfNounSenses = 0;
 			int nrOfVerbSenses = 0;
-			//get NOUN senses
+			
+			// get NOUN senses
 			IndexWord iw;
 			if(stemWords){
 				iw = dict.getMorphologicalProcessor().lookupBaseForm(POS.NOUN, token);
@@ -45,8 +44,8 @@ public class WordTypeDetector {
 				iw = dict.getIndexWord(POS.NOUN, token);
 			}
 			if(iw != null){
-				Synset[] synsets = iw.getSenses();
-				nrOfNounSenses = synsets.length;
+				List<Synset> synsets = iw.getSenses();
+				nrOfNounSenses = synsets.size();
 			}
 			//get VERB senses
 			if(stemWords){

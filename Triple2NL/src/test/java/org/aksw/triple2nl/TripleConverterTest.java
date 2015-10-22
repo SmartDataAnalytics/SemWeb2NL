@@ -6,7 +6,6 @@ package org.aksw.triple2nl;
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.dllearner.kb.SparqlEndpointKS;

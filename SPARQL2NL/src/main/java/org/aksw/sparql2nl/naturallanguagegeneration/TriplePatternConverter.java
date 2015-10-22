@@ -18,8 +18,14 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.vocabulary.RDFS;
+
+import net.sf.extjwnl.dictionary.Dictionary;
 import simplenlg.features.Feature;
-import simplenlg.features.Form;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.InterrogativeType;
 import simplenlg.features.Tense;
@@ -32,13 +38,6 @@ import simplenlg.phrasespec.PPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.phrasespec.VPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
-
-import com.clarkparsia.sparqlowl.parser.antlr.SparqlOwlParser.verbObjectListPair_return;
-import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.vocabulary.RDFS;
 
 /**
  * Convert triple(s) into natural language.
@@ -57,21 +56,21 @@ public class TriplePatternConverter {
 
 	private boolean useCompactOfVerbalization = true;
 
-	public TriplePatternConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TriplePatternConverter(SparqlEndpoint endpoint, String cacheDirectory, Dictionary wordnetDirectory, Lexicon lexicon) {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), null,
 				null, cacheDirectory, wordnetDirectory, lexicon);
 	}
 	
-	public TriplePatternConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+	public TriplePatternConverter(SparqlEndpoint endpoint, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), 
 				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
-	public TriplePatternConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+	public TriplePatternConverter(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(qef, null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 
-	public TriplePatternConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
+	public TriplePatternConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
@@ -79,7 +78,7 @@ public class TriplePatternConverter {
 		this(qef, null, new DefaultIRIConverter(qef), cacheDirectory, null, lexicon);
 	}
 	
-	public TriplePatternConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TriplePatternConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDirectory, Lexicon lexicon) {
 		if(propertyVerbalizer == null){
 			propertyVerbalizer = new PropertyVerbalizer(qef, cacheDirectory, wordnetDirectory);
 		}
@@ -326,7 +325,9 @@ public class TriplePatternConverter {
         
 //        System.exit(0);
         
-        TriplePatternConverter tpConverter = new TriplePatternConverter(qef, "/tmp/cache", wordNetDir);
+        Dictionary dict = Dictionary.getDefaultResourceInstance();
+        
+		TriplePatternConverter tpConverter = new TriplePatternConverter(qef, "/tmp/cache", dict);
 		
         Triple t1 = Triple.create(
 				NodeFactory.createVariable("s"), 
@@ -367,7 +368,7 @@ public class TriplePatternConverter {
 				NodeFactory.createURI("http://dbpedia.org/resource/Mammalogy")
 				);
 		
-		TripleConverter conv = new TripleConverter(qef, "tmp/cache", wordNetDir);
+		TripleConverter conv = new TripleConverter(qef, "tmp/cache", dict);
 		SPhraseSpec p = conv.convertTriple(t);
 		System.out.println(realiser.realise(p));
 		p.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.WHAT_OBJECT);

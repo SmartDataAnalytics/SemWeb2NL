@@ -31,17 +31,6 @@ import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
-import simplenlg.features.Feature;
-import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.DocumentElement;
-import simplenlg.framework.LexicalCategory;
-import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
-import simplenlg.lexicon.Lexicon;
-import simplenlg.phrasespec.NPPhraseSpec;
-import simplenlg.phrasespec.SPhraseSpec;
-import simplenlg.realiser.english.Realiser;
-
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.io.Files;
@@ -70,6 +59,18 @@ import com.hp.hpl.jena.sparql.syntax.PatternVars;
 import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
+
+import net.sf.extjwnl.dictionary.Dictionary;
+import simplenlg.features.Feature;
+import simplenlg.framework.CoordinatedPhraseElement;
+import simplenlg.framework.DocumentElement;
+import simplenlg.framework.LexicalCategory;
+import simplenlg.framework.NLGElement;
+import simplenlg.framework.NLGFactory;
+import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.NPPhraseSpec;
+import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.realiser.english.Realiser;
 
 /**
  *
@@ -103,7 +104,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     private PropertyVerbalizer propertyVerbalizer;
     private FunctionalityDetector functionalityDetector;
 	private QueryExecutionFactory qef;
-	private String wordnetDirectory;
+	private Dictionary wordnetDirectory;
 	private String cacheDirectory;
 	private TripleConverter tripleConverter;
 	private QueryRewriter queryRewriter;
@@ -121,14 +122,14 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
 
-    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String wordnetDirectory) {
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, Dictionary wordnetDirectory) {
         this.endpoint = endpoint;
 		this.wordnetDirectory = wordnetDirectory;
 		
 		init();
     }
     
-    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+    public SimpleNLGwithPostprocessing(SparqlEndpoint endpoint, String cacheDirectory, Dictionary wordnetDirectory) {
         this.endpoint = endpoint;
 		this.cacheDirectory = cacheDirectory;
 		this.wordnetDirectory = wordnetDirectory;
@@ -136,7 +137,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         init();
     }
     
-    public SimpleNLGwithPostprocessing(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+    public SimpleNLGwithPostprocessing(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDirectory) {
         this.qef = qef;
 		this.cacheDirectory = cacheDirectory;
 		this.wordnetDirectory = wordnetDirectory;
@@ -144,7 +145,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 		init();
     }
 
-    public SimpleNLGwithPostprocessing(Model model, String wordnetDirectory) {
+    public SimpleNLGwithPostprocessing(Model model, Dictionary wordnetDirectory) {
         this.model = model;
 		this.wordnetDirectory = wordnetDirectory;
 
