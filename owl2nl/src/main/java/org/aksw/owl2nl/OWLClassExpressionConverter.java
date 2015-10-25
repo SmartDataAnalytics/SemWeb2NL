@@ -37,6 +37,7 @@ import org.semanticweb.owlapi.model.OWLDataUnionOf;
 import org.semanticweb.owlapi.model.OWLDatatype;
 import org.semanticweb.owlapi.model.OWLDatatypeRestriction;
 import org.semanticweb.owlapi.model.OWLEntity;
+import org.semanticweb.owlapi.model.OWLFacetRestriction;
 import org.semanticweb.owlapi.model.OWLIndividual;
 import org.semanticweb.owlapi.model.OWLIndividualVisitorEx;
 import org.semanticweb.owlapi.model.OWLLiteral;
@@ -58,6 +59,7 @@ import org.semanticweb.owlapi.model.OWLObjectUnionOf;
 import org.semanticweb.owlapi.util.IRIShortFormProvider;
 import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 import org.semanticweb.owlapi.vocab.OWL2Datatype;
+import org.semanticweb.owlapi.vocab.OWLFacet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1017,6 +1019,45 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDatatypeRestriction node) {
+		Set<OWLFacetRestriction> facetRestrictions = node.getFacetRestrictions();
+		
+		for(OWLFacetRestriction facetRestriction : facetRestrictions) {
+			OWLFacet facet = facetRestriction.getFacet();
+			OWLLiteral value = facetRestriction.getFacetValue();
+			
+			String valueString = value.getLiteral();
+			
+			String keyword = facet.toString();
+			switch(facet) {
+				case LENGTH: keyword = "STRLEN(STR(%s) = %d)";
+					break;
+				case MIN_LENGTH: keyword = "STRLEN(STR(%s) >= %d)";
+					break;
+				case MAX_LENGTH: keyword = "STRLEN(STR(%s) <= %d)";
+					break;
+				case PATTERN: keyword = "REGEX(STR(%s), %d)";
+					break;
+				case LANG_RANGE:
+					break;
+				case MAX_EXCLUSIVE: keyword = "lower than";
+					break;
+				case MAX_INCLUSIVE: keyword = "lower than or equals to";
+					break;
+				case MIN_EXCLUSIVE: keyword = "greater than";
+					break;
+				case MIN_INCLUSIVE: keyword = "greater than or equals to";
+					break;
+				case FRACTION_DIGITS:
+					break;
+				case TOTAL_DIGITS:
+					break;
+				default:
+					break;
+			
+			}
+			
+			return nlgFactory.createNounPhrase(keyword + " " + valueString);
+		}
 		return null;
 	}
 }
