@@ -995,7 +995,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDataComplementOf node) {
-		return null;
+		NLGElement nlgElement = node.getDataRange().accept(this);
+		nlgElement.setFeature(Feature.NEGATED, true);
+		return nlgElement;
 	}
 
 	/* (non-Javadoc)
@@ -1003,7 +1005,13 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDataIntersectionOf node) {
-		return null;
+		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+		
+		for(OWLDataRange op : node.getOperands()) {
+			cc.addCoordinate(op.accept(this));
+		}
+		
+		return cc;
 	}
 
 	/* (non-Javadoc)
@@ -1011,7 +1019,14 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	 */
 	@Override
 	public NLGElement visit(OWLDataUnionOf node) {
-		return null;
+		CoordinatedPhraseElement cc = nlgFactory.createCoordinatedPhrase();
+		cc.setConjunction("or");
+		
+		for(OWLDataRange op : node.getOperands()) {
+			cc.addCoordinate(op.accept(this));
+		}
+		
+		return cc;
 	}
 
 	/* (non-Javadoc)
