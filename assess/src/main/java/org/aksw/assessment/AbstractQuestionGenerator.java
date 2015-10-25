@@ -20,9 +20,9 @@ import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparqltools.util.SPARQLEndpointType;
-import org.aksw.triple2nl.DefaultIRIConverter;
-import org.aksw.triple2nl.LiteralConverter;
 import org.aksw.triple2nl.TripleConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.LiteralConverter;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -32,13 +32,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryFactory;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.rdf.model.Resource;
 
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.dictionary.Dictionary;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
@@ -100,11 +100,18 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
         wordNetDir = this.getClass().getClassLoader().getResource(wordNetDir).getPath();
         System.setProperty("wordnet.database.dir", wordNetDir);
         
+        Dictionary dictionary;
+		try {
+			dictionary = Dictionary.getDefaultResourceInstance();
+		} catch (JWNLException e) {
+			throw new RuntimeException("Failed to create WordNet instance.", e);
+		}
+        
         // a reasoner on SPARQL
         reasoner = new SPARQLReasoner(qef);
         
         // converter for triples
-        tripleConverter = new TripleConverter(qef, cacheDirectory, wordNetDir);
+        tripleConverter = new TripleConverter(qef, cacheDirectory, dictionary);
         
         // converter for literals
         literalConverter = new LiteralConverter(new DefaultIRIConverter(qef, cacheDirectory));
@@ -113,7 +120,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
         Lexicon lexicon = Lexicon.getDefaultLexicon();
         nlgFactory = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
-        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordNetDir);
+        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, dictionary);
 	}
 	
 	/**

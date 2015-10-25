@@ -109,7 +109,7 @@ public class Verbalizer {
     public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
     	this.qef = qef;
     	
-        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, wordnetDirectory);
+        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
         labels = new HashMap<Resource, String>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
         realiser = nlg.realiser;

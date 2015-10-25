@@ -5,6 +5,7 @@ import java.text.DateFormatSymbols;
 import java.util.Calendar;
 import java.util.Locale;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
@@ -24,7 +25,6 @@ import com.hp.hpl.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
 import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
-import com.hp.hpl.jena.vocabulary.XSD;
 
 public class LiteralConverter {
 
@@ -79,7 +79,7 @@ public class LiteralConverter {
 					s = '"' + s + '"';
 				}
             } else {// user-defined datatype
-                s = lit.getLexicalForm() + " " + splitAtCamelCase(uriConverter.convert(dt.getURI(), false));
+                s = lit.getLexicalForm() + " " + StringUtils.splitByCharacterTypeCamelCase(uriConverter.convert(dt.getURI(), false));
             }
         }
         return s;
@@ -151,12 +151,6 @@ public class LiteralConverter {
 	public void setEncapsulateStringLiterals(boolean encapsulateStringLiterals) {
 		this.encapsulateStringLiterals = encapsulateStringLiterals;
 	}
-
-    private String splitAtCamelCase(String s) {
-        String regex = "([a-z])([A-Z])";
-        String replacement = "$1 $2";
-        return s.replaceAll(regex, replacement).toLowerCase();
-    }
     
     public String getMonthName(int month) {
         return new DateFormatSymbols().getMonths()[month-1];

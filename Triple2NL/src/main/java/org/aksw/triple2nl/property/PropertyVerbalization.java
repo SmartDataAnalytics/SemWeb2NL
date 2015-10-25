@@ -95,7 +95,10 @@ public class PropertyVerbalization {
 	 */
 	@Override
 	public String toString() {
-		return "URI:" + propertyURI + "\nText: " + propertyText + "\nExpanded Text:" + expandedVerbalization + "\nType: " + verbalizationType;
+		return "URI:" + propertyURI + 
+				"\nText:" + propertyText + 
+				"\nExpanded Text:" + expandedVerbalization + 
+				"\nType: " + verbalizationType;
 	}
 
 }

@@ -58,14 +58,6 @@
 			<artifactId>jgrapht-core</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>jaws</groupId>
-			<artifactId>core</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>net.didion.jwnl</groupId>
-			<artifactId>jwnl</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.dllearner</groupId>
 			<artifactId>components-core</artifactId>
 			<exclusions>

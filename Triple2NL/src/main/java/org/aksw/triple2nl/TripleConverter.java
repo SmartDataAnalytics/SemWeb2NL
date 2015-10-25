@@ -52,6 +52,8 @@ import com.hp.hpl.jena.vocabulary.OWL;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
+import net.sf.extjwnl.dictionary.Dictionary;
+
 /**
  * Convert triple(s) into natural language.
  * @author Lorenz Buehmann
@@ -81,7 +83,7 @@ public class TripleConverter {
 		this(endpoint, null);
 	}
 	
-	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(qef, null, null, cacheDirectory, wordnetDirectory, null);
 	}
 	
@@ -89,17 +91,17 @@ public class TripleConverter {
 		this(endpoint, cacheDirectory, null);
 	}
 	
-	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), 
 				null, null, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
-	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TripleConverter(SparqlEndpoint endpoint, String cacheDirectory, Dictionary wordnetDirectory, Lexicon lexicon) {
 		this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), null,
 				null, cacheDirectory, wordnetDirectory, lexicon);
 	}
 
-	public TripleConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory) {
+	public TripleConverter(QueryExecutionFactory qef, IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDirectory) {
 		this(qef, null, uriConverter, cacheDirectory, wordnetDirectory, Lexicon.getDefaultLexicon());
 	}
 	
@@ -107,7 +109,7 @@ public class TripleConverter {
 		this(qef, null, null, cacheDirectory, null, lexicon);
 	}
 	
-	public TripleConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, String wordnetDirectory, Lexicon lexicon) {
+	public TripleConverter(QueryExecutionFactory qef, PropertyVerbalizer propertyVerbalizer, IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDirectory, Lexicon lexicon) {
 		if(uriConverter == null){
 			uriConverter = new DefaultIRIConverter(qef, cacheDirectory);
 		}

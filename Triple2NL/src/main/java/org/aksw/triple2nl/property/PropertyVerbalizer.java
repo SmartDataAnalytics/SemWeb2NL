@@ -9,9 +9,8 @@ import static org.aksw.triple2nl.util.PennTreebankTagSet.SBARQ;
 import static org.aksw.triple2nl.util.PennTreebankTagSet.SINV;
 import static org.aksw.triple2nl.util.PennTreebankTagSet.VERB_PHRASE;
 
-import java.io.File;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -20,16 +19,11 @@ import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.util.Preposition;
-import org.apache.commons.lang.SystemUtils;
 import org.apache.log4j.Logger;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 
-import edu.emory.mathcs.backport.java.util.Arrays;
-import edu.smu.tspell.wordnet.Synset;
-import edu.smu.tspell.wordnet.SynsetType;
-import edu.smu.tspell.wordnet.WordNetDatabase;
 import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
 import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
@@ -41,6 +35,12 @@ import edu.stanford.nlp.pipeline.StanfordCoreNLP;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.util.CoreMap;
+import net.sf.extjwnl.JWNLException;
+import net.sf.extjwnl.data.IndexWord;
+import net.sf.extjwnl.data.POS;
+import net.sf.extjwnl.data.Synset;
+import net.sf.extjwnl.data.Word;
+import net.sf.extjwnl.dictionary.Dictionary;
 
 /**
  * Verbalize a property.
@@ -53,7 +53,7 @@ public class PropertyVerbalizer {
     
     private double threshold = 2.0;
     private Preposition preposition;
-    private WordNetDatabase database;
+    private Dictionary database;
     
     private final String VERB_PATTERN = "^((VP)|(have NP)|(be NP P)|(be VP P)|(VP NP)).*";
 	private StanfordCoreNLP pipeline;
@@ -63,25 +63,18 @@ public class PropertyVerbalizer {
 
 	private IRIConverter uriConverter;
 	
-	public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDictionary) {
+	public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDictionary) {
 		this(new DefaultIRIConverter(qef), cacheDirectory, wordnetDictionary);
 	}
 	
-    public PropertyVerbalizer(IRIConverter uriConverter, String cacheDirectory, String wordnetDictionary) {
+    public PropertyVerbalizer(IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDictionary) {
         this.uriConverter = uriConverter;
-        if (wordnetDictionary == null) {
-			try {
-				File file = new File(PropertyVerbalizer.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath());
-				file = new File(file, SystemUtils.IS_OS_WINDOWS ? "wordnet/windows/dict" : "wordnet/linux/dict");
-				wordnetDictionary = file.getPath();
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
-			}
+        try {
+			this.database = wordnetDictionary == null ? Dictionary.getDefaultResourceInstance() : wordnetDictionary;
+		} catch (JWNLException e) {
+			throw new RuntimeException("Failed to create WordNet instance.", e);
 		}
-    	logger.info("WordNet directory: " + wordnetDictionary);
         
-		System.setProperty("wordnet.database.dir", wordnetDictionary);
-        database = WordNetDatabase.getFileInstance();
         preposition = new Preposition();
         
         Properties props = new Properties();
@@ -180,29 +173,49 @@ public class PropertyVerbalizer {
      * @param word Input token
      * @return "Typicity"
      */
-    public double getScore(String word) {
+    public double getScore(String token) {
+        logger.debug("Checking " + token);
+        
         double nounCount = 0;
         double verbCount = 0;
-        logger.debug("Checking " + word);
-        Synset[] synsets = database.getSynsets(word, SynsetType.NOUN);
-		for (Synset synset : synsets) {
-			String[] s = synset.getWordForms();
-			for (String value : s) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
-				nounCount = nounCount + Math.log(synset.getTagCount(value) + 1.0);
+        
+        List<Synset> synsets;
+        
+        try {
+			// number of occurrences as noun
+			IndexWord iw = database.getIndexWord(POS.NOUN, token);
+			if(iw != null) {
+				synsets = iw.getSenses();
+				
+				for (Synset synset : synsets) {
+					List<Word> words = synset.getWords();
+					
+					for (Word word : words) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
+						nounCount += Math.log(word.getUseCount() + 1.0);
+					}
+				}
 			}
+			
+
+			// number of occurrences as verb
+			iw = database.getIndexWord(POS.VERB, token);
+			if(iw != null) {
+				synsets = iw.getSenses();
+				for (Synset synset : synsets) {
+					List<Word> words = synset.getWords();
+					
+					for (Word word : words) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
+						verbCount += Math.log(word.getUseCount() + 1.0);
+					}
+				}
+			}
+			
+			logger.debug("Noun count = "+nounCount);
+			logger.debug("Verb count = "+verbCount);
+		} catch (JWNLException e) {
+			logger.error("WordNet lookup failed.", e);
 		}
 
-        synsets = database.getSynsets(word, SynsetType.VERB);
-        for (int i = 0; i < synsets.length; i++) {
-
-            String[] s = synsets[i].getWordForms();
-            for (int j = 0; j < s.length; j++) {//System.out.println(s[j] + ":" + synsets[i].getTagCount(s[j]));
-                verbCount = verbCount + Math.log(synsets[i].getTagCount(s[j]) + 1.0);
-            }
-        }
-//        System.out.println("Noun count = "+nounCount);
-//        System.out.println("Verb count = "+verbCount);
-//        //verbCount = synsets.length;
         if (verbCount == 0 && nounCount == 0) {
             return 1.0;
         }
@@ -217,19 +230,29 @@ public class PropertyVerbalizer {
     }
 
     private List<String> getAllSynsets(String word) {
-        List<String> synset = new ArrayList<String>();
+    	List<String> synsets = new ArrayList<>();
+    	
+    	try {
+    		// noun synsets
+			IndexWord iw = database.getIndexWord(POS.NOUN, word);
+			if(iw != null) {
+				for (Synset synset : iw.getSenses()) {
+					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
+				}
+			}
 
-        WordNetDatabase database = WordNetDatabase.getFileInstance();
-        Synset[] synsets = database.getSynsets(word, SynsetType.NOUN, true);
-        for (int i = 0; i < synsets.length; i++) {
-            synset.add("NOUN " + synsets[i].getWordForms()[0]);
-        }
-        synsets = database.getSynsets(word, SynsetType.VERB, true);
-        for (int i = 0; i < synsets.length; i++) {
-            synset.add("VERB " + synsets[i].getWordForms()[0]);
-        }
+			// verb synsets
+			iw = database.getIndexWord(POS.VERB, word);
+			if(iw != null) {
+				for (Synset synset : iw.getSenses()) {
+					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
+				}
+			}
+		} catch (JWNLException e) {
+			logger.error("WordNet lookup failed.", e);
+		}
 
-        return synset;
+        return synsets;
     }
     
 	/**
@@ -251,25 +274,29 @@ public class PropertyVerbalizer {
         	return "be " + word;
         }
 
-        List<String> synset = new ArrayList<String>();
-        WordNetDatabase database = WordNetDatabase.getFileInstance();
-        Synset[] synsets = database.getSynsets(verb, SynsetType.VERB, true);
-        double min = verb.length();
-        String result = verb;
-        for (int i = 0; i < synsets.length; i++) {
-            String[] wordForms = synsets[i].getWordForms();
-            for (int j = 0; j < wordForms.length; j++) {
-                if (verb.contains(wordForms[j])) {
-                    result = wordForms[j];
-                    if (split.length > 1) {
-                        for (int k = 1; k < split.length; k++) {
-                            result = result + " " + split[k];
-                        }
-                    }
-                    return result;
-                }
-            }
-        }
+        try {
+			IndexWord iw = database.getIndexWord(POS.VERB, word);
+			if(iw != null) {
+				List<Synset> synsets = iw.getSenses();
+				double min = verb.length();
+				String result = verb;
+				for (Synset synset : synsets) {
+				    for (Word w : synset.getWords()) {
+				        if (verb.contains(w.getLemma())) {
+				            result = w.getLemma();
+				            if (split.length > 1) {
+				                for (int k = 1; k < split.length; k++) {
+				                    result = result + " " + split[k];
+				                }
+				            }
+				            return result;
+				        }
+				    }
+				}
+			}
+		} catch (JWNLException e) {
+			logger.error("WordNet lookup failed.", e);
+		}
         return word;
     }
     
@@ -382,13 +409,14 @@ public class PropertyVerbalizer {
 		if(pos.equals("VBN IN")){
 			expandedForm = "is" + " " + text;
 		} else if(pos.startsWith("BE DET")) {
-			expandedForm = "is" + " a " + text;
+			String[] split = text.split(" ");
+			expandedForm = "is" + " a " + Joiner.on(" ").join(Arrays.copyOfRange(text.split(" "), 1, split.length));
 		}
 		
 		propertyVerbalization.setExpandedVerbalizationText(expandedForm);
 	}
 	
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception{
         PropertyVerbalizer pp = new PropertyVerbalizer(new QueryExecutionFactoryHttp("http://dbpedia.org/sparql"), "cache", null);
         
         String propertyURI = "http://dbpedia.org/ontology/birthPlace";
