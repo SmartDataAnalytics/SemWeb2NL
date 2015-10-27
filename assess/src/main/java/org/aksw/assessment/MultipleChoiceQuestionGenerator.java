@@ -257,7 +257,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         }
         
         // random selection
-        String property = propertyCandidates.toArray(new String[]{})[rndGen.nextInt(propertyCandidates.size())];
+        String property = propertyCandidates.toArray(new String[propertyCandidates.size()])[rndGen.nextInt(propertyCandidates.size())];
         logger.info("Randomly chosen property: " + property);
         
         return property;
@@ -441,7 +441,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     
 	private Triple generateFocusTriple(Resource r, String property, boolean inSubjectPosition) {
 		logger.info("Generating focus triple...");
-		Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
+		List<RDFNode> correctAnswers = new ArrayList<RDFNode>();
 
 		Query query;
 		if (inSubjectPosition) {
@@ -460,17 +460,20 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 		while (rs.hasNext()) {
 			QuerySolution qs = rs.next();
 			RDFNode node = qs.get(var.getName());
-			if (node.isLiteral()) {
-				correctAnswers.add(node.asLiteral());
-			} else {
-				correctAnswers.add(node.asResource());
+			if (!node.isAnon()) {
+				correctAnswers.add(node);
 			}
-			return Triple.create(r.asNode(), NodeFactory.createURI(property), node.asNode());
 		}
-		
-		logger.warn("got no focus triple. query:\n" + query);
 
-		return null;
+		if(correctAnswers.isEmpty()) {
+			logger.warn("got no focus triple. query:\n" + query);
+			return null;
+		}
+
+		// random selection
+		Collections.sort(correctAnswers, new RDFNodeComparator());
+		RDFNode node = correctAnswers.get(rndGen.nextInt());
+		return Triple.create(r.asNode(), NodeFactory.createURI(property), node.asNode());
 	}
 	
 	private ElementGroup generateFocusBGP(Resource r, String property, boolean inSubjectPosition, boolean hideSubject, int difficulty) {

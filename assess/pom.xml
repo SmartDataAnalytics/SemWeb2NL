@@ -69,6 +69,8 @@
 								</systemProperty>
 							</systemProperties>
 							<scanIntervalSeconds>0</scanIntervalSeconds>
+							<stopKey>jetty-stop</stopKey>
+							<stopPort>5679</stopPort>
 						</configuration>
 					</plugin>
 					<plugin>

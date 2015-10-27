@@ -56,8 +56,6 @@ import org.semanticweb.owlapi.model.OWLObjectOneOf;
 import org.semanticweb.owlapi.model.OWLObjectPropertyExpression;
 import org.semanticweb.owlapi.model.OWLObjectSomeValuesFrom;
 import org.semanticweb.owlapi.model.OWLObjectUnionOf;
-import org.semanticweb.owlapi.util.IRIShortFormProvider;
-import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 import org.semanticweb.owlapi.vocab.OWL2Datatype;
 import org.semanticweb.owlapi.vocab.OWLFacet;
 import org.slf4j.Logger;
@@ -173,7 +171,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		} else if(ce instanceof OWLObjectIntersectionOf){
 			Set<OWLClassExpression> operands = ((OWLObjectIntersectionOf) ce).getOperands();
 			Set<OWLClassExpression> newOperands = Sets.newHashSet();
-			
+
 			for (OWLClassExpression operand : operands) {
 				newOperands.add(rewrite(operand, true));
 			}
@@ -280,7 +278,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			
 			// process the classes
 			Iterator<OWLClassExpression> iterator = operands.iterator();
-			List<OWLClass> classes = new ArrayList<OWLClass>();
+			List<OWLClass> classes = new ArrayList<>();
 			while(iterator.hasNext()){
 				OWLClassExpression operand = iterator.next();
 				if(!operand.isAnonymous()){
@@ -715,7 +713,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		Set<OWLIndividual> individuals = ce.getIndividuals();
 
 		if (individuals.size() > 1) {
-			Set<OWLClassExpression> operands = new HashSet<OWLClassExpression>(individuals.size());
+			Set<OWLClassExpression> operands = new HashSet<>(individuals.size());
 			for (OWLIndividual ind : individuals) {
 				operands.add(df.getOWLObjectOneOf(ind));
 			}
@@ -981,7 +979,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		Set<OWLLiteral> values = node.getValues();
 		
 		if(values.size() > 1){
-			Set<OWLDataRange> operands = new HashSet<OWLDataRange>(values.size());
+			Set<OWLDataRange> operands = new HashSet<>(values.size());
 			for (OWLLiteral value : values) {
 				operands.add(df.getOWLDataOneOf(value));
 			}
@@ -1035,7 +1033,9 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	@Override
 	public NLGElement visit(OWLDatatypeRestriction node) {
 		Set<OWLFacetRestriction> facetRestrictions = node.getFacetRestrictions();
-		
+
+		List<NPPhraseSpec> phrases = new ArrayList<>(facetRestrictions.size());
+
 		for(OWLFacetRestriction facetRestriction : facetRestrictions) {
 			OWLFacet facet = facetRestriction.getFacet();
 			OWLLiteral value = facetRestriction.getFacetValue();
@@ -1070,9 +1070,18 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 					break;
 			
 			}
-			
-			return nlgFactory.createNounPhrase(keyword + " " + valueString);
+
+			phrases.add(nlgFactory.createNounPhrase(keyword + " " + valueString));
 		}
-		return null;
+
+		if(phrases.size() > 1) {
+			CoordinatedPhraseElement coordinatedPhrase = nlgFactory.createCoordinatedPhrase();
+			for (NPPhraseSpec phrase : phrases) {
+				coordinatedPhrase.addCoordinate(phrase);
+			}
+			return coordinatedPhrase;
+		}
+
+		return phrases.get(0);
 	}
 }

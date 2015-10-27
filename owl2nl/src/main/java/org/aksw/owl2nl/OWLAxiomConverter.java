@@ -315,13 +315,12 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
 		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
+		ontologyURL = "http://protege.cim3.net/file/pub/ontologies/travel/travel.owl";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
 		
 		OWLAxiomConverter converter = new OWLAxiomConverter();
-		for (OWLAxiom axiom : ontology.getAxioms()) {
-			converter.convert(axiom);
-		}
+		ontology.getAxioms().forEach(converter::convert);
 	}
 
 }

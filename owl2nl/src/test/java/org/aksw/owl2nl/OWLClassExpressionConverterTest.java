@@ -34,7 +34,6 @@ public class OWLClassExpressionConverterTest {
 	private static OWLClass company;
 	private static OWLClass person;
 	private static OWLDataFactoryImpl df;
-	private static PrefixManager pm;
 	private static OWLNamedIndividual leipzig;
 	private static OWLLiteral literal;
 	
@@ -50,7 +49,7 @@ public class OWLClassExpressionConverterTest {
 		converter = new OWLClassExpressionConverter();
 		
 		df = new OWLDataFactoryImpl(false, false);
-		pm = new DefaultPrefixManager("http://dbpedia.org/ontology/");
+		PrefixManager pm = new DefaultPrefixManager("http://dbpedia.org/ontology/");
 		
 		birthPlace = df.getOWLObjectProperty("birthPlace", pm);
 		worksFor = df.getOWLObjectProperty("worksFor", pm);

@@ -41,10 +41,10 @@ public class SPARQLQueryUtils {
      * 
      * @param endpointType
      *            the endpoint type
-     * @param queryString
-     *            the SPARQL query string to add the ranking constraint
-     * @param rootVarName
-     *            the variable name used to select entities
+     * @param query
+     *            the SPARQL query
+     * @param rootVar
+     *            the variable used to select entities
      */
     public static void addRanking(SPARQLEndpointType endpointType,
                                               final Query query,
@@ -61,10 +61,10 @@ public class SPARQLQueryUtils {
      * 
      * @param endpointType
      *            the endpoint type
-     * @param queryString
-     *            the SPARQL query string to add the ranking constraint
-     * @param rootVarName
-     *            the variable name used to select entities
+     * @param query
+     *            the SPARQL query
+     * @param rootVar
+     *            the variable used to select entities
      */
     public static void addRankingConstraints(SPARQLEndpointType endpointType,
                                               final Query query,
@@ -84,8 +84,8 @@ public class SPARQLQueryUtils {
     }
 
     /**
-     * @param endpointType
-     * @param queryString
+     * @param endpointType the SPARQL endpoint type
+     * @param query the SPARQL query
      */
     public static void addRankingOrder(SPARQLEndpointType endpointType,
     		final Query query,

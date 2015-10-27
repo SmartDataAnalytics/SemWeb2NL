@@ -14,13 +14,19 @@ import com.hp.hpl.jena.rdf.model.Resource;
 public interface BlackList {
 
 	/**
-	 * 
+	 * Checks whether the given URI is contained in the black list.
 	 * @param uri the entity URI
-	 * @return <code>true</code> if the entity is not allowed, otherwise
+	 * @return <code>TRUE</code> if the entity is contained in the black list, i.e. not allowed, otherwise
 	 *         <code>FALSE</code>
 	 */
 	boolean contains(String uri);
 
-	boolean contains(Resource uri);
+	/**
+	 * Checks whether the given resource is contained in the black list.
+	 * @param resource the resource
+	 * @return <code>TRUE</code> if the resource is contained in the black list, i.e. not allowed, otherwise
+	 *         <code>FALSE</code>
+	 */
+	boolean contains(Resource resource);
 
 }

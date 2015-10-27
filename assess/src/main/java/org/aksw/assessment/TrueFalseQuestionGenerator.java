@@ -115,7 +115,7 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
         }
     }
 
-	public static void main(String args[]) {
+	public static void main(String args[]) throws Exception{
 		Map<OWLEntity, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
 		restrictions.put(new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/Writer")),
 				Sets.<OWLObjectProperty> newHashSet(

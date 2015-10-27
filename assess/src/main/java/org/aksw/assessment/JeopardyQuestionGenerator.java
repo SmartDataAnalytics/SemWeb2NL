@@ -304,8 +304,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     
     /**
      * Given a list of triples all having the same predicate a SPARQL query pattern using FILTER IN is returned.
-     * @param property
-     * @param resources
+     * @param triples the triples
+     * @param type the type
      * @return
      */
     private String asFilterInSPARQLQuery(Collection<Triple> triples, OWLClass type){

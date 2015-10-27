@@ -170,7 +170,7 @@ public class PropertyVerbalizer {
      * Returns log(nounCount/verbCount), i.e., positive for noun, negative for
      * verb
      *
-     * @param word Input token
+     * @param token Input token
      * @return "Typicity"
      */
     public double getScore(String token) {

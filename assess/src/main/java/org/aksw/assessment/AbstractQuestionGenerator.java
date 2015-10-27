@@ -244,7 +244,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	/**
 	 * Returns a textual summary for a given individual and its type.
 	 * 
-	 * @param ind the individual
+	 * @param entityURI the individual
 	 * @param type the type of the individual
 	 * @return a textual summary for a given individual and its type
 	 */
@@ -270,7 +270,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	
 	 /**
      * Returns a textual summary for a given individual.
-     * @param ind
+     * @param entityURI
      * @return
      */
 	protected String getEntitySummary(String entityURI) {
