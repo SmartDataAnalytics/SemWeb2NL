@@ -53,7 +53,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 	}
     
      public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
-        resource2Triples = new HashMap<Resource, Collection<Triple>>();
+        resource2Triples = new HashMap<>();
         
         // first get graph for class
         try {
@@ -69,7 +69,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 				logger.info(cluster);
 			}
 
-			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<>();
 
 			for (OWLIndividual ind : individuals) {
 			    //finally generateSentencesFromClusters

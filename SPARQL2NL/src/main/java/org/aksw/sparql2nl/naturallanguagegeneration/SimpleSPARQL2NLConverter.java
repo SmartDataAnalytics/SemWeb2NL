@@ -115,8 +115,8 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 		//2. determine root variable
 		List<Var> projectVars = query.getProjectVars();
 		
-		varTypes = new HashMap<Node, List<Node>>();
-		var2TypeDescription = new HashMap<Node, NLGElement>();
+		varTypes = new HashMap<>();
+		var2TypeDescription = new HashMap<>();
 		for (Node node : queryGraph.vertexSet()) {
 			if(node.isVariable()){
 				var2TypeDescription.put(node, getVarType(node, queryGraph));
@@ -131,9 +131,9 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 		graphGenerator.transform(queryGraph, rootVar);
 //		QueryGraphGenerator.showGraph(queryGraph);
 		
-		var2Description = new HashMap<Node, NLGElement>();
+		var2Description = new HashMap<>();
 	
-		GraphIterator<Node, Edge> iterator = new DepthFirstIterator<Node, Edge>(queryGraph, rootVar.asNode());
+		GraphIterator<Node, Edge> iterator = new DepthFirstIterator<>(queryGraph, rootVar.asNode());
 		iterator.addTraversalListener(new TraversalListener<Node, Edge>() {
 			
 			@Override
@@ -174,7 +174,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	private NLGElement getVarType(Node varNode, DirectedMultigraph<Node, Edge> graph){
 		logger.info("Determining type of " + varNode + "...");
 		//check for type paths
-		List<Node> types = new ArrayList<Node>();
+		List<Node> types = new ArrayList<>();
 		Set<Edge> edges = graph.outgoingEdgesOf(varNode);
 		for (Edge edge : edges) {
 			Node predicate = edge.getPredicateNode();
@@ -237,7 +237,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	private void computeDescription(Node node, DirectedMultigraph<Node, Edge> graph){
 		boolean plural = true;
 		
-		List<PhraseElement> phrases = new ArrayList<PhraseElement>();
+		List<PhraseElement> phrases = new ArrayList<>();
 		for (Edge edge : graph.outgoingEdgesOf(node)) {
 			Triple triple = edge.asTriple();
 			//we handle rdf:type triples separately
@@ -293,7 +293,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	}
 	
 	private Var determineRootVar(Query query){
-		List<Var> candidateVars = new ArrayList<Var>(query.getProjectVars());
+		List<Var> candidateVars = new ArrayList<>(query.getProjectVars());
 		
 		if(candidateVars.size() == 1){
 			return candidateVars.get(0);

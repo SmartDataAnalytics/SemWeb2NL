@@ -22,7 +22,7 @@ import com.hp.hpl.jena.rdf.model.Resource;
  */
 public class DefaultPropertyBlackList implements BlackList{
 
-	public final Set<String> blacklist;
+	private final Set<String> blacklist;
 	
 	public DefaultPropertyBlackList() {
 		this(Collections.EMPTY_SET);

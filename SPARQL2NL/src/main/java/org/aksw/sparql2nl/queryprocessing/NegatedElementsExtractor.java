@@ -29,7 +29,7 @@ public class NegatedElementsExtractor extends ElementVisitorBase{
 	
 	ElementGroup currentGroup;
 	
-	Map<ElementGroup, Var> elementGroup2Var = new HashMap<ElementGroup, Var>();
+	Map<ElementGroup, Var> elementGroup2Var = new HashMap<>();
 	
 	public void getNegatedElements(Query query){
 		query.getQueryPattern().visit(this);

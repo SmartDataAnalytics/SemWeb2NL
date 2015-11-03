@@ -101,7 +101,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Set<Triple> extractTriplePatterns(Query query, Node node){
-		Set<Triple> triplePatterns = new HashSet<Triple>();
+		Set<Triple> triplePatterns = new HashSet<>();
 		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
 		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
 		return triplePatterns;
@@ -115,7 +115,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Set<Triple> extractNonOptionalTriplePatterns(Query query, Node node){
-		Set<Triple> triplePatterns = new HashSet<Triple>();
+		Set<Triple> triplePatterns = new HashSet<>();
 		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
 		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
 		triplePatterns.removeAll(optionalTriplePattern);
@@ -129,9 +129,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
 			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
@@ -146,9 +146,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractOutgoingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -169,9 +169,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractIncomingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIncomingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -185,9 +185,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractIngoingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -199,8 +199,8 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	public Set<Triple> extractTriplePattern(Query query, boolean ignoreOptionals){
-		triplePattern = new HashSet<Triple>();
-		optionalTriplePattern = new HashSet<Triple>();
+		triplePattern = new HashSet<>();
+		optionalTriplePattern = new HashSet<>();
 		
 		query.getQueryPattern().visit(this);
 		
@@ -208,7 +208,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		if(!ignoreOptionals){
 			if(query.isSelectType()){
 				for(Triple t : optionalTriplePattern){
-					if(!ListUtils.intersection(new ArrayList<Var>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
+					if(!ListUtils.intersection(new ArrayList<>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
 						triplePattern.add(t);
 					}
 				}
@@ -227,8 +227,8 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	public Set<Triple> extractTriplePattern(ElementGroup group, boolean ignoreOptionals){
-		triplePattern = new HashSet<Triple>();
-		optionalTriplePattern = new HashSet<Triple>();
+		triplePattern = new HashSet<>();
+		optionalTriplePattern = new HashSet<>();
 		
 		group.visit(this);
 		

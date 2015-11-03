@@ -19,7 +19,7 @@ public class DisjunctiveNormalFormConverter2 extends ElementVisitorBase {
 	private boolean innerUnion = false;
 	private boolean outerUnion = true;
 	
-	private Stack<ElementUnion> unionStack = new Stack<ElementUnion>();
+	private Stack<ElementUnion> unionStack = new Stack<>();
 	
 	public com.hp.hpl.jena.query.Query getDisjunctiveNormalForm(com.hp.hpl.jena.query.Query query){
 		Query copy = QueryFactory.create(query);

@@ -14,7 +14,7 @@ public class Filter {
         coord = c;
     }
     public Filter(Sentence s) {
-        sentences = new HashSet<Sentence>();
+        sentences = new HashSet<>();
         sentences.add(s);
         coord = null;
     }

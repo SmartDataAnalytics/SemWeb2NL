@@ -35,8 +35,8 @@ public class TypeExtractor2 {
 
        
 	public Map<String, Set<String>> extractTypes(Query query) {
-		var2AssertedTypesMap = new HashMap<String, Set<String>>();
-		var2InferredTypesMap = new HashMap<String, Set<String>>();
+		var2AssertedTypesMap = new HashMap<>();
+		var2InferredTypesMap = new HashMap<>();
 		
 		TriplePatternExtractor extr = new TriplePatternExtractor();
 		Set<Triple> triples = extr.extractTriplePattern((ElementGroup)query.getQueryPattern());
@@ -45,7 +45,7 @@ public class TypeExtractor2 {
 			processTriple(t);
 		}
 		
-		Map<String, Set<String>> var2TypesMap = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> var2TypesMap = new HashMap<>();
 		if(preferAssertedTypes){
 			var2TypesMap.putAll(var2AssertedTypesMap);
 			for(Entry<String, Set<String>> entry : var2InferredTypesMap.entrySet()){
@@ -116,7 +116,7 @@ public class TypeExtractor2 {
 	private void addAssertedType(String variable, String type){
 		Set<String> types = var2AssertedTypesMap.get(variable);
 		if(types == null){
-			types = new HashSet<String>();
+			types = new HashSet<>();
 			var2AssertedTypesMap.put(variable, types);
 		}
 		types.add(type);
@@ -125,7 +125,7 @@ public class TypeExtractor2 {
 	private void addInferredType(String variable, String type){
 		Set<String> types = var2InferredTypesMap.get(variable);
 		if(types == null){
-			types = new HashSet<String>();
+			types = new HashSet<>();
 			var2InferredTypesMap.put(variable, types);
 		}
 		types.add(type);

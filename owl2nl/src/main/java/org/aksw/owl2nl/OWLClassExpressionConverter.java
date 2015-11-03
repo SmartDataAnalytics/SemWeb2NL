@@ -217,8 +217,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	/**
 	 * Returns a list of operands ordered by class expressions types,
 	 * starting with the "more easy" first.
-	 * @param ce
-	 * @return
+	 * @param ce the class expression
+	 * @return a list of operands
 	 */
 	private List<OWLClassExpression> getOperandsByPriority(OWLNaryBooleanClassExpression ce){
 		return ce.getOperandsAsList();

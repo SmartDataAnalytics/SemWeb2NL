@@ -45,7 +45,7 @@ public class DefaultIRIConverter implements IRIConverter{
 	private static final Logger logger = LoggerFactory.getLogger(DefaultIRIConverter.class);
 	
 	private IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
-	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
+	private LRUMap<String, String> uri2LabelCache = new LRUMap<>(200);
 	
 	private QueryExecutionFactory qef;
 	
@@ -262,7 +262,7 @@ public class DefaultIRIConverter implements IRIConverter{
 	 /**
      * Dereference the IRI and look for label property value.
      * @param iri the IRI
-     * @return
+     * @return the label if exist, otherwise <code>null</code>
      */
     private String getLabelFromLinkedData(String iri){
     	logger.debug("Get label for " + iri + " from Linked Data...");

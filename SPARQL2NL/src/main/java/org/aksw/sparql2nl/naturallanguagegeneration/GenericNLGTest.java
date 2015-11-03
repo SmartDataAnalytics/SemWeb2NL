@@ -57,7 +57,7 @@ public class GenericNLGTest {
      * @return List of elements from the WHERE clause
      */
     private static List<Element> getWhereElements(Query query) {
-        List<Element> result = new ArrayList<Element>();
+        List<Element> result = new ArrayList<>();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         for(int i=0; i<elt.getElements().size(); i++)
         {
@@ -83,7 +83,7 @@ public class GenericNLGTest {
     }
     
     private static List<Element> getElements(Query query) {
-        List<Element> result = new ArrayList<Element>();
+        List<Element> result = new ArrayList<>();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         return elt.getElements();
     }

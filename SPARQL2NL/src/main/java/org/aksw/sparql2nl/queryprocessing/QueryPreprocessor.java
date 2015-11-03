@@ -58,7 +58,7 @@ public class QueryPreprocessor {
 	}
 	
 	public String replaceVariablesWithTypes(String queryString){
-		Map<String, Set<String>> label2ReplacedVars = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> label2ReplacedVars = new HashMap<>();
 		
 		Map<String, Set<String>> var2TypesMap = typeExtr.extractTypes(QueryFactory.create(queryString, Syntax.syntaxARQ));
 		String replacedQuery = queryString;
@@ -75,7 +75,7 @@ public class QueryPreprocessor {
 				
 				if(label2ReplacedVars.containsKey(label)){
 					Set<String> oldReplacedVars = label2ReplacedVars.get(label);
-					Set<String> newReplacedVars = new HashSet<String>();
+					Set<String> newReplacedVars = new HashSet<>();
 					// replace the old replaced vars
 					int i = 1;
 					for(String rV : oldReplacedVars){
@@ -90,7 +90,7 @@ public class QueryPreprocessor {
 					label2ReplacedVars.put(label, newReplacedVars);
 					
 				} else {
-					Set<String> replacedVars = new HashSet<String>();
+					Set<String> replacedVars = new HashSet<>();
 					replacedVars.add(label);
 					replacedQuery = replacedQuery.replace("?" + var, "?" + label);
 					label2ReplacedVars.put(label, replacedVars);

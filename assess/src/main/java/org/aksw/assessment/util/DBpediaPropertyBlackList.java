@@ -23,7 +23,7 @@ public class DBpediaPropertyBlackList implements BlackList {
 
 	private static final String FILE_NAME = "property_blacklist_dbpedia.txt";
 
-	public final Set<String> blacklist;
+	private final Set<String> blacklist;
 	
 	public static boolean onlyOntologyNamespace = true;
 

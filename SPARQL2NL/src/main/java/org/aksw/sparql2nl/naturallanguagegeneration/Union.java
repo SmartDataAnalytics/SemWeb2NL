@@ -25,7 +25,7 @@ public class Union {
     
     public Sentence removeRedundancy(Realiser realiser) {
         
-        Hashtable<String,Sentence> unionsents = new Hashtable<String,Sentence>();
+        Hashtable<String,Sentence> unionsents = new Hashtable<>();
             
         for (Set<Sentence> un : sentences) {          
              for (Sentence s : un) {

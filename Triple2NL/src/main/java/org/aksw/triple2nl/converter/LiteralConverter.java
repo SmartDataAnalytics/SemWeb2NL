@@ -7,6 +7,7 @@ import java.util.Locale;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.dllearner.utilities.OwlApiJenaUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
 import org.semanticweb.owlapi.model.OWLDatatype;
@@ -26,34 +27,36 @@ import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.Literal;
 
+/**
+ * A converter for literals.
+ * @author Lorenz Buehmann
+ */
 public class LiteralConverter {
 
     private static final Locale ENGLISH_LOCAL = Locale.UK;
     private static final Logger logger = LoggerFactory.getLogger(LiteralConverter.class);
-    private IRIConverter uriConverter;
+    private IRIConverter iriConverter;
     private DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.LONG, ENGLISH_LOCAL);
     private boolean encapsulateStringLiterals = true;
 
-    public LiteralConverter(IRIConverter uriConverter) {
-        this.uriConverter = uriConverter;
+    public LiteralConverter(IRIConverter iriConverter) {
+        this.iriConverter = iriConverter;
     }
-    
+
+    /**
+     * Convert the literal into natural language.
+     * @param lit the literal
+     * @return the natural language expression
+     */
     public String convert(OWLLiteral lit) {
-    	RDFDatatype datatype;
-
-    	OWLDatatype owlDatatype = lit.getDatatype();
-
-    	if(Namespaces.XSD.inNamespace(owlDatatype.getIRI())){
-    		datatype = new XSDDatatype(owlDatatype.getIRI().getRemainder().get());
-    	} else {
-    		datatype = new BaseDatatype(lit.getDatatype().toStringID());
-    	}
-        return convert(NodeFactory.createLiteral(
-		        			lit.getLiteral(), 
-			        		lit.getLang(),
-			                datatype).getLiteral());
+        return convert(OwlApiJenaUtils.getLiteral(lit));
     }
 
+	/**
+     * Convert the literal into natural language.
+     * @param lit the literal
+     * @return the natural language expression
+     */
     public String convert(Literal lit) {
         return convert(NodeFactory.createLiteral(
 		        		lit.getLexicalForm(), 
@@ -61,6 +64,11 @@ public class LiteralConverter {
 		                lit.getDatatype()).getLiteral());
     }
 
+    /**
+     * Convert the literal into natural language.
+     * @param lit the literal
+     * @return the natural language expression
+     */
     public String convert(LiteralLabel lit) {
         RDFDatatype dt = lit.getDatatype();
 
@@ -79,7 +87,7 @@ public class LiteralConverter {
 					s = '"' + s + '"';
 				}
             } else {// user-defined datatype
-                s = lit.getLexicalForm() + " " + StringUtils.splitByCharacterTypeCamelCase(uriConverter.convert(dt.getURI(), false));
+                s = lit.getLexicalForm() + " " + StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(iriConverter.convert(dt.getURI(), false)), " ");
             }
         }
         return s;
@@ -102,8 +110,6 @@ public class LiteralConverter {
 				} else {
 					s = dateFormat.format(calendar.getTime());
 				}
-			} else {
-				
 			}
 		} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
 			logger.error("Conversion of date literal " + lit + " failed. Reason: " + e.getMessage());

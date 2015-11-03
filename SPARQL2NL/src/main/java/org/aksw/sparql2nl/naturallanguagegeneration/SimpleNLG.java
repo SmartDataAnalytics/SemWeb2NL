@@ -108,7 +108,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     @Override
     public DocumentElement convert2NLE(Query query) {
-        phrases = new ArrayList<NLGElement>();
+        phrases = new ArrayList<>();
         if (query.isSelectType() || query.isAskType()) {
             return convertSelectAndAsk(query);
         } else if (query.isDescribeType()) {
@@ -132,7 +132,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      */
     public DocumentElement convertSelectAndAsk(Query query) {
         // List of sentences for the output
-        List<DocumentElement> sentences = new ArrayList<DocumentElement>();
+        List<DocumentElement> sentences = new ArrayList<>();
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
         TypeExtractor tEx = new TypeExtractor(endpoint);
@@ -321,7 +321,7 @@ public class SimpleNLG implements Sparql2NLConverter {
      * @return List of elements from the WHERE clause
      */
     private static List<Element> getWhereElements(Query query) {
-        List<Element> result = new ArrayList<Element>();
+        List<Element> result = new ArrayList<>();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         for (int i = 0; i < elt.getElements().size(); i++) {
             Element e = elt.getElements().get(i);
@@ -345,7 +345,7 @@ public class SimpleNLG implements Sparql2NLConverter {
                 return ((ElementGroup) ((ElementOptional) e).getOptionalElement()).getElements();
             }
         }
-        return new ArrayList<Element>();
+        return new ArrayList<>();
     }
 
     /** Takes a DBPedia class and returns the correct label for it
@@ -377,7 +377,7 @@ public class SimpleNLG implements Sparql2NLConverter {
 
 
     private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
-        List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> objects = new ArrayList<>();
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
             if (vars.contains(s)) {
@@ -485,7 +485,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     public NLGElement getNLFromSingleClause(Element e) {
         if (e instanceof ElementPathBlock) {
             ElementPathBlock epb = (ElementPathBlock) e;
-            List<Triple> triples = new ArrayList<Triple>();
+            List<Triple> triples = new ArrayList<>();
 
             //get all triples. We assume that the depth of union is always 1
             for (TriplePath tp : epb.getPattern().getList()) {
@@ -498,7 +498,7 @@ public class SimpleNLG implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
-            List<Triple> triples = new ArrayList<Triple>();
+            List<Triple> triples = new ArrayList<>();
 
             //get all triples. We assume that the depth of union is always 1
             for (Element atom : union.getElements()) {
@@ -592,7 +592,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     }
 
     private Set<String> getVars(List<Element> elements, Set<String> projectionVars) {
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         for (Element e : elements) {
             for (String var : projectionVars) {
                 if (e.toString().contains("?" + var)) {
@@ -751,7 +751,7 @@ public class SimpleNLG implements Sparql2NLConverter {
     }
 
     private NLGElement getNLFromExpressions(List<Expr> expressions) {
-        List<NLGElement> nlgs = new ArrayList<NLGElement>();
+        List<NLGElement> nlgs = new ArrayList<>();
         NLGElement elt;
         for (Expr e : expressions) {
             elt = getNLFromSingleExpression(e);

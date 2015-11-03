@@ -67,7 +67,7 @@ public class GenericNLG implements Sparql2NLConverter {
         SPhraseSpec p = nlgFactory.createClause();
         p.setSubject("This query");
         p.setVerb("retrieve");
-        List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> objects = new ArrayList<>();
 
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
@@ -173,7 +173,7 @@ public class GenericNLG implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
-            List<Triple> triples = new ArrayList<Triple>();
+            List<Triple> triples = new ArrayList<>();
 
             //get all triples. We assume that the depth of union is always 1
             for (Element atom : union.getElements()) {
@@ -239,7 +239,7 @@ public class GenericNLG implements Sparql2NLConverter {
     }
 
     public static void test() {
-        Map<String, Set<String>> typeMap = new HashMap<String, Set<String>>();
+        Map<String, Set<String>> typeMap = new HashMap<>();
         String s = "x";
         HashSet type = new HashSet();
         type.add("Person");

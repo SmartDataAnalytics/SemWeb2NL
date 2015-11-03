@@ -54,7 +54,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         SimpleGraphAccessor g1 = q1.getGraphRepresentation();
         SimpleGraphAccessor g2 = q2.getGraphRepresentation();
 
-        HashMap<String, String> nodeMapping = new HashMap<String, String>();
+        HashMap<String, String> nodeMapping = new HashMap<>();
         for (String s : cliqueList) {
             String[] split1 = s.split(Pattern.quote(", "));
             for (int i = 0; i < split1.length; i++) {
@@ -83,11 +83,11 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
             }
         }
         //get successor map at string level
-        HashMap<String, TreeSet<String>> successors1 = new HashMap<String, TreeSet<String>>();
+        HashMap<String, TreeSet<String>> successors1 = new HashMap<>();
         double edgeCount1 = 0;
         for (IGraphNode n : g1.getNodeSet()) {
             TreeSet<IGraphNode> succ = n.getSuccessorSet();
-            TreeSet<String> labels = new TreeSet<String>();
+            TreeSet<String> labels = new TreeSet<>();
             for (IGraphNode ns : succ) {
                 labels.add(ns.getLabel());
                 edgeCount1++;
@@ -95,11 +95,11 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
             successors1.put(n.getLabel(), labels);
         }
 
-        HashMap<String, TreeSet<String>> successors2 = new HashMap<String, TreeSet<String>>();
+        HashMap<String, TreeSet<String>> successors2 = new HashMap<>();
         double edgeCount2 = 0;
         for (IGraphNode n : g2.getNodeSet()) {
             TreeSet<IGraphNode> succ = n.getSuccessorSet();
-            TreeSet<String> labels = new TreeSet<String>();
+            TreeSet<String> labels = new TreeSet<>();
             for (IGraphNode ns : succ) {
                 labels.add(ns.getLabel());
                 edgeCount2++;

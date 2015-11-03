@@ -71,8 +71,8 @@ public class PropertyVerbalization {
 	}
 	
 	/**
-	 * 
-	 * @param expandedVerbalization
+	 * Set the expanded verbalization text.
+	 * @param expandedVerbalization the expanded verbalization text
 	 */
 	public void setExpandedVerbalizationText(String expandedVerbalization) {
 		this.expandedVerbalization = expandedVerbalization;

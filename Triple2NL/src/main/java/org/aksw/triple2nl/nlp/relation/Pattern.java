@@ -8,7 +8,7 @@ import java.util.Map;
  */
 public class Pattern {
     
-    public Map<String,Double> features = new HashMap<String,Double>();
+    public Map<String,Double> features = new HashMap<>();
     public String naturalLanguageRepresentationWithoutVariables = "";
     public String naturalLanguageRepresentation = "";
     public Double boaScore = 0D;

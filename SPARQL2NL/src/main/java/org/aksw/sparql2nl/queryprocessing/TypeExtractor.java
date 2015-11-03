@@ -89,13 +89,13 @@ public class TypeExtractor extends ElementVisitorBase {
 	public Map<String, Set<String>> extractTypes(Query query) {
 		this.query = query;
 		
-		var2TypesMap = new HashMap<String, Set<String>>();
-		var2Triples = new HashMap<Var, Set<Triple>>();
-                explicitTypedVars = new HashSet<String>();
+		var2TypesMap = new HashMap<>();
+		var2Triples = new HashMap<>();
+                explicitTypedVars = new HashSet<>();
 		projectionVars = query.getProjectVars();
 		isCount = false;
 		//handle COUNT aggregator by replacing generic var name with var name in COUNT construct
-		for(Var v : new ArrayList<Var>(projectionVars)){
+		for(Var v : new ArrayList<>(projectionVars)){
 			if(query.getProject().hasExpr(v)){
 				Expr expr = query.getProject().getExpr(v);
 				if(expr instanceof ExprAggregator){
@@ -111,7 +111,7 @@ public class TypeExtractor extends ElementVisitorBase {
 		
 		//if query is ASK query use all variables
 		if(query.isAskType()){
-			projectionVars = new ArrayList<Var>(PatternVars.vars(query.getQueryPattern()));
+			projectionVars = new ArrayList<>(PatternVars.vars(query.getQueryPattern()));
 		}
 		
 		ElementGroup wherePart = (ElementGroup) query.getQueryPattern();
@@ -178,7 +178,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	}
 	
 	private Set<Resource> getPropertyTypes(String propertyURI){
-		Set<Resource> types = new HashSet<Resource>();
+		Set<Resource> types = new HashSet<>();
 		String query = String.format("SELECT ?type WHERE {<%s> a ?type}", propertyURI);
 		
 		QueryExecution qe = qef.createQueryExecution(query);
@@ -356,7 +356,7 @@ public class TypeExtractor extends ElementVisitorBase {
 			for(Var var : VarUtils.getVars(triple)){
 				Set<Triple> triples = var2Triples.get(var);
 				if(triples == null){
-					triples = new HashSet<Triple>();
+					triples = new HashSet<>();
 					var2Triples.put(var, triples);
 				}
 				triples.add(triple);
@@ -368,7 +368,7 @@ public class TypeExtractor extends ElementVisitorBase {
 	private void addType(String variable, String type){
 		Set<String> types = var2TypesMap.get(variable);
 		if(types == null){
-			types = new HashSet<String>();
+			types = new HashSet<>();
 			var2TypesMap.put(variable, types);
 		}
 		types.add(type);

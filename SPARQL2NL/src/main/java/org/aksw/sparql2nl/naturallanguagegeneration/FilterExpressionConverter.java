@@ -106,7 +106,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 
 	@Override
 	public void startVisit() {
-		stack = new Stack<NLGElement>();
+		stack = new Stack<>();
 	}
 
 	@Override

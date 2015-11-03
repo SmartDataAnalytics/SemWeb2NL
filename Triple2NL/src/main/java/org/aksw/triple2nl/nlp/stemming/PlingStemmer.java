@@ -220,7 +220,7 @@ public class PlingStemmer {
   }
 
   /** Words that end in "-se" in their plural forms (like "nurse" etc.)*/
-  public static Set<String> categorySE_SES= new HashSet<String>();
+  public static Set<String> categorySE_SES= new HashSet<>();
   static {
       
       categorySE_SES.add("nurses");
@@ -230,7 +230,7 @@ public class PlingStemmer {
   }
 
   /** Words that do not have a distinct plural form (like "atlas" etc.)*/
-  public static Set<String> category00 = new HashSet<String>();
+  public static Set<String> category00 = new HashSet<>();
   static { 
       category00.add("alias");
       category00.add("asbestos");
@@ -278,7 +278,7 @@ public class PlingStemmer {
     }
 
   /** Words that change from "-um" to "-a" (like "curriculum" etc.), listed in their plural forms*/
-  public static Set<String> categoryUM_A=new HashSet<String>();
+  public static Set<String> categoryUM_A= new HashSet<>();
   static {
        categoryUM_A.add("addenda");
        categoryUM_A.add("agenda");
@@ -323,7 +323,7 @@ public class PlingStemmer {
 }
 
   /** Words that change from "-on" to "-a" (like "phenomenon" etc.), listed in their plural forms*/
-  public static Set<String> categoryON_A=new HashSet<String>();
+  public static Set<String> categoryON_A= new HashSet<>();
   static {
       categoryON_A.add("aphelia");
       categoryON_A.add("asyndeta");
@@ -338,7 +338,7 @@ public class PlingStemmer {
   }
 
   /** Words that change from "-o" to "-i" (like "libretto" etc.), listed in their plural forms*/
-  public static Set<String> categoryO_I=new HashSet<String>();
+  public static Set<String> categoryO_I= new HashSet<>();
    static {       categoryO_I.add("alti");
           categoryO_I.add("bassi");
           categoryO_I.add("canti");
@@ -352,7 +352,7 @@ public class PlingStemmer {
    }
 
   /** Words that change from "-us" to "-i" (like "fungus" etc.), listed in their plural forms*/
-  public static Set<String> categoryUS_I=new HashSet<String>();
+  public static Set<String> categoryUS_I= new HashSet<>();
    static {
        categoryUS_I.add("alumni");
       categoryUS_I.add("bacilli");
@@ -378,14 +378,14 @@ public class PlingStemmer {
 }
 
   /** Words that change from "-ix" to "-ices" (like "appendix" etc.), listed in their plural forms*/
-  public static Set<String> categoryIX_ICES=new HashSet<String>();
+  public static Set<String> categoryIX_ICES= new HashSet<>();
 static {
     categoryIX_ICES.add("appendices");
     categoryIX_ICES.add("cervices");
 }
 
   /** Words that change from "-is" to "-es" (like "axis" etc.), listed in their plural forms*/
-  public static Set<String> categoryIS_ES=new HashSet<String>();
+  public static Set<String> categoryIS_ES= new HashSet<>();
   static {
     // plus everybody ending in theses
        category00.add("analyses");
@@ -402,7 +402,7 @@ static {
   }
 
   /** Words that change from "-oe" to "-oes" (like "toe" etc.), listed in their plural forms*/
-  public static Set<String> categoryOE_OES=new HashSet<String>();
+  public static Set<String> categoryOE_OES= new HashSet<>();
   static {
        categoryOE_OES.add("aloes");
        categoryOE_OES.add("backhoes");
@@ -443,7 +443,7 @@ static {
   }
 
   /** Words that change from "-ex" to "-ices" (like "index" etc.), listed in their plural forms*/
-  public static Set<String> categoryEX_ICES=new HashSet<String>();
+  public static Set<String> categoryEX_ICES= new HashSet<>();
   static {
       categoryEX_ICES.add("apices");
       categoryEX_ICES.add("codices");
@@ -459,7 +459,7 @@ static {
   }
 
   /** Words that change from "-u" to "-us" (like "emu" etc.), listed in their plural forms*/
-  public static Set<String> categoryU_US=new HashSet<String>();
+  public static Set<String> categoryU_US= new HashSet<>();
   static {
       categoryU_US.add("apercus");
       categoryU_US.add("barbus");
@@ -485,7 +485,7 @@ static {
   }
 
   /** Words that change from "-sse" to "-sses" (like "finesse" etc.), listed in their plural forms*/
-  public static Set<String> categorySSE_SSES=new HashSet<String>();
+  public static Set<String> categorySSE_SSES= new HashSet<>();
   static {  //plus those ending in mousse
        categorySSE_SSES.add("bouillabaisses");
        categorySSE_SSES.add("coulisses");
@@ -511,7 +511,7 @@ static {
   }
 
   /** Words that change from "-che" to "-ches" (like "brioche" etc.), listed in their plural forms*/
-  public static Set<String> categoryCHE_CHES=new HashSet<String>();
+  public static Set<String> categoryCHE_CHES= new HashSet<>();
   static {
        categoryCHE_CHES.add("adrenarches");
        categoryCHE_CHES.add("attaches");
@@ -554,7 +554,7 @@ static {
   }
 
   /** Words that end with "-ics" and do not exist as nouns without the 's' (like "aerobics" etc.)*/
-  public static Set<String> categoryICS=new HashSet<String>();
+  public static Set<String> categoryICS= new HashSet<>();
   static {
        categoryICS.add("aerobatics");
        categoryICS.add("aerobics");
@@ -703,7 +703,7 @@ static {
   }
 
   /** Words that change from "-ie" to "-ies" (like "auntie" etc.), listed in their plural forms*/
-  public static Set<String> categoryIE_IES=new HashSet<String>();
+  public static Set<String> categoryIE_IES= new HashSet<>();
   static {
        categoryIE_IES.add("aeries");
        categoryIE_IES.add("anomies");
@@ -858,7 +858,7 @@ static {
   }
 
   /** Maps irregular Germanic English plural nouns to their singular form */
-  public static Map<String,String> irregular=new HashMap<String,String>();
+  public static Map<String,String> irregular= new HashMap<>();
   static {
        irregular.put("beefs","beef");
        irregular.put("beeves","beef");
@@ -890,7 +890,7 @@ static {
   }
 
   /** Contains word forms that can either be plural or singular */
-  public static Set<String> singAndPlur=new HashSet<String>();
+  public static Set<String> singAndPlur= new HashSet<>();
   static {
            singAndPlur.add("acoustics");
            singAndPlur.add("aestetics");

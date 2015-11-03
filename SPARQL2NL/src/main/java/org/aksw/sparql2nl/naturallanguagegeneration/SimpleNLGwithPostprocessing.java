@@ -209,7 +209,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      * Converts the representation of the query as Natural Language Element into
      * free text.
      *
-     * @param query Input query
+     * @param inputQuery Input query
      * @return Text representation
      */
     @Override
@@ -282,7 +282,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      */
     public DocumentElement convertSelectAndAsk(Query query) {
         // List of sentences for the output
-        List<DocumentElement> sentences = new ArrayList<DocumentElement>();
+        List<DocumentElement> sentences = new ArrayList<>();
 //        System.out.println("Input query = " + query);
         // preprocess the query to get the relevant types
 
@@ -325,7 +325,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         // collect primary and secondary variables for postprocessor
         if (!POSTPROCESSING) {
             post.primaries = typeMap.keySet();
-            List<String> nonoptionalVars = new ArrayList<String>();
+            List<String> nonoptionalVars = new ArrayList<>();
             for (Element e : whereElements) {
                 for (Var var : PatternVars.vars(e)) {
                     String v = var.toString().replace("?", "");
@@ -598,7 +598,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
      * @return List of elements from the WHERE clause
      */
     private static List<Element> getWhereElements(Query query) {
-        List<Element> result = new ArrayList<Element>();
+        List<Element> result = new ArrayList<>();
         Element f = query.getQueryPattern();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         for (int i = 0; i < elt.getElements().size(); i++) {
@@ -625,7 +625,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 return ((ElementGroup) ((ElementOptional) e).getOptionalElement()).getElements();
             }
         }
-        return new ArrayList<Element>();
+        return new ArrayList<>();
     }
 
     /**
@@ -668,7 +668,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
     private NLGElement processTypes(Map<String, Set<String>> typeMap, Set<String> vars, boolean count, boolean distinct) {
-        List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> objects = new ArrayList<>();
         //process the type information to create the object(s)
         for (String s : typeMap.keySet()) {
             if (vars.contains(s)) {
@@ -826,7 +826,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     public NLGElement getNLFromSingleClause(Element e) {
         if (e instanceof ElementPathBlock) {
             ElementPathBlock epb = (ElementPathBlock) e;
-            List<Triple> triples = new ArrayList<Triple>();
+            List<Triple> triples = new ArrayList<>();
 
             // get all triples
             for (TriplePath tp : epb.getPattern().getList()) {
@@ -842,18 +842,18 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
             // for POSTPROCESSOR
             UNIONSWITCH = true;
-            UNION = new HashSet<Set<SPhraseSpec>>();
+            UNION = new HashSet<>();
 
             // get all triples
-            List<NLGElement> list = new ArrayList<NLGElement>();
+            List<NLGElement> list = new ArrayList<>();
             for (Element atom : union.getElements()) {
                 list.add(getNLFromSingleClause(atom));
             }
 
             // for POSTPROCESSOR
-            Set<Set<Sentence>> UNIONclone = new HashSet<Set<Sentence>>();
+            Set<Set<Sentence>> UNIONclone = new HashSet<>();
             for (Set<SPhraseSpec> UN : UNION) {
-                Set<Sentence> UNclone = new HashSet<Sentence>();
+                Set<Sentence> UNclone = new HashSet<>();
                 for (SPhraseSpec s : UN) {
                     UNclone.add(new Sentence(s, SWITCH, post.id));
                     post.id++;
@@ -868,7 +868,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
             }
 
             UNIONSWITCH = false;
-            UNION = new HashSet<Set<SPhraseSpec>>();
+            UNION = new HashSet<>();
 
             //should not happen
             if (list.size() == 0) {
@@ -898,7 +898,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                     post.id++;
                 } else if (el.getClass().toString().endsWith("CoordinatedPhraseElement")) {
                     String coord = ((CoordinatedPhraseElement) el).getConjunction();
-                    Set<Sentence> csents = new HashSet<Sentence>();
+                    Set<Sentence> csents = new HashSet<>();
                     for (NLGElement compl : ((CoordinatedPhraseElement) el).getChildren()) {
                         if (compl.getClass().toString().endsWith("SPhraseSpec")) {
                             csents.add(new Sentence(((SPhraseSpec) compl), false, post.id));
@@ -921,7 +921,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         }
         if (e instanceof ElementGroup) {
             if (UNIONSWITCH) {
-                union = new HashSet<SPhraseSpec>();
+                union = new HashSet<>();
             }
 
             if (((ElementGroup) e).getElements().size() == 1) {
@@ -932,7 +932,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 return el;
             } else {
                 CoordinatedPhraseElement cpe;
-                List<NLGElement> list = new ArrayList<NLGElement>();
+                List<NLGElement> list = new ArrayList<>();
                 for (Element elt : ((ElementGroup) e).getElements()) {
                     list.add(getNLFromSingleClause(elt));
                 }
@@ -962,7 +962,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
     private Set<String> getVars(List<Element> elements, Set<String> projectionVars) {
-        Set<String> result = new HashSet<String>();
+        Set<String> result = new HashSet<>();
         for (Element e : elements) {
             for (String var : projectionVars) {
                 if (e.toString().contains("?" + var)) {
@@ -991,7 +991,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
     }
 
     private NLGElement getNLFromExpressions(List<Expr> expressions) {
-        List<NLGElement> nlgs = new ArrayList<NLGElement>();
+        List<NLGElement> nlgs = new ArrayList<>();
         NLGElement elt;
         for (Expr e : expressions) {
             elt = getNLFromSingleExpression(e);

@@ -5,15 +5,7 @@ import java.io.InputStream;
 import java.util.Set;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAnnotation;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLDataPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLLiteral;
-import org.semanticweb.owlapi.model.OWLObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.*;
 
 public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 	
@@ -47,25 +39,35 @@ public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 
 	@Override
 	public boolean isFunctional(String iri) {
-		Set<OWLDataPropertyAxiom> axioms = ontology.getAxioms(dataFactory.getOWLDataProperty(IRI.create(iri)));
+		// check as data property
+		Set<? extends OWLAxiom> axioms = ontology.getFunctionalDataPropertyAxioms(dataFactory.getOWLDataProperty(IRI.create(iri)));
 		if(!axioms.isEmpty()){
-			Set<OWLAnnotation> annotations = axioms.iterator().next().getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
-			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
-			double confidence = Double.valueOf(val.parseDouble());
-			if(confidence >= threshold){
+			Double confidence = getConfidenceValue(axioms.iterator().next());
+
+			if(confidence != null && confidence >= threshold){
 				return true;
 			} 
 		}
-		Set<OWLObjectPropertyAxiom> axioms2 = ontology.getAxioms(dataFactory.getOWLObjectProperty(IRI.create(iri)));
+
+		//check as object property
+		axioms = ontology.getFunctionalObjectPropertyAxioms(dataFactory.getOWLObjectProperty(IRI.create(iri)));
 		if(!axioms.isEmpty()){
-			Set<OWLAnnotation> annotations = axioms.iterator().next().getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
-			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
-			double confidence = Double.valueOf(val.parseDouble());
-			if(confidence >= threshold){
+			Double confidence = getConfidenceValue(axioms.iterator().next());
+
+			if(confidence != null && confidence >= threshold){
 				return true;
-			} 
+			}
 		}
 		return false;
+	}
+
+	private Double getConfidenceValue(OWLAxiom axiom) {
+		Set<OWLAnnotation> annotations = axiom.getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
+		if(!annotations.isEmpty()) {
+			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
+			return val.parseDouble();
+		}
+		return null;
 	}
 	
 	public static void main(String[] args) throws Exception{

@@ -15,7 +15,7 @@ public class Preposition extends HashSet<String> {
 
 	public Preposition(InputStream is) {
 		try (BufferedReader bufRdr = new BufferedReader(new InputStreamReader(is))) {
-			String line = null;
+			String line;
 			while ((line = bufRdr.readLine()) != null) {
 				add(line.toLowerCase().trim());
 			}

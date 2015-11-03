@@ -49,7 +49,7 @@ public class QueryGraphGenerator {
 		Set<Triple> triplePattern = triplePatternExtractor.extractTriplePattern(query, ignoreOptionalPatterns);
 		
 		//build graph
-		DirectedMultigraph<Node, Edge> graph = new DirectedMultigraph<Node, Edge>(Edge.class);
+		DirectedMultigraph<Node, Edge> graph = new DirectedMultigraph<>(Edge.class);
 		for (Triple tp : triplePattern) {
 			graph.addVertex(tp.getSubject());
 			graph.addVertex(tp.getObject());
@@ -61,7 +61,7 @@ public class QueryGraphGenerator {
 	
 	public void reverse(DirectedMultigraph<Node, Edge> graph, Node rootNode) {
         System.out.println("reversing graph ... ");
-        Set<Node> visited = new HashSet<Node>(graph.vertexSet().size() + 1);
+        Set<Node> visited = new HashSet<>(graph.vertexSet().size() + 1);
         for (Edge edge : graph.incomingEdgesOf(rootNode)) {
             if (!visited.contains(graph.getEdgeSource(edge))) {
                 reverse(graph, graph.getEdgeSource(edge), visited);
@@ -72,8 +72,8 @@ public class QueryGraphGenerator {
     private void reverse(DirectedMultigraph<Node, Edge> graph, Node v, Set<Node> visited) {
         System.out.println("reversing " + v);
         visited.add(v);
-        List<Node> neigbors = new ArrayList<Node>();
-        List<Edge> toReverse = new ArrayList<Edge>();
+        List<Node> neigbors = new ArrayList<>();
+        List<Edge> toReverse = new ArrayList<>();
         for (Edge edge : graph.incomingEdgesOf(v)) {
             Node source = graph.getEdgeSource(edge);
             if (!visited.contains(source)) {
@@ -110,8 +110,8 @@ public class QueryGraphGenerator {
 	}
 	
 	private Set<Edge> revertEdges(DirectedMultigraph<Node, Edge> graph, Node startNode){
-		Set<Edge> incomingEdges = new HashSet<Edge>(graph.incomingEdgesOf(startNode));
-		Set<Edge> newEdges = new HashSet<Edge>();
+		Set<Edge> incomingEdges = new HashSet<>(graph.incomingEdgesOf(startNode));
+		Set<Edge> newEdges = new HashSet<>();
 		for (Iterator<Edge> iterator = incomingEdges.iterator(); iterator.hasNext();) {
 			Edge edge = iterator.next();
 			
@@ -130,8 +130,8 @@ public class QueryGraphGenerator {
 	        	JFrame frame = new JFrame("DemoGraph");
 	            frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
-	            JGraphXAdapter<Node, Edge> graphAdapter = 
-	                    new JGraphXAdapter<Node, Edge>(graph);
+	            JGraphXAdapter<Node, Edge> graphAdapter =
+						new JGraphXAdapter<>(graph);
 
 	            mxIGraphLayout layout = new mxCircleLayout(graphAdapter);
 	            layout = new mxHierarchicalLayout(graphAdapter);
@@ -163,7 +163,7 @@ public class QueryGraphGenerator {
 		DirectedMultigraph<Node, Edge> graph = graphGenerator.generateQueryGraph(query);
 		
 		for (Var var : query.getProjectVars()) {System.out.println("Var:" + var);
-			GraphIterator<Node, Edge> iterator = new DepthFirstIterator<Node, Edge>(graph, var.asNode());
+			GraphIterator<Node, Edge> iterator = new DepthFirstIterator<>(graph, var.asNode());
 			iterator.addTraversalListener(new TraversalListener<Node, Edge>() {
 				
 				@Override

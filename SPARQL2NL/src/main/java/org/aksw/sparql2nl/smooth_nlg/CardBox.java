@@ -42,7 +42,7 @@ public class CardBox {
     
     public Set<String> getSecondaryVars() {
         
-        Set<String> out = new HashSet<String>();
+        Set<String> out = new HashSet<>();
         for (Entity e : secondaries) {
             out.add(e.var);
         }

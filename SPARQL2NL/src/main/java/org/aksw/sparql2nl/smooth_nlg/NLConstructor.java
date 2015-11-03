@@ -86,9 +86,9 @@ public class NLConstructor {
             else np = nlg.createNounPhrase("all",e.type);
             np.setFeature(Feature.NUMBER,NumberAgreement.PLURAL);
                         
-            List<NLGElement> npclauses = new ArrayList<NLGElement>();
-            List<NLGElement> activeclauses = new ArrayList<NLGElement>();
-            List<NLGElement> passiveclauses = new ArrayList<NLGElement>();
+            List<NLGElement> npclauses = new ArrayList<>();
+            List<NLGElement> activeclauses = new ArrayList<>();
+            List<NLGElement> passiveclauses = new ArrayList<>();
             
             // collect all properties into np-modifying clauses
             for (int i = 0; i < m.length; i++) {

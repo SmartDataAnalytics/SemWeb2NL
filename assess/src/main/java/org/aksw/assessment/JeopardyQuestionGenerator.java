@@ -212,7 +212,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 					
 					String query = asFilterInSPARQLQuery(triples, type);
 					
-					Set<Resource> wrongAnswerCandidatesTmp = new HashSet<Resource>();
+					Set<Resource> wrongAnswerCandidatesTmp = new HashSet<>();
 					ResultSet rs = executeSelectQuery(query);
 					QuerySolution qs;
 					while (rs.hasNext()) {
@@ -386,7 +386,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		if(wrongAnswersByType.containsKey(type)){
 			wrongAnswerCandidates = wrongAnswersByType.get(type);
 		} else {
-			wrongAnswerCandidates = new ArrayList<Resource>(getMostProminentResources(restrictions.keySet()).keySet());
+			wrongAnswerCandidates = new ArrayList<>(getMostProminentResources(restrictions.keySet()).keySet());
 			wrongAnswerCandidates.remove(r);
 			Collections.shuffle(wrongAnswerCandidates, new Random(123));
 			wrongAnswersByType.put(type, wrongAnswerCandidates);
@@ -417,7 +417,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 			System.out.println("Class:" + cls);
 			try {
 				Map<OWLEntity, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
-				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
+				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<>());
 				
 				
 				SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");

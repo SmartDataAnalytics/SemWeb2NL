@@ -46,7 +46,7 @@ public class SPARQLBasedLCS implements LCS{
 	}
 	
 	private Set<String> getSuperClasses(String cls){
-		Set<String> superClasses = new HashSet<String>();
+		Set<String> superClasses = new HashSet<>();
 		String query = String.format("SELECT ?sup WHERE {<%s> <http://www.w3.org/2000/01/rdf-schema#subClassOf> ?sup}", cls);
 		ResultSet rs = new SparqlQuery(query, endpoint).send(false);
 		QuerySolution qs;

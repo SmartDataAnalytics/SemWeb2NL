@@ -21,11 +21,11 @@ import com.hp.hpl.jena.sparql.syntax.ElementVisitorBase;
 public class DisjunctiveNormalFormConverter extends ElementVisitorBase {
 	
 	private boolean inUNION = false;
-	private Stack<ElementUnion> unionStack = new Stack<ElementUnion>();
+	private Stack<ElementUnion> unionStack = new Stack<>();
 	
 	private ElementUnion toAdd = null;
 	
-	private Map<ElementUnion, ElementGroup> union2Group = new HashMap<ElementUnion, ElementGroup>();
+	private Map<ElementUnion, ElementGroup> union2Group = new HashMap<>();
 	
 	public com.hp.hpl.jena.query.Query getDisjunctiveNormalForm(com.hp.hpl.jena.query.Query query){
 		Query copy = QueryFactory.create(query);
@@ -69,7 +69,7 @@ public class DisjunctiveNormalFormConverter extends ElementVisitorBase {
 	}
 	
 	private List<Element> getUnionElements(ElementUnion el){
-		List<Element> elements = new ArrayList<Element>();
+		List<Element> elements = new ArrayList<>();
 		for(Element e : el.getElements()){
 			if(e instanceof ElementGroup){
 //				if(((ElementGroup) e).getElements().size() == 1){

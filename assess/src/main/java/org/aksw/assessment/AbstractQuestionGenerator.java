@@ -288,7 +288,7 @@ public abstract class AbstractQuestionGenerator implements QuestionGenerator {
 	}
 	
 	protected List<Answer> generateAnswers(Collection<RDFNode> resources, boolean addHint) {
-		List<Answer> answers = new ArrayList<Answer>();
+		List<Answer> answers = new ArrayList<>();
 
 		for (RDFNode node : resources) {
 			// get a textual representation of the resource

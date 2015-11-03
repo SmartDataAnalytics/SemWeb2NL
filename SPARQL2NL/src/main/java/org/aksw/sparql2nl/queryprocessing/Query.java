@@ -60,7 +60,7 @@ public class Query {
         queryWithOnlyVars = null;
         var2NonVar = null;
         nonVar2Var = null;
-        exceptions = new HashMap<String, String>();
+        exceptions = new HashMap<>();
         // non-variables that are to be left as is
 //        exceptions.put("rdfs:label", "\\?\\?1");
 //        exceptions.put("\\?\\?1", "rdfs:label");
@@ -101,8 +101,8 @@ public class Query {
         if(!copy.contains("{ ")) copy = copy.replaceAll(Pattern.quote("{"), "{ ");
         if(!copy.contains(" }")) copy = copy.replaceAll(Pattern.quote("}"), " }");
         copy = copy.replaceAll(Pattern.quote(". "), " . ");
-        var2NonVar = new HashMap<String, String>();
-        nonVar2Var = new HashMap<String, String>();
+        var2NonVar = new HashMap<>();
+        nonVar2Var = new HashMap<>();
 
         //copy = copy.substring(copy.indexOf("{")+1,  copy.indexOf("}"));
         //1. Replaces the exceptions by exception tokens
@@ -139,7 +139,7 @@ public class Query {
         //3. get selectedVars
         if(usesSelect)
         {
-            selectedVars = new TreeSet<String>();
+            selectedVars = new TreeSet<>();
             String vars = copy.substring(copy.toLowerCase().indexOf("select ")+7, 
                     copy.toLowerCase().indexOf(" where"));
             split = vars.trim().split(" ");
@@ -163,7 +163,7 @@ public class Query {
         if (graphRepresentation != null) {
             return graphRepresentation;
         }
-        HashMap<String, GraphNode> nodeIndex = new HashMap<String, GraphNode>();
+        HashMap<String, GraphNode> nodeIndex = new HashMap<>();
         SimpleGraphAccessor graph = new SimpleGraphAccessor();
         String selectSection = queryWithOnlyVars.substring(queryWithOnlyVars.indexOf("{") + 1,
                 queryWithOnlyVars.indexOf("}"));
