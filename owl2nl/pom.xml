@@ -7,6 +7,8 @@
 		<version>0.1-SNAPSHOT</version>
 	</parent>
 	<artifactId>owl2nl</artifactId>
+	<name>OWL2NL</name>
+	<description>OWL class expressions and axioms to Natural Language Converter</description>
 
 	<dependencies>
 		<dependency>

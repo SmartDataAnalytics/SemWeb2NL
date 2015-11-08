@@ -1,32 +1,34 @@
-/**
+/*
+ * #%L
+ * OWL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
  */
 package org.aksw.owl2nl.evaluation;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.jena_sparql_api.pagination.core.QueryExecutionFactoryPaginated;
-
-import com.google.common.base.Charsets;
-import com.google.common.io.Files;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.sparql.core.Var;
-
 /**
+ * A generator for HTML tables.
  * @author Lorenz Buehmann
  *
  */
 public class HTMLTableGenerator {
 	
-	String style = 
+	static final String style =
 			"<head>\n" + 
 			"<style>\n" + 
 			"table.sortable thead {\n" + 
@@ -70,7 +72,7 @@ public class HTMLTableGenerator {
 			"</head>\n" + 
 			"<body>";
 	
-	String style2 = 
+	static final String style2 =
 			"<head>\n" + 
 			"<link rel=\"stylesheet\" href=\"https://rawgit.com/twbs/bootstrap/master/dist/css/bootstrap.min.css\">\n" + 
 			"<link rel=\"stylesheet\" href=\"https://rawgit.com/wenzhixin/bootstrap-table/1.8.0/dist/bootstrap-table.css\">\n" +
@@ -119,95 +121,43 @@ public class HTMLTableGenerator {
 			"<script src=\"http://code.jquery.com/jquery-1.11.3.min.js\"></script>\n" + 
 			"<script src=\"https://rawgit.com/twbs/bootstrap/master/dist/js/bootstrap.min.js\"></script>\n" + 
 			"<script src=\"https://rawgit.com/wenzhixin/bootstrap-table/1.8.0/dist/bootstrap-table-all.min.js\"></script>\n" +
-			"</head>\n";  
-			
-	
-	private QueryExecutionFactory qef;
+			"</head>\n";
 
-	public HTMLTableGenerator(QueryExecutionFactory qef) {
-		this.qef = qef;
-	}
 
-	private List<Query> loadQueries(File queriesFile) throws IOException {
-		List<Query> queries = new ArrayList<Query>();
-		
-		for (String queryString : Files.readLines(queriesFile, Charsets.UTF_8)) {
-			Query q = QueryFactory.create(queryString);
-			queries.add(q);
-		}
-		return queries;
-	}
-	
-	public void generateBenchmarkDescription(File benchmarkQueriesFile, File htmlOutputFile) throws Exception{
-		List<Query> queries = loadQueries(benchmarkQueriesFile);
-		
-		Var var = Var.alloc("s");
+	/**
+	 * Generates an HTML table based on the given column names and data.
+	 * @param columnNames the column names
+	 * @param data the data as a list of row entry values
+	 * @return an HTML table
+	 */
+	public static String generateHTMLTable(List<String> columnNames, List<List<String>> data) {
 		String html = "<html>\n";
 		html += style2;
 		html += "<body>\n";
 		html += "<table data-toggle=\"table\" data-striped='true'>\n";
+
 		// table header
-		html += "<thead><tr>"
-				+ "<th data-sortable=\"true\" data-valign='middle'>ID</th>"
-				+ "<th data-sortable=\"true\" data-valign='middle'>Query</th>"
-				+ "<th data-align=\"right\" data-sortable=\"true\" data-valign='middle'>Depth</th>"
-				+ "<th data-align=\"right\" data-sortable=\"true\" data-valign='middle'>#Instances</th>"
-				+ "</tr></thead>\n";
-		
+		html += "<thead><tr>";
+		for (String columnName : columnNames) {
+			html += "<th data-align=\"left\" data-sortable=\"true\" data-valign='middle'>" + columnName + "</th>";
+		}
+
+		// the data
 		html += "<tbody>\n";
-		int id = 1;
-		for (Query query : queries) {
+		for (List<String> row : data) {
 			html += "<tr>\n";
-			
-			// 1. column: ID
-			html += "<td>" + id++ + "</td>\n";
-			
-			// 2. column: SPARQL query
-			html += "<td><pre>" + query.toString().replace("<", "&lt;").replace(">", "&gt;") + "</pre></td>\n";
-			
-			// 3. column: depth
-			int depth = org.dllearner.utilities.QueryUtils.getSubjectObjectJoinDepth(query, var) + 1;
-			html += "<td class='number'>" + depth + "</td>\n";
-			
-			// 4. column: #instances
-			int nrOfInstances = 0;
-			QueryExecution qe = qef.createQueryExecution(query);
-			ResultSet rs = qe.execSelect();
-			while(rs.hasNext()) {
-				rs.next();
-				nrOfInstances++;
+			for (String entry : row) {
+				html += "<td>" + entry + "</td>\n";
+				//class='number'
 			}
-			qe.close();
-			html += "<td class='number'>" + nrOfInstances + "</td>\n";
-			
 			html += "</tr>\n";
 		}
 		html += "</tbody>\n";
+
 		html += "</table>\n";
 		html += "</body>\n";
 		html += "</html>\n";
 		
-		try {
-			Files.write(html, htmlOutputFile, Charsets.UTF_8);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
+		return html;
 	}
-
-	public static void main(String[] args) throws Exception{
-		if(args.length < 4) {
-			System.out.println("Usage: HTMLTableGenerator <source> <target> <endpointURL> <defaultGraphURI>");
-			System.exit(0);
-		}
-		File source = new File(args[0]);
-		File target = new File(args[1]);
-		String endpointURL = args[2];
-		String defaultGraph = args[3];
-		
-		QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpointURL, defaultGraph);
-		qef = new QueryExecutionFactoryPaginated(qef);
-		HTMLTableGenerator generator = new HTMLTableGenerator(qef);
-		generator.generateBenchmarkDescription(source, target);
-	}
-
 }
