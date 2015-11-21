@@ -30,7 +30,7 @@ public enum QuestionType {
 	
 	MC("mc"), JEOPARDY("jeopardy"), TRUEFALSE("truefalse");
 	
-	String name;
+	final String name;
 	
 	private QuestionType(String name) {
 		this.name = name;

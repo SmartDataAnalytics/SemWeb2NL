@@ -70,8 +70,8 @@ public class JeopardyVerbalizer extends Verbalizer {
 	public JeopardyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
 		super(qef, cacheDirectory, wordnetDirectory);
 	}
-    
-     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
+
+    public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
         resource2Triples = new HashMap<>();
         
         // first get graph for class
@@ -178,11 +178,11 @@ public class JeopardyVerbalizer extends Verbalizer {
                 sphrase.setSubject("It");
             }
         }
-        return phrase;
+        return sphrase;
     }
 
 	/**
-	 * @param sphrase
+	 * @param phrase
 	 * @return
 	 */
 	private boolean isPossessive(SPhraseSpec phrase) {

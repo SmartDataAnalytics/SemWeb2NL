@@ -491,7 +491,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 
 		// random selection
 		Collections.sort(correctAnswers, new RDFNodeComparator());
-		RDFNode node = correctAnswers.get(rndGen.nextInt());
+		RDFNode node = correctAnswers.get(rndGen.nextInt(correctAnswers.size()));
 		return Triple.create(r.asNode(), NodeFactory.createURI(property), node.asNode());
 	}
 	
