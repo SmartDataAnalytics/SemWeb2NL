@@ -71,6 +71,14 @@ public class TrueFalseQuestionGenerator extends MultipleChoiceQuestionGenerator 
 		super(qef, cacheDirectory, restrictions);
 	}
 
+    /* (non-Javadoc)
+	* @see org.aksw.assessment.AbstractQuestionGenerator#getQuestionType()
+	*/
+    @Override
+    public QuestionType getQuestionType() {
+        return QuestionType.TRUEFALSE;
+    }
+
     public Question generateQuestion(Resource r, OWLEntity domain, boolean inSubjectPosition, boolean hideSubject) {
         logger.info("Generating question for resource " + r + "...");
         //get properties

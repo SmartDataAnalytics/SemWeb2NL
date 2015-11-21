@@ -100,6 +100,14 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
         verbalizer.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
         verbalizer.setOmitContentInBrackets(true);
     }
+
+	/* (non-Javadoc)
+	* @see org.aksw.assessment.AbstractQuestionGenerator#getQuestionType()
+	*/
+	@Override
+	public QuestionType getQuestionType() {
+		return QuestionType.JEOPARDY;
+	}
     
     /* (non-Javadoc)
      * @see org.aksw.assessment.question.MultipleChoiceQuestionGenerator#getMostProminentResources(java.util.Set)
@@ -173,7 +181,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     private Question generateQuestion(Resource r, OWLClass type) {
         
         // generate the question in forms of a summary describing the resource
-        String summary = getEntitySummary(r.getURI());
+        String summary = getEntitySummary(r.getURI(), type);
         
         if(summary == null){
         	return null;
