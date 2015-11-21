@@ -622,7 +622,7 @@ public class Verbalizer {
     }
 
     /**
-     * @param maxShownValuesPerProperty the maxShownValuesPerProperty to set
+     * @param maxShownValuesPerProperty the max. number of shown values per properties for multi-value properties
      */
     public void setMaxShownValuesPerProperty(int maxShownValuesPerProperty) {
         this.maxShownValuesPerProperty = maxShownValuesPerProperty;
@@ -647,28 +647,32 @@ public class Verbalizer {
         }
         int index = (int) Math.floor(Math.random() * subjects.size());
 //        index = 2;
+
+        // get the gender feature
+        simplenlg.features.Gender genderFeature;
+        if (g.equals(Gender.MALE)) {
+            genderFeature = simplenlg.features.Gender.MASCULINE;
+        } else if (g.equals(Gender.FEMALE)) {
+            genderFeature = simplenlg.features.Gender.FEMININE;
+        } else {
+            genderFeature = simplenlg.features.Gender.NEUTER;
+        }
         
         // possessive as specifier of the NP 
         NLGElement currentSubject = sphrase.getSubject();
         if (currentSubject.hasFeature(InternalFeature.SPECIFIER) && currentSubject.getFeatureAsElement(InternalFeature.SPECIFIER).getFeatureAsBoolean(Feature.POSSESSIVE)) //possessive subject
         {
-
             NPPhraseSpec newSubject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) currentSubject).getHead());
             
             NPPhraseSpec newSpecifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
             newSpecifier.setFeature(Feature.POSSESSIVE, true);
             newSubject.setSpecifier(newSpecifier);
-            
+
             if (index >= subjects.size() - 1) {
-                if (g.equals(Gender.MALE)) {
-                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.MASCULINE);
-                } else if (g.equals(Gender.FEMALE)) {
-                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);
-                } else {
-                	newSpecifier.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.NEUTER);
-                }
+                newSpecifier.setFeature(LexicalFeature.GENDER, genderFeature);
                 newSpecifier.setFeature(Feature.PRONOMINAL, true);
             }
+
             if (currentSubject.isPlural()) {
                 newSubject.setPlural(true);
                 newSpecifier.setFeature(Feature.NUMBER, NumberAgreement.SINGULAR);
@@ -676,13 +680,7 @@ public class Verbalizer {
             sphrase.setSubject(newSubject);
         } else {
         	currentSubject.setFeature(Feature.PRONOMINAL, true);
-            if (g.equals(Gender.MALE)) {
-                currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.MASCULINE);
-            } else if (g.equals(Gender.FEMALE)) {
-            	currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);
-            } else {
-            	currentSubject.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.NEUTER);
-            }
+            currentSubject.setFeature(LexicalFeature.GENDER, genderFeature);
         }
         return phrase;
     }
