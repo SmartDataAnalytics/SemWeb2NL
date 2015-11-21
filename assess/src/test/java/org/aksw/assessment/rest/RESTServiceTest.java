@@ -22,12 +22,7 @@
  */
 package org.aksw.assessment.rest;
 
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-
+import com.google.common.collect.Lists;
 import org.aksw.assessment.question.QuestionType;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.codehaus.jettison.json.JSONArray;
@@ -35,7 +30,11 @@ import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
+import javax.servlet.ServletContext;
+import java.io.InputStream;
+import java.util.List;
+
+import static org.junit.Assert.fail;
 
 /**
  * @author Lorenz Buehmann
@@ -47,7 +46,7 @@ private RESTService restService = new RESTService();
 	
 	public RESTServiceTest() throws Exception {
 		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
-		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dsa.ini")){
+		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dbpedia.ini")){
 			config.load(is);
 		}
 		
@@ -55,7 +54,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#getQuestionsJSON(javax.servlet.ServletContext, java.lang.String, java.util.List, int)}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#getQuestionsJSON(ServletContext, String, List, int)}.
 	 */
 	@Test
 	public void testGetQuestionsJSON() {
@@ -63,7 +62,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#getQuestionsJSON2(javax.servlet.ServletContext, org.codehaus.jettison.json.JSONArray, java.util.List, int)}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#getQuestionsJSON2(javax.servlet.ServletContext, org.codehaus.jettison.json.JSONArray, java.util.List, int)}.
 	 * @throws JSONException 
 	 */
 	@Test
@@ -81,7 +80,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#getApplicableProperties(javax.servlet.ServletContext, java.lang.String)}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#getApplicableProperties(javax.servlet.ServletContext, java.lang.String)}.
 	 */
 	@Test
 	public void testGetApplicableProperties() {
@@ -89,7 +88,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#getClasses(javax.servlet.ServletContext)}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#getClasses(javax.servlet.ServletContext)}.
 	 */
 	@Test
 	public void testGetClasses() {
@@ -98,7 +97,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#getEntities(javax.servlet.ServletContext)}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#getEntities(javax.servlet.ServletContext)}.
 	 */
 	@Test
 	public void testGetEntities() {
@@ -106,7 +105,7 @@ private RESTService restService = new RESTService();
 	}
 
 	/**
-	 * Test method for {@link org.aksw.assessment.question.rest.RESTService#precomputeGraphs()}.
+	 * Test method for {@link org.aksw.assessment.rest.RESTService#precomputeGraphs(ServletContext)}.
 	 */
 	@Test
 	public void testPrecomputeGraphs() {
