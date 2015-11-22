@@ -27,6 +27,8 @@ import javax.servlet.ServletContextListener;
 
 import org.apache.log4j.Logger;
 
+import java.util.Enumeration;
+
 /**
  * @author Lorenz Buehmann
  *
@@ -48,7 +50,7 @@ public class AssessServletContextListener implements ServletContextListener{
 	@Override
 	public void contextInitialized(ServletContextEvent e) {
 		RESTService.init(e.getServletContext());
-		new RESTService().precomputeGraphs(e.getServletContext());
+//		new RESTService().precomputeGraphs(e.getServletContext());
 	}
 
 }

@@ -3,7 +3,13 @@
 	xmlns="http://java.sun.com/xml/ns/javaee" xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 	xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
 	id="WebApp_ID" version="2.5">
-	<display-name>de.vogella.jersey.jaxb</display-name>
+	<display-name>ASSESS REST Service</display-name>
+
+	<context-param>
+		<param-name>configFile</param-name>
+		<param-value>assess_config_dbpedia.ini</param-value>
+	</context-param>
+
 	<servlet>
 		<servlet-name>ASSESS REST Service</servlet-name>
 		<servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
@@ -15,8 +21,13 @@
 			<param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
 			<param-value>true</param-value>
 		</init-param>
+		<!--<init-param>
+			<param-name>configFile</param-name>
+			<param-value>assess_config_dbpedia.ini</param-value>
+		</init-param>-->
 		<load-on-startup>1</load-on-startup>
 	</servlet>
+
 	<listener>
         <listener-class>org.aksw.assessment.rest.AssessServletContextListener</listener-class>
     </listener>

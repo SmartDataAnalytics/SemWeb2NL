@@ -48,6 +48,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 
@@ -60,7 +61,6 @@ import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.util.BlackList;
-import org.aksw.assessment.util.DBpediaPropertyBlackList;
 import org.aksw.assessment.util.DefaultPropertyBlackList;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
@@ -91,7 +91,6 @@ import com.hp.hpl.jena.ontology.OntModelSpec;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
 
-import uk.ac.manchester.cs.jfact.kernel.AbsorptionActions;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
@@ -100,7 +99,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
  *
  */
 @Path("/assess")
-public class RESTService {
+public class RESTService extends Application{
 	
 	private static final Logger logger = LoggerFactory.getLogger(RESTService.class);
 	
@@ -112,7 +111,7 @@ public class RESTService {
 	
 	static Map<SparqlEndpointKS, List<String>> classesCache = new HashMap<>();
 	static Map<String, List<String>> propertiesCache = new HashMap<>();
-	static Map<SparqlEndpointKS, Map<String, List<String>>> applicableEntitesCache = new HashMap<>();
+	static Map<SparqlEndpointKS, Map<String, List<String>>> applicableEntitiesCache = new HashMap<>();
 
 	private static double propertyFrequencyThreshold;
 	private static Cooccurrence cooccurrenceType;
@@ -120,9 +119,10 @@ public class RESTService {
 	private static SPARQLReasoner reasoner;
 
 	public static QueryExecutionFactory qef;
-	
+
 	public RESTService() {}
-	
+
+
 	/**
 	 * Precompute all applicable classes and for each class its applicable properties.
 	 * @param context
@@ -141,7 +141,7 @@ public class RESTService {
 		loadConfig(config, null);
 	}
 	
-	public static void loadConfig(HierarchicalINIConfiguration config, ServletContext context) throws Exception{
+	public static void loadConfig(HierarchicalINIConfiguration config, ServletContext context) throws Exception {
 		logger.info("Loading config...");
 		
 		// endpoint settings
@@ -202,19 +202,21 @@ public class RESTService {
 		
 		reasoner = new SPARQLReasoner(qef);
 	}
-	
+
 	public static void init(ServletContext context){
 		try {
-			logger.info("Loading config...");
+			System.err.println(context.getServletContextName());
+			String path = (context == null) ? "assess_config_dbpedia.ini" : context.getRealPath(context.getInitParameter("configFile"));
+			logger.info("Loading config from " + path + "...");
 			HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
-			config.load(RESTService.class.getClassLoader().getResourceAsStream("assess_config_dbpedia.ini"));
-			
+			config.load(path);
+
 			loadConfig(config, context);
 		} catch (ConfigurationException e) {
 			logger.error("Could not load config file.", e);
 		} catch (Exception e) {
 			logger.error("Illegal endpoint URL.", e);
-		} 
+		}
 	}
 	
 	@GET
@@ -343,8 +345,8 @@ public class RESTService {
 		
 		// get random numbers for max. computed questions per type
 		final List<Integer> partitionSizes = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
-		
-		ExecutorService tp = Executors.newFixedThreadPool(generators.entrySet().size());
+		System.err.println(generators);
+		ExecutorService tp = Executors.newFixedThreadPool(1);//generators.entrySet().size()
 		// submit a task for each question type
         List<Future<List<RESTQuestion>>> list = new ArrayList<>();
 		int i = 0;
@@ -424,7 +426,7 @@ public class RESTService {
 	public Map<String, List<String>> getEntities(@Context ServletContext context) {
 		logger.info("REST Request - Get all applicable entities");
 
-		Map<String, List<String>> entities = applicableEntitesCache.get(ks);
+		Map<String, List<String>> entities = applicableEntitiesCache.get(ks);
 
 		if(entities == null){
 			entities = new LinkedHashMap<>();
@@ -438,7 +440,7 @@ public class RESTService {
 					entities.put(cls, properties);
 				}
 			}
-			applicableEntitesCache.put(ks, entities);
+			applicableEntitiesCache.put(ks, entities);
 		}
 		logger.info("Done.");
 		return entities;
