@@ -53,6 +53,8 @@ import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
 import org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
 import org.semanticweb.owlapi.model.SWRLRule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import simplenlg.features.Feature;
 import simplenlg.framework.NLGElement;
@@ -68,6 +70,8 @@ import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
  *
  */
 public class OWLAxiomConverter implements OWLAxiomVisitor{
+	
+	private static final Logger logger = LoggerFactory.getLogger(OWLAxiomConverter.class);
 	
 	NLGFactory nlgFactory;
 	Realiser realiser;
@@ -97,20 +101,21 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	 */
 	@Override
 	public void visit(OWLSubClassOfAxiom axiom) {
+		logger.debug("Converting SubClassOf axiom {}", axiom);
 //		System.out.println("Axiom: " + axiom);
 		OWLClassExpression subClass = axiom.getSubClass();
 		NLGElement subClassElement = ceConverter.asNLGElement(subClass, true);
-		System.out.println("SubClass: " + realiser.realise(subClassElement));
+		logger.debug("SubClass: " + realiser.realise(subClassElement));
 //		((PhraseElement)subClassElement).setPreModifier("every");
 		
 		OWLClassExpression superClass = axiom.getSuperClass();
 		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
-		System.out.println("SuperClass: " + realiser.realise(superClassElement));
+		logger.debug("SuperClass: " + realiser.realise(superClassElement));
 		
 		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
 		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
 		
-		System.out.println(axiom + " = " + realiser.realise(clause));
+		logger.debug(axiom + " = " + realiser.realise(clause));
 		
 	}
 	

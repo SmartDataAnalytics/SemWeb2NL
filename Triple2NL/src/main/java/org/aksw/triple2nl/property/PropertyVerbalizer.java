@@ -349,7 +349,7 @@ public class PropertyVerbalizer {
 			Tree tree = sentence.get(TreeAnnotation.class);
 			//skip ROOT tag
 			tree = tree.skipRoot();
-			logger.info("Parse tree:" + tree.pennString());
+			logger.debug("Parse tree:" + tree.pennString());
 //			tree.pennPrint();
 			//check if VP is directly followed by NP
 			//sometimes parent node is S,SINV,etc.
@@ -403,7 +403,6 @@ public class PropertyVerbalizer {
 		
 		//get POS tag of property verbalization
 		String pos = propertyVerbalization.getPOSTags();
-		System.out.println(pos);
 		
 		//VBN IN
 		if(pos.equals("VBN IN")){
