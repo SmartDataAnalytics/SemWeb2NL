@@ -91,8 +91,9 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 	private boolean optimizedAnswerGeneration = true;
 
 	private boolean useCompleteResourcesOnly = true;
-	
-    public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
+	private Set<org.aksw.avatar.clustering.Node> summaryProperties;
+
+	public JeopardyQuestionGenerator(QueryExecutionFactory qef, String cacheDirectory, Map<OWLEntity, Set<OWLObjectProperty>> restrictions) {
         super(qef, cacheDirectory, restrictions);
         
         verbalizer = new JeopardyVerbalizer(qef, cacheDirectory, wordNetDir);
@@ -120,7 +121,8 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
     		Map<Resource, OWLEntity> result = Maps.newLinkedHashMap();
     		//we need the summarizing properties graph first
     		for (OWLEntity type : types) {
-				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(type.asOWLClass(), propertyFrequencyThreshold, namespace, cooccurrenceType);
+				Set<org.aksw.avatar.clustering.Node> summaryProperties = verbalizer.getSummaryProperties(
+						type.asOWLClass(), propertyFrequencyThreshold, namespace, cooccurrenceType);
 				
 				if(summaryProperties != null) {
 					StringBuilder query = new StringBuilder();
@@ -129,7 +131,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		        	//add triple pattern for each property in summary graph
 		        	int i = 0;
 					for (org.aksw.avatar.clustering.Node propertyNode : summaryProperties) {
-						query.append((propertyNode.outgoing ? ("?x <" + propertyNode.label + "> ?o" + i++) :  ("?o" + i++ + " <" + propertyNode.label + "> ?x")) + ".");
+						query.append((propertyNode.outgoing ? ("?x <" + propertyNode.label + "> ?o" + i++) : ("?o" + i++ + " <" + propertyNode.label + "> ?x")) + ".");
 					}
 		        	SPARQLQueryUtils.addRankingConstraints(endpointType, query, "x");
 		        	query.append("}");

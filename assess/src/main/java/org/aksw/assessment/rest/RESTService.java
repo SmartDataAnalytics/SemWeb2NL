@@ -42,15 +42,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import javax.servlet.ServletContext;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 import org.aksw.assessment.AbstractQuestionGenerator;
 import org.aksw.assessment.JeopardyQuestionGenerator;
@@ -62,6 +58,7 @@ import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
 import org.aksw.assessment.util.BlackList;
 import org.aksw.assessment.util.DefaultPropertyBlackList;
+import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
@@ -98,7 +95,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
  * @author Lorenz Buehmann
  *
  */
-@Path("/assess")
+@Path("/rest")
 public class RESTService extends Application{
 	
 	private static final Logger logger = LoggerFactory.getLogger(RESTService.class);
@@ -445,7 +442,9 @@ public class RESTService extends Application{
 		logger.info("Done.");
 		return entities;
 	}
-	
+
+	@POST
+	@Path("/precompute-graphs")
 	public void precomputeGraphs(ServletContext context){
 		logger.info("Precomputing graphs...");
 		
@@ -459,6 +458,28 @@ public class RESTService extends Application{
 			} catch (Exception e) {
 				logger.error(e.getLocalizedMessage(), e);
 			}
+		}
+
+		logger.info("Precomputing graphs finished.");
+	}
+
+	@GET
+	@Path("/compute-graph")
+	public Response computeGraph(@QueryParam("class") String cls){
+		logger.info("Computing graph for {} ...", cls);
+
+		DatasetBasedGraphGenerator graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
+
+		try {
+			WeightedGraph g = graphGenerator.generateGraph(new OWLClassImpl(IRI.create(cls)),
+																	   propertyFrequencyThreshold, namespace,
+																	   cooccurrenceType);
+			logger.info("Computing graph for {} finished.", cls);
+
+			return Response.ok(g.toString(), MediaType.TEXT_PLAIN_TYPE).build();
+		} catch (Exception e) {
+			logger.error("Computing graph for {} failed.", cls, e);
+			return Response.status(Response.Status.BAD_REQUEST).entity(e).build();
 		}
 	}
 	

@@ -67,7 +67,7 @@ public class WeightedGraph implements Serializable{
     /**
      * Adds a weighted node to the graph
      *
-     * @param label label of node
+     * @param node the node
      * @param weight weight of node
      * @return The new node
      */
@@ -210,7 +210,7 @@ public class WeightedGraph implements Serializable{
             }
         }
 
-        // node occured alone. Thus increment its weight
+        // node occurred alone. Thus increment its weight
         if (nodeList.size() == 1) {
             double weight = nodes.get(nodeList.get(0)) + 1;
             nodes.remove(nodeList.get(0));

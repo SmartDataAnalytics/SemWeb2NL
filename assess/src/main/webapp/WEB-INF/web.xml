@@ -33,7 +33,7 @@
     </listener>
 	<servlet-mapping>
 		<servlet-name>ASSESS REST Service</servlet-name>
-		<url-pattern>/assess/*</url-pattern>
+		<url-pattern>/*</url-pattern>
 	</servlet-mapping>
 	<filter>
        		<filter-name>cross-origin</filter-name>
