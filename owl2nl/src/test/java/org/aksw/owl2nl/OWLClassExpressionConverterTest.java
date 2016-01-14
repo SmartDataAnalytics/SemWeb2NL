@@ -67,7 +67,7 @@ public class OWLClassExpressionConverterTest {
 	public static void setUpBeforeClass() throws Exception {
 		converter = new OWLClassExpressionConverter();
 		
-		df = new OWLDataFactoryImpl(false, false);
+		df = new OWLDataFactoryImpl();
 		PrefixManager pm = new DefaultPrefixManager("http://dbpedia.org/ontology/");
 		
 		birthPlace = df.getOWLObjectProperty("birthPlace", pm);

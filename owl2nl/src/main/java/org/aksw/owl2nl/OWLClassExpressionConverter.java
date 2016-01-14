@@ -107,10 +107,10 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	NLGFactory nlgFactory;
 	Realiser realiser;
 	
-	IRIConverter iriConverter = new SimpleIRIConverter();
-	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
-	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
-	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	IRIConverter iriConverter;
+	PropertyVerbalizer propertyVerbalizer;
+	LiteralConverter literalConverter;
+	OWLDataFactory df = new OWLDataFactoryImpl();
 	
 	boolean noun;
 	
@@ -126,6 +126,15 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	private OWLClassExpression startClass;
 	
 	public OWLClassExpressionConverter(Lexicon lexicon) {
+		this(lexicon, new SimpleIRIConverter());
+	}
+
+	public OWLClassExpressionConverter(Lexicon lexicon, IRIConverter iriConverter) {
+		this.iriConverter = iriConverter;
+
+		propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
+		literalConverter = new LiteralConverter(iriConverter);
+
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
 	}
@@ -165,7 +174,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		return nlgElement;
 	}
 	
-	private String getLexicalForm(OWLEntity entity){
+	public String getLexicalForm(OWLEntity entity){
 		return iriConverter.convert(entity.toStringID());
 	}
 	
@@ -562,7 +571,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLObjectPropertyExpression property = ce.getProperty();
-		OWLIndividual value = ce.getValue();
+		OWLIndividual value = ce.getFiller();
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLObjectProperty().getIRI().toString());
@@ -835,7 +844,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		SPhraseSpec phrase = nlgFactory.createClause();
 		
 		OWLDataPropertyExpression property = ce.getProperty();
-		OWLLiteral value = ce.getValue();
+		OWLLiteral value = ce.getFiller();
 		
 		if(!property.isAnonymous()){
 			PropertyVerbalization propertyVerbalization = propertyVerbalizer.verbalize(property.asOWLDataProperty().getIRI().toString());

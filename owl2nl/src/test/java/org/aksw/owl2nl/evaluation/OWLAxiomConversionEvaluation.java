@@ -54,7 +54,7 @@ public class OWLAxiomConversionEvaluation {
 
 		List<List<String>> data = new ArrayList<>();
 
-		OWLAxiomConverter converter = new OWLAxiomConverter();
+		OWLAxiomConverter converter = new OWLAxiomConverter(ontology);
 		int i = 1;
 		for (OWLAxiom axiom : ontology.getAxioms()) {
 			String s = converter.convert(axiom);

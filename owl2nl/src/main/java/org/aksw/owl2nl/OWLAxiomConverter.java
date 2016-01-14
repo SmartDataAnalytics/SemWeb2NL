@@ -19,60 +19,20 @@
  */
 package org.aksw.owl2nl;
 
-import java.util.List;
-
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
+import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.owl2nl.exception.OWLAxiomConversionException;
+import org.aksw.triple2nl.TripleConverter;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.dllearner.kb.SparqlEndpointKS;
+import org.dllearner.utilities.OwlApiJenaUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.ToStringRenderer;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAnnotationAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLAnnotationPropertyDomainAxiom;
-import org.semanticweb.owlapi.model.OWLAnnotationPropertyRangeAxiom;
-import org.semanticweb.owlapi.model.OWLAsymmetricObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLAxiom;
-import org.semanticweb.owlapi.model.OWLAxiomVisitor;
-import org.semanticweb.owlapi.model.OWLClassAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLClassExpression;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLDataPropertyAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLDataPropertyDomainAxiom;
-import org.semanticweb.owlapi.model.OWLDataPropertyRangeAxiom;
-import org.semanticweb.owlapi.model.OWLDatatypeDefinitionAxiom;
-import org.semanticweb.owlapi.model.OWLDeclarationAxiom;
-import org.semanticweb.owlapi.model.OWLDifferentIndividualsAxiom;
-import org.semanticweb.owlapi.model.OWLDisjointClassesAxiom;
-import org.semanticweb.owlapi.model.OWLDisjointDataPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLDisjointObjectPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLDisjointUnionAxiom;
-import org.semanticweb.owlapi.model.OWLEquivalentClassesAxiom;
-import org.semanticweb.owlapi.model.OWLEquivalentDataPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLEquivalentObjectPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLFunctionalDataPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLFunctionalObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLHasKeyAxiom;
-import org.semanticweb.owlapi.model.OWLInverseFunctionalObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLInverseObjectPropertiesAxiom;
-import org.semanticweb.owlapi.model.OWLIrreflexiveObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLNegativeDataPropertyAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLNegativeObjectPropertyAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLObjectPropertyAssertionAxiom;
-import org.semanticweb.owlapi.model.OWLObjectPropertyDomainAxiom;
-import org.semanticweb.owlapi.model.OWLObjectPropertyRangeAxiom;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
-import org.semanticweb.owlapi.model.OWLReflexiveObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLSameIndividualAxiom;
-import org.semanticweb.owlapi.model.OWLSubAnnotationPropertyOfAxiom;
-import org.semanticweb.owlapi.model.OWLSubClassOfAxiom;
-import org.semanticweb.owlapi.model.OWLSubDataPropertyOfAxiom;
-import org.semanticweb.owlapi.model.OWLSubObjectPropertyOfAxiom;
-import org.semanticweb.owlapi.model.OWLSubPropertyChainOfAxiom;
-import org.semanticweb.owlapi.model.OWLSymmetricObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLTransitiveObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.SWRLRule;
+import org.semanticweb.owlapi.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import simplenlg.features.Feature;
 import simplenlg.framework.NLGElement;
 import simplenlg.framework.NLGFactory;
@@ -81,6 +41,8 @@ import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
+
+import java.util.List;
 
 /**
  * Converts OWL axioms into natural language.
@@ -95,22 +57,30 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	private Realiser realiser;
 	
 	private OWLClassExpressionConverter ceConverter;
+	private TripleConverter tripleConverter;
 	
-	private OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	private OWLDataFactory df = new OWLDataFactoryImpl();
 	
 	private String nl;
+
+	private NLGElement nlgElement;
 	
-	public OWLAxiomConverter(Lexicon lexicon) {
+	public OWLAxiomConverter(OWLOntology ontology) {
+		this(ontology, Lexicon.getDefaultLexicon());
+	}
+
+	public OWLAxiomConverter(OWLOntology ontology, Lexicon lexicon) {
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
-		
-		ceConverter = new OWLClassExpressionConverter(lexicon);
+
+		QueryExecutionFactoryModel qef = new QueryExecutionFactoryModel(OwlApiJenaUtils.getModel(ontology));
+		IRIConverter iriConverter = new DefaultIRIConverter(qef);
+
+		ceConverter = new OWLClassExpressionConverter(lexicon, iriConverter);
+
+		tripleConverter = new TripleConverter(qef, iriConverter, null, null);
 	}
-	
-	public OWLAxiomConverter() {
-		this(Lexicon.getDefaultLexicon());
-	}
-	
+
 	/**
 	 * Converts the OWL axiom into natural language. Only logical axioms are 
 	 * supported, i.e. declaration axioms and annotation axioms are not 
@@ -125,6 +95,10 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 			logger.debug("Converting " + axiom.getAxiomType().getName() + " axiom: " + axiom);
 			try {
 				axiom.accept(this);
+				if(nlgElement != null) {
+					nl = realiser.realise(nlgElement).getRealisation();
+					logger.debug("Axiom:" + nl);
+				}
 				return nl;
 			} catch (Exception e) {
 				throw new OWLAxiomConversionException(axiom, e);
@@ -137,6 +111,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	private void reset() {
 		nl = null;
+		nlgElement = null;
 	}
 
 	/* (non-Javadoc)
@@ -157,10 +132,8 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		
 		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
 		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
-		
-		nl = realiser.realise(clause).toString();
-		
-		logger.debug("Axiom:" + nl);		
+
+		nlgElement = clause;
 	}
 	
 	@Override
@@ -298,22 +271,75 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	@Override
 	public void visit(OWLClassAssertionAxiom axiom) {
+		if(axiom.getClassExpression().isOWLThing()) {
+			logger.warn("Explicit assertion of an individual to owl:Thing is meaningless. Skipping conversion.");
+			return;
+		}
+		SPhraseSpec clause = nlgFactory.createClause();
+
+		// individual is the subject
+		OWLIndividual individual = axiom.getIndividual();
+		if(individual.isNamed()) {
+			clause.setSubject(ceConverter.getLexicalForm(individual.asOWLNamedIndividual()));
+		} else {
+			clause.setSubject("something");
+		}
+
+		// 'to be' as verb
+		clause.setVerb("be");
+
+		// class is the object
+		OWLClassExpression ce = axiom.getClassExpression();
+		clause.setObject(ceConverter.asNLGElement(ce));
+
+		nlgElement = clause;
 	}
 	
 	@Override
 	public void visit(OWLObjectPropertyAssertionAxiom axiom) {
+		SPhraseSpec clause = nlgFactory.createClause();
+
+		Triple triple;
+		if(axiom.getProperty().isAnonymous()) {
+			triple = Triple.create(
+					NodeFactory.createURI(axiom.getSubject().toStringID()),
+					NodeFactory.createURI(axiom.getProperty().getNamedProperty().toStringID()),
+					NodeFactory.createURI(axiom.getObject().toStringID()));
+
+		} else {
+			triple = Triple.create(
+					NodeFactory.createURI(axiom.getObject().toStringID()),
+					NodeFactory.createURI(axiom.getProperty().getNamedProperty().toStringID()),
+					NodeFactory.createURI(axiom.getSubject().toStringID()));
+		}
+		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+
+		nlgElement = phrase;
 	}
 	
 	@Override
 	public void visit(OWLDataPropertyAssertionAxiom axiom) {
+		SPhraseSpec clause = nlgFactory.createClause();
+
+		Triple triple = Triple.create(
+				NodeFactory.createURI(axiom.getSubject().toStringID()),
+				OwlApiJenaUtils.asNode(axiom.getProperty().asOWLDataProperty()),
+				NodeFactory.createLiteral(OwlApiJenaUtils.getLiteral(axiom.getObject())));
+		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+
+		nlgElement = phrase;
 	}
 
 	@Override
 	public void visit(OWLNegativeObjectPropertyAssertionAxiom axiom) {
+		df.getOWLObjectPropertyAssertionAxiom(axiom.getProperty(), axiom.getSubject(), axiom.getObject()).accept(this);
+		nlgElement.setFeature(Feature.NEGATED, true);
 	}
 
 	@Override
 	public void visit(OWLNegativeDataPropertyAssertionAxiom axiom) {
+		df.getOWLDataPropertyAssertionAxiom(axiom.getProperty(), axiom.getSubject(), axiom.getObject()).accept(this);
+		nlgElement.setFeature(Feature.NEGATED, true);
 	}
 
 	@Override
@@ -373,11 +399,12 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
 		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
 		ontologyURL = "http://protege.cim3.net/file/pub/ontologies/travel/travel.owl";
-		//ontologyURL = "https://raw.githubusercontent.com/pezra/pretty-printer/master/Jenna-2.6.3/testing/ontology/bugs/koala.owl";
+		ontologyURL = "https://raw.githubusercontent.com/pezra/pretty-printer/master/Jenna-2.6.3/testing/ontology/bugs/koala.owl";
+		ontologyURL = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
 		
-		OWLAxiomConverter converter = new OWLAxiomConverter();
+		OWLAxiomConverter converter = new OWLAxiomConverter(ontology);
 		for (OWLAxiom axiom : ontology.getAxioms()) {
 			converter.convert(axiom);
 		}
