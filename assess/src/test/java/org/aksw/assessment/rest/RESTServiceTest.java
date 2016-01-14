@@ -46,10 +46,9 @@ private RESTService restService = new RESTService();
 	
 	public RESTServiceTest() throws Exception {
 		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
-		try(InputStream is = RESTService.class.getClassLoader().getResourceAsStream("assess_config_dbpedia.ini")){
+		try(InputStream is = RESTServiceTest.class.getClassLoader().getResourceAsStream("assess_test_config_dbpedia.ini")){
 			config.load(is);
 		}
-		
 		RESTService.loadConfig(config);
 	}
 
