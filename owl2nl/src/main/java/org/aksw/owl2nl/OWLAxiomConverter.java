@@ -96,7 +96,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	private OWLClassExpressionConverter ceConverter;
 	
-	private OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	private OWLDataFactory df = new OWLDataFactoryImpl();
 	
 	private String nl;
 	

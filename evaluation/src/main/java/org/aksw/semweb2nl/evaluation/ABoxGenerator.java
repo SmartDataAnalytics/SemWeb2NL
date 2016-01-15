@@ -155,7 +155,7 @@ public class ABoxGenerator extends OWLClassExpressionVisitorAdapter {
 	@Override
 	public void visit(OWLObjectHasValue ce) {
 		// given \exists r.{x}, add r(a,x)
-		axioms.add(df.getOWLObjectPropertyAssertionAxiom(ce.getProperty(), individuals.peek(), ce.getValue()));
+		axioms.add(df.getOWLObjectPropertyAssertionAxiom(ce.getProperty(), individuals.peek(), ce.getFiller()));
 	}
 
 	/* (non-Javadoc)
@@ -164,7 +164,7 @@ public class ABoxGenerator extends OWLClassExpressionVisitorAdapter {
 	@Override
 	public void visit(OWLDataHasValue ce) {
 		// given \exists r.{x}, add r(a,x)
-		axioms.add(df.getOWLDataPropertyAssertionAxiom(ce.getProperty(), individuals.peek(), ce.getValue()));
+		axioms.add(df.getOWLDataPropertyAssertionAxiom(ce.getProperty(), individuals.peek(), ce.getFiller()));
 	}
 
 	/* (non-Javadoc)

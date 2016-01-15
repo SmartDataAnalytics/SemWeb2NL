@@ -22,14 +22,8 @@
  */
 package org.aksw.semweb2nl.evaluation;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.ToStringRenderer;
@@ -43,6 +37,7 @@ import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
+import org.semanticweb.owlapi.search.EntitySearcher;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
@@ -72,8 +67,8 @@ public class ExamplesGenerator {
 		individualGenerator.reset();
 		
 		// get the class expressions that describe the given class
-		Set<OWLClassExpression> superClassExpressions = cls.getSuperClasses(ontology);
-		superClassExpressions.addAll(cls.getEquivalentClasses(ontology));
+		Collection<OWLClassExpression> superClassExpressions = EntitySearcher.getSuperClasses(cls, ontology);
+		superClassExpressions.addAll(EntitySearcher.getEquivalentClasses(cls, ontology));
 //		superClassExpressions.addAll(cls.getSubClasses(ontology));
 
 		// rewrite as intersection for simplicity

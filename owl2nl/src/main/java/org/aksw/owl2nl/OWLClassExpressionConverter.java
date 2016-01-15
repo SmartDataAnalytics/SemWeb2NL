@@ -110,7 +110,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	IRIConverter iriConverter = new SimpleIRIConverter();
 	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
 	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
-	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	OWLDataFactory df = new OWLDataFactoryImpl();
 	
 	boolean noun;
 	
