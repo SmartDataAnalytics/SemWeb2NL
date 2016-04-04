@@ -23,6 +23,7 @@ import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.owl2nl.exception.OWLAxiomConversionException;
+import org.aksw.owl2nl.util.OWLClassExpressionUtils;
 import org.aksw.triple2nl.TripleConverter;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
@@ -127,11 +128,18 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		
 		// convert the superclass
 		OWLClassExpression superClass = axiom.getSuperClass();
-		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
+		NLGElement superClassElement = ceConverter.asNLGElement(superClass, false, subClass.isAnonymous());
 		logger.debug("SuperClass: " + realiser.realise(superClassElement));
-		
-		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
-		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+
+		SPhraseSpec clause;
+		if(subClass.isAnonymous() || OWLClassExpressionUtils.hasNamedClassOnTopLevel(superClass)) { // LHS is complex CE
+			clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
+			superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+		} else {// LHS is named class
+			clause = nlgFactory.createClause(subClassElement, null, superClassElement);
+			superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+		}
+
 
 		nlgElement = clause;
 	}
@@ -400,13 +408,14 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
 		ontologyURL = "http://protege.cim3.net/file/pub/ontologies/travel/travel.owl";
 		ontologyURL = "https://raw.githubusercontent.com/pezra/pretty-printer/master/Jenna-2.6.3/testing/ontology/bugs/koala.owl";
-		ontologyURL = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
+//		ontologyURL = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
 		
 		OWLAxiomConverter converter = new OWLAxiomConverter(ontology);
 		for (OWLAxiom axiom : ontology.getAxioms()) {
-			converter.convert(axiom);
+			String nl = converter.convert(axiom);
+			System.out.println(axiom + "->" + nl);
 		}
 	}
 

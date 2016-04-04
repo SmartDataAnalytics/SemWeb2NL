@@ -122,6 +122,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	OWLClassExpression root;
 
 	private boolean isSubClassExpression;
+	private boolean extendIfNoOuterNamedClass;
 
 	private OWLClassExpression startClass;
 	
@@ -158,13 +159,19 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	}
 	
 	public NLGElement asNLGElement(OWLClassExpression ce, boolean isSubClassExpression) {
+		return asNLGElement(ce, isSubClassExpression, true);
+	}
+
+	public NLGElement asNLGElement(OWLClassExpression ce, boolean isSubClassExpression, boolean extendIfNoOuterNamedClass) {
 		this.root = ce;
 		this.isSubClassExpression = isSubClassExpression;
+		this.extendIfNoOuterNamedClass = extendIfNoOuterNamedClass;
+
 		this.startClass = null;
-		
+
 		// reset modal depth
 		modalDepth = 1;
-		
+
 		// rewrite class expression
 		ce = rewrite(ce);
 
@@ -204,7 +211,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				newOperands.add(rewrite(operand, true));
 			}
 			
-			if(!containsNamedClass(operands)){
+			if(extendIfNoOuterNamedClass && !containsNamedClass(operands)){
 				newOperands.add(df.getOWLThing());
 			}
 			
@@ -220,20 +227,72 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 			return df.getOWLObjectUnionOf(newOperands);
 		} else if(ce instanceof OWLObjectSomeValuesFrom){
 			OWLClassExpression newCe = df.getOWLObjectSomeValuesFrom(((OWLObjectSomeValuesFrom) ce).getProperty(), rewrite(((OWLObjectSomeValuesFrom) ce).getFiller()));
-			if(inIntersection){
+
+			// if in intersection or expansion disabled return the rewritten CE
+			if(inIntersection || !extendIfNoOuterNamedClass){
 				return newCe;
 			}
+
+			// add owl:Thing
 			return df.getOWLObjectIntersectionOf(
 					df.getOWLThing(),
 					newCe);
 		} else if(ce instanceof OWLObjectAllValuesFrom){
 			OWLClassExpression newCe = df.getOWLObjectAllValuesFrom(((OWLObjectAllValuesFrom) ce).getProperty(), rewrite(((OWLObjectAllValuesFrom) ce).getFiller()));
-			if(inIntersection){
+			// if in intersection or expansion disabled return the rewritten CE
+			if(inIntersection || !extendIfNoOuterNamedClass){
 				return newCe;
 			}
+
+			// add owl:Thing
 			return df.getOWLObjectIntersectionOf(
 					df.getOWLThing(),
 					newCe);
+		} else if(ce instanceof OWLObjectHasValue || ce instanceof OWLDataHasValue || ce instanceof OWLObjectOneOf || ce instanceof  OWLDataOneOf){
+			// if in intersection or expansion disabled return the rewritten CE
+			if(inIntersection || !extendIfNoOuterNamedClass){
+				return ce;
+			}
+
+			// add owl:Thing
+			return df.getOWLObjectIntersectionOf(
+					df.getOWLThing(),
+					ce);
+		} else if(ce instanceof OWLObjectCardinalityRestriction) {
+			int cardinality = ((OWLObjectCardinalityRestriction) ce).getCardinality();
+			OWLObjectPropertyExpression property = ((OWLObjectCardinalityRestriction) ce).getProperty();
+			OWLClassExpression filler = ((OWLObjectCardinalityRestriction) ce).getFiller();
+
+			OWLClassExpression newFiller = rewrite(filler);
+
+			OWLClassExpression newCe;
+			if(ce instanceof OWLObjectMinCardinality) {
+				newCe = df.getOWLObjectMinCardinality(cardinality, property, filler);
+			} else if(ce instanceof OWLObjectExactCardinality) {
+				newCe = df.getOWLObjectExactCardinality(cardinality, property, filler);
+			} else {
+				newCe = df.getOWLObjectMaxCardinality(cardinality, property, filler);
+			}
+
+			// if in intersection or expansion disabled return the rewritten CE
+			if(inIntersection || !extendIfNoOuterNamedClass){
+				return newCe;
+			}
+
+			// add owl:Thing
+			return df.getOWLObjectIntersectionOf(
+					df.getOWLThing(),
+					newCe);
+		} else if(ce instanceof OWLDataCardinalityRestriction) {
+			// if in intersection or expansion disabled return the rewritten CE
+			if(inIntersection || !extendIfNoOuterNamedClass){
+				return ce;
+			}
+
+			// add owl:Thing
+			return df.getOWLObjectIntersectionOf(
+					df.getOWLThing(),
+					ce);
 		}
 		if(inIntersection){
 			return ce;
@@ -241,7 +300,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		Set<OWLClassExpression> operands = Sets.<OWLClassExpression>newHashSet(ce, df.getOWLThing());
 		return df.getOWLObjectIntersectionOf(operands);
 	}
-	
+
 	/**
 	 * Returns a list of operands ordered by class expressions types,
 	 * starting with the "more easy" first.
