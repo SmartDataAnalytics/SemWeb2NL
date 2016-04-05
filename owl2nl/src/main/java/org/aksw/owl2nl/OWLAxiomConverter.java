@@ -41,9 +41,11 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
+import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
 import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Converts OWL axioms into natural language.
@@ -305,8 +307,6 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	@Override
 	public void visit(OWLObjectPropertyAssertionAxiom axiom) {
-		SPhraseSpec clause = nlgFactory.createClause();
-
 		Triple triple;
 		if(axiom.getProperty().isAnonymous()) {
 			triple = Triple.create(
@@ -327,8 +327,6 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	@Override
 	public void visit(OWLDataPropertyAssertionAxiom axiom) {
-		SPhraseSpec clause = nlgFactory.createClause();
-
 		Triple triple = Triple.create(
 				NodeFactory.createURI(axiom.getSubject().toStringID()),
 				OwlApiJenaUtils.asNode(axiom.getProperty().asOWLDataProperty()),
@@ -404,6 +402,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	public static void main(String[] args) throws Exception {
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
+		ToStringRenderer.getInstance().setRenderer(new ManchesterOWLSyntaxOWLObjectRendererImpl());
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
 		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
 		ontologyURL = "http://protege.cim3.net/file/pub/ontologies/travel/travel.owl";
@@ -413,9 +412,18 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
 		
 		OWLAxiomConverter converter = new OWLAxiomConverter(ontology);
-		for (OWLAxiom axiom : ontology.getAxioms()) {
+		System.out.println("\tAxiom\tAs SubClassOf Axiom\tVerbalization");
+		for (OWLAxiom axiom : new TreeSet<>(ontology.getLogicalAxioms())) {
+			String axiomStr = axiom.toString();
+			String axiomSubClsStr = "";
+			boolean isSubClassOfAxiom = axiom.getAxiomType() == AxiomType.SUBCLASS_OF;
+			if(axiom instanceof OWLSubClassOfAxiomShortCut) {
+				axiomSubClsStr = ((OWLSubClassOfAxiomShortCut) axiom).asOWLSubClassOfAxiom().toString();
+				isSubClassOfAxiom = true;
+			}
 			String nl = converter.convert(axiom);
-			System.out.println(axiom + "->" + nl);
+
+			System.out.println((isSubClassOfAxiom ? "x\t" : "\t") + axiomStr + "\t" + axiomSubClsStr + "\t" + nl);
 		}
 	}
 

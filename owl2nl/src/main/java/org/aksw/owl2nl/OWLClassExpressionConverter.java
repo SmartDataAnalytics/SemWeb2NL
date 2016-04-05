@@ -267,11 +267,11 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 			OWLClassExpression newCe;
 			if(ce instanceof OWLObjectMinCardinality) {
-				newCe = df.getOWLObjectMinCardinality(cardinality, property, filler);
+				newCe = df.getOWLObjectMinCardinality(cardinality, property, newFiller);
 			} else if(ce instanceof OWLObjectExactCardinality) {
-				newCe = df.getOWLObjectExactCardinality(cardinality, property, filler);
+				newCe = df.getOWLObjectExactCardinality(cardinality, property, newFiller);
 			} else {
-				newCe = df.getOWLObjectMaxCardinality(cardinality, property, filler);
+				newCe = df.getOWLObjectMaxCardinality(cardinality, property, newFiller);
 			}
 
 			// if in intersection or expansion disabled return the rewritten CE
@@ -297,7 +297,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 		if(inIntersection){
 			return ce;
 		}
-		Set<OWLClassExpression> operands = Sets.<OWLClassExpression>newHashSet(ce, df.getOWLThing());
+		Set<OWLClassExpression> operands = Sets.newHashSet(ce, df.getOWLThing());
 		return df.getOWLObjectIntersectionOf(operands);
 	}
 
@@ -1163,9 +1163,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 
 		if(phrases.size() > 1) {
 			CoordinatedPhraseElement coordinatedPhrase = nlgFactory.createCoordinatedPhrase();
-			for (NPPhraseSpec phrase : phrases) {
-				coordinatedPhrase.addCoordinate(phrase);
-			}
+			phrases.forEach(coordinatedPhrase::addCoordinate);
 			return coordinatedPhrase;
 		}
 
