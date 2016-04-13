@@ -45,7 +45,7 @@ public class PropertySimilarityCorrelation {
     }
 
     public static Map<Set<OWLObjectProperty>, Double> getCooccurrences(OWLClass cls, Set<OWLObjectProperty> properties, double threshold) {
-        Map<Set<OWLObjectProperty>, Double> pair2similarity = new HashMap<Set<OWLObjectProperty>, Double>();
+        Map<Set<OWLObjectProperty>, Double> pair2similarity = new HashMap<>();
        
         QGramsDistance qgrams = new QGramsDistance();
         for (OWLObjectProperty prop1 : properties) {

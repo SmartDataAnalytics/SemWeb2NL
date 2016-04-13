@@ -123,7 +123,7 @@ public class Verbalizer {
 		cacheDirectory = new File(cacheDirectory, "avatar-cache/sparql").getAbsolutePath();
     	
         nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
-        labels = new HashMap<Resource, String>();
+        labels = new HashMap<>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
         realiser = nlg.realiser;
 
@@ -175,7 +175,7 @@ public class Verbalizer {
      * @return A set of triples
      */
     public Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
-        Set<Triple> result = new HashSet<Triple>();
+        Set<Triple> result = new HashSet<>();
         try {
         	String q;
         	if(outgoing){
@@ -202,7 +202,7 @@ public class Verbalizer {
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,
 			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
-		Set<Node> properties = new HashSet<Node>();
+		Set<Node> properties = new HashSet<>();
 		WeightedGraph wg;
 		try {
 			wg = graphGenerator.generateGraph(cls, threshold, namespace,
@@ -258,14 +258,14 @@ public class Verbalizer {
         //get a list of possible subject replacements
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
         
-        List<NLGElement> result = new ArrayList<NLGElement>();
-        Collection<Triple> allTriples = new ArrayList<Triple>();
+        List<NLGElement> result = new ArrayList<>();
+        Collection<Triple> allTriples = new ArrayList<>();
         DateLiteralFilter dateFilter = new DateLiteralFilter();
 //      
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
-            Set<Triple> triples = new HashSet<Triple>();
-            buffer = new ArrayList<SPhraseSpec>();
+            Set<Triple> triples = new HashSet<>();
+            buffer = new ArrayList<>();
             for (Node property : propertySet) {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label), property.outgoing);
                 litFilter.filter(triples);
@@ -287,14 +287,12 @@ public class Verbalizer {
 
         resource2Triples.put(resource, allTriples);
 
-        List<NLGElement> phrases = new ArrayList<NLGElement>();
+        List<NLGElement> phrases = new ArrayList<>();
         if (replaceSubjects) {
-
-            for (int i = 0; i < result.size(); i++) {
-                NLGElement phrase = result.get(i);
-				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);System.out.println(realiser.realiseSentence(replacedPhrase));
+			for (NLGElement phrase : result) {
+				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);
 				phrases.add(replacedPhrase);
-            }
+			}
             return phrases;
         } else {
             return result;
@@ -387,7 +385,7 @@ public class Verbalizer {
      * @return A set of sentences representing these triples
      */
     public List<SPhraseSpec> getPhraseSpecsFromTriples(Set<Triple> triples, boolean outgoing) {
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         SPhraseSpec phrase;
         for (Triple t : triples) {
             phrase = generateSimplePhraseFromTriple(t, outgoing);
@@ -404,7 +402,7 @@ public class Verbalizer {
      * @return List of sentences
      */
     public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples, Gender g) {
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         phrases.addAll(triples);
 
         int newSize = phrases.size(), oldSize = phrases.size() + 1;
@@ -454,7 +452,7 @@ public class Verbalizer {
     }
 
     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        resource2Triples = new HashMap<Resource, Collection<Triple>>();
+        resource2Triples = new HashMap<>();
         
         // first get graph for nc
         try {
@@ -467,7 +465,7 @@ public class Verbalizer {
 			List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
 			logger.info("Cluster = " + sortedPropertyClusters);
 
-			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<>();
 
 			for (OWLIndividual ind : individuals) {
 			    //finally generateSentencesFromClusters
@@ -560,7 +558,7 @@ public class Verbalizer {
     			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
     			ind.toStringID(), ind.toStringID());
     	
-    	SortedSet<OWLClass> types = new TreeSet<OWLClass>();
+    	SortedSet<OWLClass> types = new TreeSet<>();
     	
     	QueryExecution qe = qef.createQueryExecution(query);
     	ResultSet rs = qe.execSelect();
@@ -586,7 +584,7 @@ public class Verbalizer {
      * @return list of synonymous expressions
      */
     public List<NPPhraseSpec> generateSubjects(Resource resource, OWLClass resourceType, Gender resourceGender) {
-        List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> result = new ArrayList<>();
         //the textual representation of the resource itself
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         //the class, e.g. 'this book'
@@ -639,7 +637,7 @@ public class Verbalizer {
         if (phrase instanceof SPhraseSpec) {
             sphrase = (SPhraseSpec) phrase;
         } else if (phrase instanceof CoordinatedPhraseElement) {
-            sphrase = (SPhraseSpec) ((CoordinatedPhraseElement) phrase).getChildren().get(0);
+            sphrase = (SPhraseSpec) phrase.getChildren().get(0);
         } else {
             return phrase;
         }
@@ -746,7 +744,7 @@ public class Verbalizer {
 
         Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
         
-        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(((URI)options.valueOf("i")).toString()));
+        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
 
 		OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
 

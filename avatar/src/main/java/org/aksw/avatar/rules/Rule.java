@@ -31,6 +31,6 @@ import simplenlg.phrasespec.SPhraseSpec;
  * @author ngonga
  */
 public interface Rule {
-    public int isApplicable(List<SPhraseSpec> phrases);
-    public List<SPhraseSpec> apply(List<SPhraseSpec> phrases);
+    int isApplicable(List<SPhraseSpec> phrases);
+    List<SPhraseSpec> apply(List<SPhraseSpec> phrases);
 }

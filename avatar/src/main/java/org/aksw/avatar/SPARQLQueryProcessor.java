@@ -69,9 +69,9 @@ public class SPARQLQueryProcessor {
     }
 
     public Collection<Map<OWLClass, Set<OWLProperty>>> processQueries(Collection<Query> queries) {
-        Collection<Map<OWLClass, Set<OWLProperty>>> result = new ArrayList<Map<OWLClass, Set<OWLProperty>>>();
+        Collection<Map<OWLClass, Set<OWLProperty>>> result = new ArrayList<>();
         ExecutorService threadPool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
-        List<Future<Map<OWLClass, Set<OWLProperty>>>> futures = new ArrayList<Future<Map<OWLClass, Set<OWLProperty>>>>();
+        List<Future<Map<OWLClass, Set<OWLProperty>>>> futures = new ArrayList<>();
         for (final Query query : queries) {
             futures.add(threadPool.submit(new Callable<Map<OWLClass, Set<OWLProperty>>>() {
 
@@ -101,7 +101,7 @@ public class SPARQLQueryProcessor {
      * @return
      */
     public Collection<Map<OWLClass, Set<OWLProperty>>> processEntries(Collection<LogEntry> entries) {
-    	List<Query> queries = new ArrayList<Query>();
+    	List<Query> queries = new ArrayList<>();
 //    	Set<String> blacklist = Sets.newHashSet("-", "bliss", "ARC" , "[CURL]");
     	for (LogEntry entry : entries) {
     		queries.add(entry.getSparqlQuery());
@@ -120,7 +120,7 @@ public class SPARQLQueryProcessor {
      */
     public Map<OWLClass, Set<OWLProperty>> processQuery(Query query) {
         TriplePatternExtractor patternExtractor = new TriplePatternExtractor();
-        Map<OWLClass, Set<OWLProperty>> result = new HashMap<OWLClass, Set<OWLProperty>>();
+        Map<OWLClass, Set<OWLProperty>> result = new HashMap<>();
         //get all projection variables in the query
         List<Var> vars = query.getProjectVars();
 
@@ -160,7 +160,7 @@ public class SPARQLQueryProcessor {
                             if (tp.predicateMatches(RDF.type.asNode()) && tp.getObject().isURI()) {
                                 OWLClass nc = new OWLClassImpl(IRI.create(tp.getObject().getURI()));
                                 if (!result.containsKey(nc)) {
-                                    result.put(nc, new HashSet<OWLProperty>());
+                                    result.put(nc, new HashSet<>());
                                 }
                                 result.get(nc).add(property);
                             }
@@ -169,7 +169,7 @@ public class SPARQLQueryProcessor {
                         Set<OWLClass> types = reasoner.getTypes(new OWLNamedIndividualImpl(IRI.create(subject.getURI())));
                         for (OWLClass nc : types) {
                             if (!result.containsKey(nc)) {
-                                result.put(nc, new HashSet<OWLProperty>());
+                                result.put(nc, new HashSet<>());
                             }
                             result.get(nc).add(property);
                         }

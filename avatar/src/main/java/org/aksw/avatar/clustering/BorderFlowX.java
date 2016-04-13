@@ -52,7 +52,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
     }
 
     public Set<Set<Node>> cluster() {
-        Set<Set<Node>> result = new HashSet<Set<Node>>();
+        Set<Set<Node>> result = new HashSet<>();
         logger.debug("Graph ===\n"+graph);
         for (Node n : graph.nodes.keySet()) {
             result.add(cluster(n));
@@ -69,7 +69,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
         double oldBorderFlow, newBorderFlow = graph.getNodeWeight(n);
 
         //initial cluster
-        Set<Node> cluster = new HashSet<Node>();
+        Set<Node> cluster = new HashSet<>();
         cluster.add(n);
 
         do {
@@ -96,7 +96,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
      * @return Border flow ratio of cluster when addition is added to it
      */
     public double computeBorderFlowRatio(Set<Node> cluster, Node addition) {
-        Set<Node> newCluster = new HashSet<Node>();
+        Set<Node> newCluster = new HashSet<>();
         for (Node n : cluster) {
             newCluster.add(n);
         }
@@ -114,7 +114,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
         //first get border
         Set<Node> border = getBorder(cluster);
         //then get the inner nodes
-        Set<Node> innerNodes = new HashSet<Node>(cluster);
+        Set<Node> innerNodes = new HashSet<>(cluster);
         innerNodes.removeAll(border);
         double neighborFlow = getFlow(border, getNeighbors(cluster));
         //ensure no division by zero
@@ -165,7 +165,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
      * @return Its neighbors
      */
     public Set<Node> getNeighbors(Set<Node> nodes) {
-        Set<Node> results = new HashSet<Node>();
+        Set<Node> results = new HashSet<>();
         for (Node n : nodes) {
             Set<Node> neighbors = graph.getNeighbors(n);
             for (Node m : neighbors) {
@@ -184,7 +184,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
      * @return The border of the set
      */
     public Set<Node> getBorder(Set<Node> nodes) {
-        Set<Node> results = new HashSet<Node>();
+        Set<Node> results = new HashSet<>();
         for (Node n : nodes) {
             Set<Node> neighbors = graph.getNeighbors(n);
             for (Node m : neighbors) {
@@ -205,7 +205,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
      */
     public Set<Node> getInnerNodes(Set<Node> nodes) {
         Set<Node> border = getBorder(nodes);
-        Set<Node> innerNodes = new HashSet<Node>(nodes);
+        Set<Node> innerNodes = new HashSet<>(nodes);
         innerNodes.removeAll(border);
         return innerNodes;
     }
@@ -218,12 +218,12 @@ public class BorderFlowX implements ClusteringAlgorithm {
         Set<Node> neighbors = getNeighbors(cluster);
         double max = oldBorderFlow;
         double bfr;
-        Set<Node> candidates = new HashSet<Node>();
+        Set<Node> candidates = new HashSet<>();
         // first look for candidates that improve the border flow ratio
         for (Node n : neighbors) {
             bfr = computeBorderFlowRatio(cluster, n);
             if (bfr > max) {
-                candidates = new HashSet<Node>();
+                candidates = new HashSet<>();
                 candidates.add(n);
                 max = bfr;
             } else if (bfr == max) {
@@ -240,14 +240,14 @@ public class BorderFlowX implements ClusteringAlgorithm {
         }
         //else filter
         max = 0;
-        Set<Node> finalCandidates = new HashSet<Node>();
+        Set<Node> finalCandidates = new HashSet<>();
         // now look for candidates with maximal flow to the neighborhood
         for (Node n : candidates) {
-            Set<Node> c = new HashSet<Node>();
+            Set<Node> c = new HashSet<>();
             c.add(n);
             bfr = getFlow(c, candidates);
             if (bfr > max) {
-                finalCandidates = new HashSet<Node>();
+                finalCandidates = new HashSet<>();
                 finalCandidates.add(n);
                 max = bfr;
             } else if (bfr == max) {
@@ -269,7 +269,7 @@ public class BorderFlowX implements ClusteringAlgorithm {
 
         BorderFlowX bf = new BorderFlowX(wg);
         System.out.println(wg);
-        Set<Node> nodes = new HashSet<Node>();
+        Set<Node> nodes = new HashSet<>();
         nodes.add(n2);
         nodes.add(n1);
         

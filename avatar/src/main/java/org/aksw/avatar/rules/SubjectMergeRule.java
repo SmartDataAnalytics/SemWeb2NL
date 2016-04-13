@@ -97,7 +97,7 @@ public class SubjectMergeRule {
     public List<NLGElement> apply(List<SPhraseSpec> phrases, Gender gender) {
 
         if (phrases.size() <= 1) {
-            List<NLGElement> result = new ArrayList<NLGElement>();
+            List<NLGElement> result = new ArrayList<>();
             for (SPhraseSpec s : phrases) {
                 result.add(s);
             }
@@ -138,7 +138,7 @@ public class SubjectMergeRule {
         int phraseIndex = -1;
 
         //find the index with the highest number of mappings
-        List<Integer> phraseIndexes = new ArrayList<Integer>(map.keySet());
+        List<Integer> phraseIndexes = new ArrayList<>(map.keySet());
         for (int key = 0; key < phraseIndexes.size(); key++) {
             if (map.get(key).size() > maxSize) {
                 maxSize = map.get(key).size();
@@ -147,9 +147,9 @@ public class SubjectMergeRule {
         }
 
         if (phraseIndex == -1) {
-            List<NLGElement> results = new ArrayList<NLGElement>();
+            List<NLGElement> results = new ArrayList<>();
             for (SPhraseSpec phrase : phrases) {
-                results.add((NLGElement) phrase);
+                results.add(phrase);
             }
             return results;
         }
@@ -179,7 +179,7 @@ public class SubjectMergeRule {
 
 
         //now create the final result
-        List<NLGElement> result = new ArrayList<NLGElement>();
+        List<NLGElement> result = new ArrayList<>();
         result.add(elt);
         for (int index = 0; index < phrases.size(); index++) {
             if (!toMerge.contains(index)) {
@@ -221,7 +221,7 @@ public class SubjectMergeRule {
         s3.setObject("New York");
         s3.getObject().setPlural(true);
 
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         phrases.add(s1);
         phrases.add(s2);
         phrases.add(s3);

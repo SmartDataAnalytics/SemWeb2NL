@@ -156,7 +156,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 			try(ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))){
 				g = (WeightedGraph) ois.readObject();
 				
-				Set<OWLObjectProperty> outgoingProperties = new HashSet<OWLObjectProperty>();
+				Set<OWLObjectProperty> outgoingProperties = new HashSet<>();
 				if(g != null) {
 					for (Node node : g.getNodes().keySet()) {
 						if(node.outgoing){
@@ -265,9 +265,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 					return false;
 			} else if (!namespace.equals(other.namespace))
 				return false;
-			if (Double.doubleToLongBits(threshold) != Double.doubleToLongBits(other.threshold))
-				return false;
-			return true;
+			return Double.doubleToLongBits(threshold) == Double.doubleToLongBits(other.threshold);
 		}
 
 		private CachedDatasetBasedGraphGenerator getOuterType() {
