@@ -64,11 +64,11 @@ public class JeopardyVerbalizer extends Verbalizer {
 	private static final Logger logger = Logger.getLogger(JeopardyVerbalizer.class.getName());
     
 	public JeopardyVerbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
-		super(endpoint, cacheDirectory, wordnetDirectory);
+		super(endpoint, cacheDirectory);
 	}
     
 	public JeopardyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
-		super(qef, cacheDirectory, wordnetDirectory);
+		super(qef, cacheDirectory);
 	}
 
     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace,
