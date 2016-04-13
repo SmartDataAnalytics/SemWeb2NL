@@ -23,26 +23,21 @@
  */
 package org.aksw.avatar;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-
 import org.aksw.avatar.clustering.BorderFlowX;
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
@@ -55,11 +50,7 @@ import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.gender.Gender;
 import org.aksw.avatar.gender.LexiconBasedGenderDetector;
 import org.aksw.avatar.gender.TypeAwareGenderDetector;
-import org.aksw.avatar.rules.DateLiteralFilter;
-import org.aksw.avatar.rules.NumericLiteralFilter;
-import org.aksw.avatar.rules.ObjectMergeRule;
-import org.aksw.avatar.rules.PredicateMergeRule;
-import org.aksw.avatar.rules.SubjectMergeRule;
+import org.aksw.avatar.rules.*;
 import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
@@ -70,7 +61,6 @@ import org.dllearner.utilities.MapUtils;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
-
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
@@ -83,17 +73,13 @@ import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import com.hp.hpl.jena.vocabulary.RDF;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A verbalizer for triples without variables.
@@ -104,7 +90,10 @@ public class Verbalizer {
 	
 	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
 
+	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
+
 	private static final double DEFAULT_THRESHOLD = 0.4;
+	private static final int DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY = 5;
 	private static final Cooccurrence DEFAULT_COOCCURRENCE_TYPE = Cooccurrence.PROPERTIES;
 	private static final HardeningType DEFAULT_HARDENING_TYPE = HardeningType.SMALLEST;
 
@@ -122,11 +111,16 @@ public class Verbalizer {
     ObjectMergeRule or;
     SubjectMergeRule sr;
     public DatasetBasedGraphGenerator graphGenerator;
-    int maxShownValuesPerProperty = 5;
+    int maxShownValuesPerProperty = DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY;
     boolean omitContentInBrackets = true;
     
-    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory) {
     	this.qef = qef;
+
+		if(cacheDirectory == null) {
+			cacheDirectory = DEFAULT_CACHE_BASE_DIR;
+		}
+		cacheDirectory = new File(cacheDirectory, "avatar-cache/sparql").getAbsolutePath();
     	
         nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
         labels = new HashMap<Resource, String>();
@@ -142,9 +136,13 @@ public class Verbalizer {
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
     
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
-    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory, wordnetDirectory);
+    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
+    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
     }
+
+	public Verbalizer(SparqlEndpoint endpoint) {
+		this(endpoint, DEFAULT_CACHE_BASE_DIR);
+	}
     
     /**
      * @param blacklist a blacklist of properties that are omitted when building the summary
@@ -686,14 +684,30 @@ public class Verbalizer {
     }
     
     public static void main(String args[]) throws IOException {
-    	OptionParser parser = new OptionParser();
-		parser.acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class);
-		parser.acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withOptionalArg().ofType(String.class);
-		parser.acceptsAll(Lists.newArrayList("c", "class"), "Class of the entity to summarize.").withRequiredArg().ofType(URI.class);
-		parser.acceptsAll(Lists.newArrayList("i", "individual"), "Entity to summarize.").withRequiredArg().ofType(URI.class);
-		parser.acceptsAll(Lists.newArrayList("cache"), "Path to cache directory.").withOptionalArg();
-		parser.acceptsAll(Lists.newArrayList("wordnet"), "Path to WordNet dictionary.").withOptionalArg();
-		
+    	OptionParser parser = new OptionParser() {
+			{
+				acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class).required();
+				acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withRequiredArg().ofType(String.class);
+				acceptsAll(Lists.newArrayList("i", "individual"), "The URI of the entity to summarize.")
+						.withRequiredArg()
+						.ofType(URI.class)
+						.required();
+				acceptsAll(Lists.newArrayList("c", "class"), "Optionally, you can specify a class which is supposed to be the most common type of the entity to summarize.")
+						.withRequiredArg().
+						ofType(URI.class);
+				acceptsAll(Lists.newArrayList("p", "persontypes"), "Optionally, you can specify the classes that denote persons in your knowledge base.")
+						.withRequiredArg().
+						ofType(String.class);
+				acceptsAll(Lists.newArrayList("cache"),
+						   "Path to cache directory. If not set, the operating system temporary directory will be used.")
+						.withRequiredArg().defaultsTo(System.getProperty("java.io.tmpdir"));
+				acceptsAll(Lists.newArrayList("h", "?"), "show help").forHelp();
+
+			}
+		};
+
+		parser.printHelpOn(System.out);
+
 		// parse options and display a message for the user in case of problems
 		OptionSet options = null;
 		try {
@@ -726,30 +740,27 @@ public class Verbalizer {
 				System.exit(0);
 			}
 		}
-        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpointURL.toString(), defaultGraphURI);
-        
+		SparqlEndpoint endpoint = new SparqlEndpoint(endpointURL, defaultGraphURI);
+
         String cacheDirectory = (String) options.valueOf("cache");
-		if (cacheDirectory != null) {
-		    long timeToLive = TimeUnit.DAYS.toMillis(30);
-		    qef = CacheUtilsH2.createQueryExecutionFactory(qef, cacheDirectory, false, timeToLive);
-		}
+
+        Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
         
-        String wordnetDirectory = (String) options.valueOf("wordnet");
-        
-        Verbalizer v = new Verbalizer(qef, cacheDirectory, wordnetDirectory);
-        
-        OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(((URI)options.valueOf("i")).toString()));
-        
-        v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
-   
-        int maxShownValuesPerProperty = 3;
-        v.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
-        List<NLGElement> text = v.verbalize(ind, cls, "http://dbpedia.org/ontology/", 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
-        
-        String summary = v.realize(text);
+
+		OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
+
+		// optionally, set the person types
+		if(options.has("p")) {
+			List<String> personTypes = Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) options.valueOf("p"));
+			v.setPersonTypes(new HashSet(personTypes));
+		}
+
+		String summary = v.summarize(ind, cls);
+
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
+
         System.out.println(summary);
     }
 }

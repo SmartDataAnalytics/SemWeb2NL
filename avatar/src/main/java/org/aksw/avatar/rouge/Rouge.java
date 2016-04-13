@@ -23,12 +23,12 @@
  */
 package org.aksw.avatar.rouge;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-
+import com.aliasi.chunk.Chunk;
+import com.aliasi.sentences.IndoEuropeanSentenceModel;
+import com.aliasi.sentences.SentenceChunker;
+import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
+import com.aliasi.tokenizer.Tokenizer;
+import com.aliasi.tokenizer.TokenizerFactory;
 import org.aksw.avatar.Verbalizer;
 import org.aksw.avatar.clustering.hardening.HardeningFactory;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
@@ -36,17 +36,11 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
-
 import simplenlg.framework.NLGElement;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
-import com.aliasi.chunk.Chunk;
-import com.aliasi.sentences.IndoEuropeanSentenceModel;
-import com.aliasi.sentences.SentenceChunker;
-import com.aliasi.tokenizer.IndoEuropeanTokenizerFactory;
-import com.aliasi.tokenizer.Tokenizer;
-import com.aliasi.tokenizer.TokenizerFactory;
+import java.util.*;
 
 public class Rouge {
 
@@ -492,7 +486,7 @@ public class Rouge {
     public static void main(String args[]) {
         Rouge rouge = new Rouge();
         rouge.multipleMode = MULTIPLE_MAX;
-        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW(), null, null);
+        Verbalizer v = new Verbalizer(SparqlEndpoint.getEndpointDBpediaLiveAKSW());
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create("http://dbpedia.org/resource/Chad_Ochocinco"));
         OWLClass nc = new OWLClassImpl(IRI.create("http://dbpedia.org/ontology/AmericanFootballPlayer"));
 //        Resource r = ResourceFactory.createResource("http://dbpedia.org/resource/Minority_Report_(film)");
