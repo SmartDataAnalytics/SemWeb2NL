@@ -286,7 +286,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     	logger.info("Generating question...");
     	
     	// convert to phrase
-    	SPhraseSpec p = tripleConverter.convertTriple(t);
+    	SPhraseSpec p = tripleConverter.convertToPhrase(t);
     	
     	// decide which interrogative type to use
     	InterrogativeType interrogativeType;
@@ -324,7 +324,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     	String question;
     	
     	// convert to phrase
-    	SPhraseSpec p = tripleConverter.convertTriple(t);
+    	SPhraseSpec p = tripleConverter.convertToPhrase(t);
     	System.err.println(realiser.realise(p));
     	
     	// get the type of the hidden entity
@@ -419,7 +419,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         					NPPhraseSpec objectNP = nlg.getNPPhrase(objectType.toStringID(), false);
             				objectNP.setDeterminer("a");
             				
-            				SPhraseSpec triplePhrase = tripleConverter.convertTriple(t2);
+            				SPhraseSpec triplePhrase = tripleConverter.convertToPhrase(t2);
             				NLGElement subjectElt = triplePhrase.getSubject();
             				
             				SPhraseSpec complementClause;

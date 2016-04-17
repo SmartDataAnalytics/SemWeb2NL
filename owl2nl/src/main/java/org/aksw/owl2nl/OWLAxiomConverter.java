@@ -27,7 +27,6 @@ import org.aksw.owl2nl.util.OWLClassExpressionUtils;
 import org.aksw.triple2nl.TripleConverter;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
-import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.utilities.OwlApiJenaUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.ToStringRenderer;
@@ -320,7 +319,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 					NodeFactory.createURI(axiom.getProperty().getNamedProperty().toStringID()),
 					NodeFactory.createURI(axiom.getSubject().toStringID()));
 		}
-		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+		SPhraseSpec phrase = tripleConverter.convertToPhrase(triple, false, axiom.getProperty().isAnonymous());
 
 		nlgElement = phrase;
 	}
@@ -331,7 +330,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 				NodeFactory.createURI(axiom.getSubject().toStringID()),
 				OwlApiJenaUtils.asNode(axiom.getProperty().asOWLDataProperty()),
 				NodeFactory.createLiteral(OwlApiJenaUtils.getLiteral(axiom.getObject())));
-		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+		SPhraseSpec phrase = tripleConverter.convertToPhrase(triple, false, axiom.getProperty().isAnonymous());
 
 		nlgElement = phrase;
 	}

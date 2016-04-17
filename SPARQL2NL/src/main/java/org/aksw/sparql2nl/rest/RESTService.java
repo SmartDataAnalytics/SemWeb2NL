@@ -110,7 +110,7 @@ public class RESTService {
 			//convert to text
 			if(!model.isEmpty()){
 				TripleConverter converter = new TripleConverter(endpoint, context.getRealPath("cache"), null, lexicon);
-				String text = converter.convertTriplesToText(triples);
+				String text = converter.convert(triples);
 				logger.info("Text:" + text);
 				return text;
 			}

@@ -141,7 +141,7 @@ public class DocumentGenerator {
 			}
 
 			// convert the type triples
-			List<SPhraseSpec> typePhrases = tripleConverter.convertTriples(typeTriples);
+			List<SPhraseSpec> typePhrases = tripleConverter.convertToPhrase(typeTriples);
 
 			// if there are more than one types, we combine them in a single clause
 			if (typePhrases.size() > 1) {
@@ -197,7 +197,7 @@ public class DocumentGenerator {
 				placeHolderTriples.add(newTriple);
 			}
 
-			Collection<SPhraseSpec> otherPhrases = tripleConverter.convertTriples(placeHolderTriples);
+			Collection<SPhraseSpec> otherPhrases = tripleConverter.convertToPhrase(placeHolderTriples);
 
 			for (SPhraseSpec phrase : otherPhrases) {
 				conjunction.addCoordinate(phrase);
