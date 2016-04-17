@@ -28,8 +28,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import com.hp.hpl.jena.rdf.model.ModelFactory;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.converter.LiteralConverter;
@@ -82,6 +84,8 @@ public class TripleConverter {
 	
 	private static final Logger logger = LoggerFactory.getLogger(TripleConverter.class);
 
+	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
+
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
 
@@ -97,6 +101,10 @@ public class TripleConverter {
 	private boolean encapsulateStringLiterals = true;
 	//for multiple types use 'as well as' to coordinate the last type
 	private boolean useAsWellAsCoordination = true;
+
+	public TripleConverter() {
+		this(new QueryExecutionFactoryModel(ModelFactory.createDefaultModel()), DEFAULT_CACHE_BASE_DIR + "/triple2nl-cache", Lexicon.getDefaultLexicon());
+	}
 
 	public TripleConverter(SparqlEndpoint endpoint) {
 		this(endpoint, null);
@@ -637,5 +645,14 @@ public class TripleConverter {
 		object.setPlural(plural);
 
 		return object;
+	}
+
+	public static void main(String[] args) throws Exception {
+		System.out.println(new TripleConverter().convertTripleToText(
+				Triple.create(
+						NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
+						NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+						NodeFactory.createURI("http://dbpedia.org/resource/Ulm")
+						)));
 	}
 }
