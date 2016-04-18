@@ -40,10 +40,10 @@ public class VerbalizerTest {
 	private static final SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();
 	
 	//create the verbalizer used to generate the textual summarization
-	private static final Verbalizer verbalizer = new Verbalizer(endpoint, "cache", null);
+	private static final Verbalizer verbalizer = new Verbalizer(endpoint, "cache");
 
 	/**
-	 * Test method for {@link org.aksw.avatar.Verbalizer#summarize(org.dllearner.core.owl.Individual)}.
+	 * Test method for {@link org.aksw.avatar.Verbalizer#summarize(OWLIndividual)}
 	 */
 	@Test
 	public void testSummarizeIndividual() {
@@ -56,7 +56,7 @@ public class VerbalizerTest {
 	}
 
 	/**
-	 * Test method for {@link org.aksw.avatar.Verbalizer#summarize(org.dllearner.core.owl.Individual, org.dllearner.core.owl.NamedClass)}.
+	 * Test method for {@link org.aksw.avatar.Verbalizer#summarize(OWLIndividual, OWLClass)}
 	 */
 	@Test
 	public void testSummarizeIndividualNamedClass() {

@@ -61,7 +61,7 @@ public class EntitySummarizationModelGenerator {
 	 * @return the entity summarization model
 	 */
 	public EntitySummarizationModel generateModel(Collection<LogEntry> logEntries){
-		Set<EntitySummarizationTemplate> templates = new HashSet<EntitySummarizationTemplate>();
+		Set<EntitySummarizationTemplate> templates = new HashSet<>();
         
         //process the log entries
         Collection<Map<OWLClass, Set<OWLProperty>>> result = processor.processEntries(logEntries);
@@ -71,7 +71,7 @@ public class EntitySummarizationModelGenerator {
         	//generate the weighted graph
        	 	WeightedGraph wg = Controller.generateGraphMultithreaded(nc, result);
        	 	//generate the entity summarization template
-       	 	Set<OWLProperty> properties = new HashSet<OWLProperty>();
+       	 	Set<OWLProperty> properties = new HashSet<>();
        	 	for (Entry<Node, Double> entry : wg.getNodes().entrySet()) {
 				properties.add(new OWLObjectPropertyImpl(IRI.create(entry.getKey().label)));
 			}

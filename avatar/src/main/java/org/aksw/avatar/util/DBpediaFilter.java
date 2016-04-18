@@ -71,9 +71,9 @@ public class DBpediaFilter {
 	
 	public void filterRedundantProperties(List<OWLDataProperty> properties) {
 		
-		Set<Pair<String, String>> suffixPairs = Sets.<Pair<String, String>>newHashSet(new Pair<String, String>("Date", "Year"));
+		Set<Pair<String, String>> suffixPairs = Sets.newHashSet(new Pair<>("Date", "Year"));
 		
-		ArrayList<OWLDataProperty> toRemove = new ArrayList<OWLDataProperty>();
+		ArrayList<OWLDataProperty> toRemove = new ArrayList<>();
 		
 		// properties ending with "date" usually subsume properties that end with "year"
 		for(int i = 0; i < properties.size(); i++) {
@@ -124,7 +124,7 @@ public class DBpediaFilter {
 	public void getCorrelatedProperties(List<OWLDataProperty> properties) {
 		// pre-filter candidates by suffix match
 		
-		List<List<OWLDataProperty>> candidatePairs = new ArrayList<List<OWLDataProperty>>();
+		List<List<OWLDataProperty>> candidatePairs = new ArrayList<>();
 		
 		for(int i = 0; i < properties.size(); i++) {
 			OWLDataProperty p1 = properties.get(i);
@@ -185,8 +185,8 @@ public class DBpediaFilter {
 		QueryExecution qe = qef.createQueryExecution(query);
 		ResultSet rs = qe.execSelect();
 		
-		List<Double> xValues = new ArrayList<Double>();
-		List<Double> yValues = new ArrayList<Double>();
+		List<Double> xValues = new ArrayList<>();
+		List<Double> yValues = new ArrayList<>();
 		while(rs.hasNext()) {
 			QuerySolution qs = rs.next();
 			Resource resource = qs.getResource("s");
@@ -232,7 +232,7 @@ public class DBpediaFilter {
 		
 		DBpediaFilter dbPediaFilter = new DBpediaFilter(ks.getQueryExecutionFactory());
 		
-		ArrayList<OWLDataProperty> properties = new ArrayList<OWLDataProperty>(reasoner.getDatatypeProperties());
+		ArrayList<OWLDataProperty> properties = new ArrayList<>(reasoner.getDatatypeProperties());
 		
 		dbPediaFilter.filterRedundantProperties(properties);
 		

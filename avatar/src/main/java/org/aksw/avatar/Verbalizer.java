@@ -23,26 +23,21 @@
  */
 package org.aksw.avatar;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.query.QueryExecution;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.rdf.model.Property;
+import com.hp.hpl.jena.rdf.model.RDFNode;
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import com.hp.hpl.jena.vocabulary.RDF;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
-
 import org.aksw.avatar.clustering.BorderFlowX;
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
@@ -55,11 +50,7 @@ import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.gender.Gender;
 import org.aksw.avatar.gender.LexiconBasedGenderDetector;
 import org.aksw.avatar.gender.TypeAwareGenderDetector;
-import org.aksw.avatar.rules.DateLiteralFilter;
-import org.aksw.avatar.rules.NumericLiteralFilter;
-import org.aksw.avatar.rules.ObjectMergeRule;
-import org.aksw.avatar.rules.PredicateMergeRule;
-import org.aksw.avatar.rules.SubjectMergeRule;
+import org.aksw.avatar.rules.*;
 import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
@@ -70,7 +61,6 @@ import org.dllearner.utilities.MapUtils;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
-
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
@@ -83,17 +73,13 @@ import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import com.hp.hpl.jena.vocabulary.RDF;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A verbalizer for triples without variables.
@@ -104,7 +90,10 @@ public class Verbalizer {
 	
 	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
 
+	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
+
 	private static final double DEFAULT_THRESHOLD = 0.4;
+	private static final int DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY = 5;
 	private static final Cooccurrence DEFAULT_COOCCURRENCE_TYPE = Cooccurrence.PROPERTIES;
 	private static final HardeningType DEFAULT_HARDENING_TYPE = HardeningType.SMALLEST;
 
@@ -122,14 +111,19 @@ public class Verbalizer {
     ObjectMergeRule or;
     SubjectMergeRule sr;
     public DatasetBasedGraphGenerator graphGenerator;
-    int maxShownValuesPerProperty = 5;
+    int maxShownValuesPerProperty = DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY;
     boolean omitContentInBrackets = true;
     
-    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory, String wordnetDirectory) {
+    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory) {
     	this.qef = qef;
+
+		if(cacheDirectory == null) {
+			cacheDirectory = DEFAULT_CACHE_BASE_DIR;
+		}
+		cacheDirectory = new File(cacheDirectory, "avatar-cache/sparql").getAbsolutePath();
     	
         nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
-        labels = new HashMap<Resource, String>();
+        labels = new HashMap<>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
         realiser = nlg.realiser;
 
@@ -142,9 +136,13 @@ public class Verbalizer {
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
     
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory, String wordnetDirectory) {
-    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory, wordnetDirectory);
+    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
+    	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
     }
+
+	public Verbalizer(SparqlEndpoint endpoint) {
+		this(endpoint, DEFAULT_CACHE_BASE_DIR);
+	}
     
     /**
      * @param blacklist a blacklist of properties that are omitted when building the summary
@@ -177,7 +175,7 @@ public class Verbalizer {
      * @return A set of triples
      */
     public Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
-        Set<Triple> result = new HashSet<Triple>();
+        Set<Triple> result = new HashSet<>();
         try {
         	String q;
         	if(outgoing){
@@ -204,7 +202,7 @@ public class Verbalizer {
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,
 			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
-		Set<Node> properties = new HashSet<Node>();
+		Set<Node> properties = new HashSet<>();
 		WeightedGraph wg;
 		try {
 			wg = graphGenerator.generateGraph(cls, threshold, namespace,
@@ -260,14 +258,14 @@ public class Verbalizer {
         //get a list of possible subject replacements
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
         
-        List<NLGElement> result = new ArrayList<NLGElement>();
-        Collection<Triple> allTriples = new ArrayList<Triple>();
+        List<NLGElement> result = new ArrayList<>();
+        Collection<Triple> allTriples = new ArrayList<>();
         DateLiteralFilter dateFilter = new DateLiteralFilter();
 //      
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
-            Set<Triple> triples = new HashSet<Triple>();
-            buffer = new ArrayList<SPhraseSpec>();
+            Set<Triple> triples = new HashSet<>();
+            buffer = new ArrayList<>();
             for (Node property : propertySet) {
                 triples = getTriples(resource, ResourceFactory.createProperty(property.label), property.outgoing);
                 litFilter.filter(triples);
@@ -289,14 +287,12 @@ public class Verbalizer {
 
         resource2Triples.put(resource, allTriples);
 
-        List<NLGElement> phrases = new ArrayList<NLGElement>();
+        List<NLGElement> phrases = new ArrayList<>();
         if (replaceSubjects) {
-
-            for (int i = 0; i < result.size(); i++) {
-                NLGElement phrase = result.get(i);
-				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);System.out.println(realiser.realiseSentence(replacedPhrase));
+			for (NLGElement phrase : result) {
+				NLGElement replacedPhrase = replaceSubject(phrase, subjects, g);
 				phrases.add(replacedPhrase);
-            }
+			}
             return phrases;
         } else {
             return result;
@@ -389,7 +385,7 @@ public class Verbalizer {
      * @return A set of sentences representing these triples
      */
     public List<SPhraseSpec> getPhraseSpecsFromTriples(Set<Triple> triples, boolean outgoing) {
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         SPhraseSpec phrase;
         for (Triple t : triples) {
             phrase = generateSimplePhraseFromTriple(t, outgoing);
@@ -406,7 +402,7 @@ public class Verbalizer {
      * @return List of sentences
      */
     public List<NLGElement> applyMergeRules(List<SPhraseSpec> triples, Gender g) {
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         phrases.addAll(triples);
 
         int newSize = phrases.size(), oldSize = phrases.size() + 1;
@@ -456,7 +452,7 @@ public class Verbalizer {
     }
 
     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        resource2Triples = new HashMap<Resource, Collection<Triple>>();
+        resource2Triples = new HashMap<>();
         
         // first get graph for nc
         try {
@@ -469,7 +465,7 @@ public class Verbalizer {
 			List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
 			logger.info("Cluster = " + sortedPropertyClusters);
 
-			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<>();
 
 			for (OWLIndividual ind : individuals) {
 			    //finally generateSentencesFromClusters
@@ -562,7 +558,7 @@ public class Verbalizer {
     			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
     			ind.toStringID(), ind.toStringID());
     	
-    	SortedSet<OWLClass> types = new TreeSet<OWLClass>();
+    	SortedSet<OWLClass> types = new TreeSet<>();
     	
     	QueryExecution qe = qef.createQueryExecution(query);
     	ResultSet rs = qe.execSelect();
@@ -588,7 +584,7 @@ public class Verbalizer {
      * @return list of synonymous expressions
      */
     public List<NPPhraseSpec> generateSubjects(Resource resource, OWLClass resourceType, Gender resourceGender) {
-        List<NPPhraseSpec> result = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> result = new ArrayList<>();
         //the textual representation of the resource itself
         result.add(nlg.getNPPhrase(resource.getURI(), false, false));
         //the class, e.g. 'this book'
@@ -641,7 +637,7 @@ public class Verbalizer {
         if (phrase instanceof SPhraseSpec) {
             sphrase = (SPhraseSpec) phrase;
         } else if (phrase instanceof CoordinatedPhraseElement) {
-            sphrase = (SPhraseSpec) ((CoordinatedPhraseElement) phrase).getChildren().get(0);
+            sphrase = (SPhraseSpec) phrase.getChildren().get(0);
         } else {
             return phrase;
         }
@@ -686,14 +682,30 @@ public class Verbalizer {
     }
     
     public static void main(String args[]) throws IOException {
-    	OptionParser parser = new OptionParser();
-		parser.acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class);
-		parser.acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withOptionalArg().ofType(String.class);
-		parser.acceptsAll(Lists.newArrayList("c", "class"), "Class of the entity to summarize.").withRequiredArg().ofType(URI.class);
-		parser.acceptsAll(Lists.newArrayList("i", "individual"), "Entity to summarize.").withRequiredArg().ofType(URI.class);
-		parser.acceptsAll(Lists.newArrayList("cache"), "Path to cache directory.").withOptionalArg();
-		parser.acceptsAll(Lists.newArrayList("wordnet"), "Path to WordNet dictionary.").withOptionalArg();
-		
+    	OptionParser parser = new OptionParser() {
+			{
+				acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class).required();
+				acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withRequiredArg().ofType(String.class);
+				acceptsAll(Lists.newArrayList("i", "individual"), "The URI of the entity to summarize.")
+						.withRequiredArg()
+						.ofType(URI.class)
+						.required();
+				acceptsAll(Lists.newArrayList("c", "class"), "Optionally, you can specify a class which is supposed to be the most common type of the entity to summarize.")
+						.withRequiredArg().
+						ofType(URI.class);
+				acceptsAll(Lists.newArrayList("p", "persontypes"), "Optionally, you can specify the classes that denote persons in your knowledge base.")
+						.withRequiredArg().
+						ofType(String.class);
+				acceptsAll(Lists.newArrayList("cache"),
+						   "Path to cache directory. If not set, the operating system temporary directory will be used.")
+						.withRequiredArg().defaultsTo(System.getProperty("java.io.tmpdir"));
+				acceptsAll(Lists.newArrayList("h", "?"), "show help").forHelp();
+
+			}
+		};
+
+		parser.printHelpOn(System.out);
+
 		// parse options and display a message for the user in case of problems
 		OptionSet options = null;
 		try {
@@ -726,30 +738,27 @@ public class Verbalizer {
 				System.exit(0);
 			}
 		}
-        QueryExecutionFactory qef = new QueryExecutionFactoryHttp(endpointURL.toString(), defaultGraphURI);
-        
+		SparqlEndpoint endpoint = new SparqlEndpoint(endpointURL, defaultGraphURI);
+
         String cacheDirectory = (String) options.valueOf("cache");
-		if (cacheDirectory != null) {
-		    long timeToLive = TimeUnit.DAYS.toMillis(30);
-		    qef = CacheUtilsH2.createQueryExecutionFactory(qef, cacheDirectory, false, timeToLive);
+
+        Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
+        
+        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
+
+		OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
+
+		// optionally, set the person types
+		if(options.has("p")) {
+			List<String> personTypes = Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) options.valueOf("p"));
+			v.setPersonTypes(new HashSet(personTypes));
 		}
-        
-        String wordnetDirectory = (String) options.valueOf("wordnet");
-        
-        Verbalizer v = new Verbalizer(qef, cacheDirectory, wordnetDirectory);
-        
-        OWLClass cls = new OWLClassImpl(IRI.create((URI)options.valueOf("c")));
-        OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(((URI)options.valueOf("i")).toString()));
-        
-        v.setPersonTypes(Sets.newHashSet("http://dbpedia.org/ontology/Person"));
-   
-        int maxShownValuesPerProperty = 3;
-        v.setMaxShownValuesPerProperty(maxShownValuesPerProperty);
-        List<NLGElement> text = v.verbalize(ind, cls, "http://dbpedia.org/ontology/", 0.4, Cooccurrence.PROPERTIES, HardeningType.SMALLEST);
-        
-        String summary = v.realize(text);
+
+		String summary = v.summarize(ind, cls);
+
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");
+
         System.out.println(summary);
     }
 }

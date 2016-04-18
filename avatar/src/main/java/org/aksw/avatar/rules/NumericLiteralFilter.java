@@ -55,10 +55,10 @@ public class NumericLiteralFilter {
 		Multimap<Pair<Node, String>, Triple> sp2Triples = HashMultimap.create();
 		for (Triple t : triples) {
 			if(t.getPredicate().isURI() && t.getObject().isLiteral() && isNumeric(t.getObject())){
-				sp2Triples.put(new Pair<Node, String>(t.getSubject(), conv.convert(t.getPredicate().getURI())), t);
+				sp2Triples.put(new Pair<>(t.getSubject(), conv.convert(t.getPredicate().getURI())), t);
 			}
 		}
-		Set<Triple> triples2Remove = new HashSet<Triple>();
+		Set<Triple> triples2Remove = new HashSet<>();
 		
 		for (Entry<Pair<Node, String>, Collection<Triple>> entry : sp2Triples.asMap().entrySet()) {
 			Collection<Triple> literalTriples = entry.getValue();
@@ -73,7 +73,7 @@ public class NumericLiteralFilter {
 				for (Entry<String, Collection<Triple>> entry2 : map.asMap().entrySet()) {
 					Collection<Triple> sameObjectDigits = entry2.getValue();
 					if(sameObjectDigits.size() > 1){
-						Collection<Triple> keep = new HashSet<Triple>();
+						Collection<Triple> keep = new HashSet<>();
 						for (Triple t : sameObjectDigits) {
 							if(t.getObject().getLiteralDatatype() != null){
 								keep.add(t);

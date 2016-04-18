@@ -125,7 +125,7 @@ public class DatasetBasedGraphGenerator {
 
         reasoner = new SPARQLReasoner(qef);
         
-        class2OutgoingProperties = new HashMap<OWLClass, Set<OWLObjectProperty>>();
+        class2OutgoingProperties = new HashMap<>();
     }
     
     /**
@@ -140,7 +140,7 @@ public class DatasetBasedGraphGenerator {
     }
 
     public Map<OWLClass, WeightedGraph> generateGraphs(double threshold, String namespace) {
-        Map<OWLClass, WeightedGraph> graphs = new HashMap<OWLClass, WeightedGraph>();
+        Map<OWLClass, WeightedGraph> graphs = new HashMap<>();
 
         // get all classes in knowledge base with given prefix
         Set<OWLClass> classes = reasoner.getTypes(namespace, true);
@@ -180,7 +180,7 @@ public class DatasetBasedGraphGenerator {
         class2OutgoingProperties.put(cls, outgoingProperties);
         
         //get the incoming properties with a prominence score above threshold
-        SortedSet<OWLObjectProperty> incomingProperties = new TreeSet<OWLObjectProperty>();
+        SortedSet<OWLObjectProperty> incomingProperties = new TreeSet<>();
         if(useIncomingProperties){
         	incomingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.INCOMING);
         } 
@@ -242,7 +242,7 @@ public class DatasetBasedGraphGenerator {
     }
 
     private Map<Set<OWLObjectProperty>, Double> getCooccurrences(OWLClass cls, Set<OWLObjectProperty> properties) {
-        Map<Set<OWLObjectProperty>, Double> pair2Frequency = new HashMap<Set<OWLObjectProperty>, Double>();
+        Map<Set<OWLObjectProperty>, Double> pair2Frequency = new HashMap<>();
         //compute the frequency for each pair
         ResultSet rs;
         Set<OWLObjectProperty> pair;
@@ -264,7 +264,7 @@ public class DatasetBasedGraphGenerator {
     }
     
     private Map<Set<OWLObjectProperty>, Double> getCooccurrences(OWLClass cls, Set<OWLObjectProperty> outgoingProperties, Set<OWLObjectProperty> incomingProperties) {
-        Map<Set<OWLObjectProperty>, Double> pair2Frequency = new HashMap<Set<OWLObjectProperty>, Double>();
+        Map<Set<OWLObjectProperty>, Double> pair2Frequency = new HashMap<>();
         
         SetView<OWLObjectProperty> allProperties = Sets.union(outgoingProperties, incomingProperties);
         
@@ -309,7 +309,7 @@ public class DatasetBasedGraphGenerator {
      * @return
      */
     private Map<OWLObjectProperty, Integer> getPropertiesWithFrequency(OWLClass cls, Direction propertyDirection) {
-        Map<OWLObjectProperty, Integer> properties = new HashMap<OWLObjectProperty, Integer>();
+        Map<OWLObjectProperty, Integer> properties = new HashMap<>();
         String query;
         if(propertyDirection == Direction.OUTGOING){
         	 query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
@@ -373,10 +373,10 @@ public class DatasetBasedGraphGenerator {
     private void aPriori(OWLClass cls, Set<OWLObjectProperty> properties, int minSupport) {
         System.out.println("Candidates: " + properties);
         System.out.println("Min. support: " + minSupport);
-        Set<Set<OWLObjectProperty>> nonFrequentSubsets = new HashSet<Set<OWLObjectProperty>>();
+        Set<Set<OWLObjectProperty>> nonFrequentSubsets = new HashSet<>();
         for (int i = 2; i <= properties.size(); i++) {
             Set<Set<OWLObjectProperty>> subsets = getSubsets(properties, i);
-            Set<Set<OWLObjectProperty>> nonFrequentSubsetsTmp = new HashSet<Set<OWLObjectProperty>>();
+            Set<Set<OWLObjectProperty>> nonFrequentSubsetsTmp = new HashSet<>();
             ResultSet rs;
             for (Set<OWLObjectProperty> set : subsets) {
                 if (Sets.intersection(getSubsets(set, i - 1), nonFrequentSubsets).isEmpty()) {
@@ -405,7 +405,7 @@ public class DatasetBasedGraphGenerator {
 
     private SortedSet<OWLObjectProperty> getMostProminentProperties(OWLClass cls, double threshold, String namespace, Direction propertyDirection) {
     	logger.info("Computing most prominent " + propertyDirection.name().toLowerCase() + " properties for class " + cls + " ...");
-        SortedSet<OWLObjectProperty> properties = new TreeSet<OWLObjectProperty>();
+        SortedSet<OWLObjectProperty> properties = new TreeSet<>();
 
         //get total number of instances for the class
         int instanceCount = getInstanceCount(cls);
@@ -449,7 +449,7 @@ public class DatasetBasedGraphGenerator {
     }
 
     private <T> Set<Set<T>> getSubsets(Set<T> set, int size) {
-        Set<Set<T>> subsets = new HashSet<Set<T>>();
+        Set<Set<T>> subsets = new HashSet<>();
         Set<Set<T>> powerSet = Sets.powerSet(set);
         for (Set<T> subset : powerSet) {
             if (subset.size() == size) {
@@ -460,7 +460,7 @@ public class DatasetBasedGraphGenerator {
     }
 
     private <T> Set<Set<T>> getSupersets(Set<Set<T>> sets, int size) {
-        Set<Set<T>> supersets = new HashSet<Set<T>>();
+        Set<Set<T>> supersets = new HashSet<>();
         for (Set<T> set1 : sets) {
             for (Set<T> set2 : sets) {
                 if (set1 != set2 && !Sets.intersection(set1, set2).isEmpty()) {

@@ -25,6 +25,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
@@ -327,7 +330,17 @@ public class DefaultIRIConverter implements IRIConverter{
     private static String splitCamelCase(String s) {
     	StringBuilder sb = new StringBuilder();
     	for (String token : s.split(" ")) {
-			sb.append(StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(token), ' ')).append(" ");
+			String[] split = StringUtils.splitByCharacterTypeCamelCase(token);
+			Deque<String> list = new ArrayDeque<>();
+			for (int i = 0; i < split.length; i++) {
+				String s1 = split[i];
+				if(i > 0 && s1.length() == 1 && !org.apache.commons.lang3.StringUtils.isNumeric(s1)) { // single character -> append to previous token
+					list.add(list.pollLast() + s1);
+				} else {
+					list.add(s1);
+				}
+			}
+			sb.append(StringUtils.join(list, ' ')).append(" ");
 		}
     	return sb.toString().trim();
 //    	return s.replaceAll(

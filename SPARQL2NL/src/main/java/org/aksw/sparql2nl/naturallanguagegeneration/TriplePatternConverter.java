@@ -388,7 +388,7 @@ public class TriplePatternConverter {
 				);
 		
 		TripleConverter conv = new TripleConverter(qef, "tmp/cache", dict);
-		SPhraseSpec p = conv.convertTriple(t);
+		SPhraseSpec p = conv.convertToPhrase(t);
 		System.out.println(realiser.realise(p));
 		p.setFeature(Feature.INTERROGATIVE_TYPE, InterrogativeType.WHAT_OBJECT);
 		System.out.println(realiser.realise(p));

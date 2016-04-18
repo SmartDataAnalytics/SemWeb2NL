@@ -79,7 +79,7 @@ public class Evaluation {
 	
 	SPARQLReasoner reasoner = new SPARQLReasoner(new SparqlEndpointKS(endpoint, cacheDirectory));
 	QueryExecutionFactory qef;
-	Verbalizer verbalizer = new Verbalizer(endpoint, cacheDirectory, null);
+	Verbalizer verbalizer = new Verbalizer(endpoint, cacheDirectory);
 	
 	Rouge rouge = new Rouge();
 	int rougeMode = Rouge.MULTIPLE_MAX;

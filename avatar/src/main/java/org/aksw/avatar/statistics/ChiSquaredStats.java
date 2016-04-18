@@ -43,7 +43,7 @@ public class ChiSquaredStats implements Stats {
         }
         expected = expected/edges.keySet().size();
         
-        Map<Node, Double> result = new HashMap<Node, Double>();
+        Map<Node, Double> result = new HashMap<>();
         for(Node n: edges.keySet())
         {
             result.put(n, Math.pow(edges.get(n)-expected, 2)/expected);

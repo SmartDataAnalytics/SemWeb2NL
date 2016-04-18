@@ -22,14 +22,20 @@
  */
 package org.aksw.triple2nl;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-
+import com.google.common.collect.Lists;
+import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.NodeFactory;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.graph.impl.LiteralLabel;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import com.hp.hpl.jena.vocabulary.OWL;
+import com.hp.hpl.jena.vocabulary.RDF;
+import com.hp.hpl.jena.vocabulary.RDFS;
+import net.sf.extjwnl.dictionary.Dictionary;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.converter.LiteralConverter;
@@ -45,7 +51,6 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.vocab.OWL2Datatype;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
@@ -61,17 +66,7 @@ import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataPropertyImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
-import com.google.common.collect.Lists;
-import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
-import com.hp.hpl.jena.vocabulary.OWL;
-import com.hp.hpl.jena.vocabulary.RDF;
-import com.hp.hpl.jena.vocabulary.RDFS;
-
-import net.sf.extjwnl.dictionary.Dictionary;
+import java.util.*;
 
 /**
  * Convert triple(s) into natural language.
@@ -81,6 +76,9 @@ import net.sf.extjwnl.dictionary.Dictionary;
 public class TripleConverter {
 	
 	private static final Logger logger = LoggerFactory.getLogger(TripleConverter.class);
+
+	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
+	private static String DEFAULT_CACHE_DIR = DEFAULT_CACHE_BASE_DIR + "/triple2nl-cache";
 
 	private NLGFactory nlgFactory;
 	private Realiser realiser;
@@ -98,8 +96,12 @@ public class TripleConverter {
 	//for multiple types use 'as well as' to coordinate the last type
 	private boolean useAsWellAsCoordination = true;
 
+	public TripleConverter() {
+		this(new QueryExecutionFactoryModel(ModelFactory.createDefaultModel()), DEFAULT_CACHE_DIR, Lexicon.getDefaultLexicon());
+	}
+
 	public TripleConverter(SparqlEndpoint endpoint) {
-		this(endpoint, null);
+		this(endpoint, DEFAULT_CACHE_DIR);
 	}
 	
 	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDirectory) {
@@ -153,17 +155,26 @@ public class TripleConverter {
 	}
 	
 	/**
-	 * Converts a collection of triples into a list of phrases.
-	 * 
-	 * @param triples the triples
-	 * @return a list of phrases
+	 * Return a textual representation for the given triple.
+	 *
+	 * @param t the triple to convert
+	 * @return the textual representation
 	 */
-	public List<SPhraseSpec> convertTriples(Collection<Triple> triples) {
-		List<SPhraseSpec> phrases = new ArrayList<>();
-		for (Triple triple : triples) {
-			phrases.add(convertTriple(triple));
-		}
-		return phrases;
+	public String convert(Triple t){
+		return convert(t, false);
+	}
+
+	/**
+	 * Return a textual representation for the given triple.
+	 *
+	 * @param t the triple to convert
+	 * @param negated if phrase is negated
+	 * @return the textual representation
+	 */
+	public String convert(Triple t, boolean negated){
+		NLGElement phrase = convertToPhrase(t, negated);
+		phrase = realiser.realise(phrase);
+		return phrase.getRealisation();
 	}
 	
 	/**
@@ -173,7 +184,7 @@ public class TripleConverter {
 	 * @param triples the triples to convert
 	 * @return the textual representation
 	 */
-	public String convertTriplesToText(List<Triple> triples){
+	public String convert(List<Triple> triples){
 		// combine with conjunction
 		CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
 		
@@ -190,7 +201,7 @@ public class TripleConverter {
 		}
 		
 		// convert the type triples
-		List<SPhraseSpec> typePhrases = convertTriples(typeTriples);
+		List<SPhraseSpec> typePhrases = convertToPhrase(typeTriples);
 		
 		// if there are more than one types, we combine them in a single clause
 		if(typePhrases.size() > 1){
@@ -246,7 +257,7 @@ public class TripleConverter {
 			placeHolderTriples.add(newTriple);
 		}
 		
-		Collection<SPhraseSpec> otherPhrases = convertTriples(placeHolderTriples);
+		Collection<SPhraseSpec> otherPhrases = convertToPhrase(placeHolderTriples);
 		
 		for (SPhraseSpec phrase : otherPhrases) {
 			conjunction.addCoordinate(phrase);
@@ -255,28 +266,15 @@ public class TripleConverter {
 		String sentence = realiser.realiseSentence(conjunction);
 		return sentence;
 	}
-	
+
 	/**
-	 * Return a textual representation for the given triple.
+	 * Convert a triple into a phrase object
 	 * 
-	 * @param t the triple to convert
-	 * @return the textual representation
+	 * @param t the triple
+	 * @return the phrase
 	 */
-	public String convertTripleToText(Triple t){
-		return convertTripleToText(t, false);
-	}
-	
-	/**
-	 * Return a textual representation for the given triple.
-	 * 
-	 * @param t the triple to convert
-	 * @param negated if phrase is negated
-	 * @return the textual representation
-	 */
-	public String convertTripleToText(Triple t, boolean negated){
-		NLGElement phrase = convertTriple(t, negated);
-		phrase = realiser.realise(phrase);
-		return phrase.getRealisation();
+	public SPhraseSpec convertToPhrase(Triple t) {
+		return convertToPhrase(t, false);
 	}
 	
 	/**
@@ -285,27 +283,19 @@ public class TripleConverter {
 	 * @param t the triple
 	 * @return the phrase
 	 */
-	public SPhraseSpec convertTriple(Triple t) {
-		return convertTriple(t, false);
-	}
-	
-	/**
-	 * Convert a triple into a phrase object
-	 * 
-	 * @param t the triple
-	 * @return the phrase
-	 */
-	public SPhraseSpec convertTriple(Triple t, boolean negated) {
-		return convertTriple(t, negated, false);
+	public SPhraseSpec convertToPhrase(Triple t, boolean negated) {
+		return convertToPhrase(t, negated, false);
 	}
 
 	/**
 	 * Convert a triple into a phrase object
-	 * @param t the triple
-	 * @param negated if phrase is negated 
+	 *
+	 * @param t       the triple
+	 * @param negated if phrase is negated
+	 * @param reverse whether subject and object should be changed during verbalization
 	 * @return the phrase
 	 */
-	public SPhraseSpec convertTriple(Triple t, boolean negated, boolean reverse) {
+	public SPhraseSpec convertToPhrase(Triple t, boolean negated, boolean reverse) {
 		logger.debug("Verbalizing triple " + t);
 		SPhraseSpec p = nlgFactory.createClause();
 
@@ -458,6 +448,20 @@ public class TripleConverter {
 		p.setFeature(Feature.TENSE, Tense.PRESENT);
 //		System.out.println(realiser.realise(p));
 		return p;
+	}
+
+	/**
+	 * Converts a collection of triples into a list of phrases.
+	 *
+	 * @param triples the triples
+	 * @return a list of phrases
+	 */
+	public List<SPhraseSpec> convertToPhrase(Collection<Triple> triples) {
+		List<SPhraseSpec> phrases = new ArrayList<>();
+		for (Triple triple : triples) {
+			phrases.add(convertToPhrase(triple));
+		}
+		return phrases;
 	}
 	
 	
@@ -637,5 +641,14 @@ public class TripleConverter {
 		object.setPlural(plural);
 
 		return object;
+	}
+
+	public static void main(String[] args) throws Exception {
+		System.out.println(new TripleConverter().convert(
+				Triple.create(
+						NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
+						NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+						NodeFactory.createURI("http://dbpedia.org/resource/Ulm")
+						)));
 	}
 }

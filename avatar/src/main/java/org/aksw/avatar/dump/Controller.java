@@ -104,7 +104,7 @@ public class Controller {
             if (result.containsKey(ontClass)) {
                 count++;
                 Set<OWLProperty> properties = result.get(ontClass);
-                Set<Node> nodes = new HashSet<Node>();
+                Set<Node> nodes = new HashSet<>();
                 for (OWLProperty p : properties) {
                     if (!p.toStringID().equals(RDF.type.getURI())) {
                         if (wg.getNode(p.toStringID()) == null) {
@@ -138,7 +138,7 @@ public class Controller {
             if (map.containsKey(ontClass)) {
                 count++;
                 Set<OWLProperty> properties = map.get(ontClass);
-                Set<Node> nodes = new HashSet<Node>();
+                Set<Node> nodes = new HashSet<>();
                 for (OWLProperty p : properties) {
                     if (!p.toStringID().equals(RDF.type.getURI())) {
                         if (wg.getNode(p.toStringID()) == null) {
@@ -173,7 +173,7 @@ public class Controller {
             for (OWLClass ontClass : result.keySet()) {
                 count++;
                 Set<OWLProperty> properties = result.get(ontClass);
-                Set<Node> nodes = new HashSet<Node>();
+                Set<Node> nodes = new HashSet<>();
                 for (OWLProperty p : properties) {
                     if (!p.toStringID().equals(RDF.type.getURI())) {
                         if (wg.getNode(p.toStringID()) == null) {
@@ -209,7 +209,7 @@ public class Controller {
         	count++;
             for (OWLClass ontClass : map.keySet()) {
                 Set<OWLProperty> properties = map.get(ontClass);
-                Set<Node> nodes = new HashSet<Node>();
+                Set<Node> nodes = new HashSet<>();
                 for (OWLProperty p : properties) {
                     if (!p.toStringID().equals(RDF.type.getURI())) {
                         if (wg.getNode(p.toStringID()) == null) {
@@ -294,7 +294,7 @@ public class Controller {
 
     public static void test() {
         SPARQLQueryProcessor processor = new SPARQLQueryProcessor(ks);
-        List<LogEntry> entries = new ArrayList<LogEntry>();
+        List<LogEntry> entries = new ArrayList<>();
 
         String q = "PREFIX dbr: <http://dbpedia.org/resource/> "
                 + "PREFIX dbo: <http://dbpedia.org/ontology/> "

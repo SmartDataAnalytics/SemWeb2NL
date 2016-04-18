@@ -69,8 +69,8 @@ public class LexiconBasedGenderDetector implements GenderDetector {
 
     public LexiconBasedGenderDetector() {
         try {
-            male = new HashSet<String>();
-            female = new HashSet<String>();
+            male = new HashSet<>();
+            female = new HashSet<>();
             
             InputStream is = this.getClass().getClassLoader().getResourceAsStream(maleNamesPath);
             BufferedReader br = new BufferedReader(new InputStreamReader(is));

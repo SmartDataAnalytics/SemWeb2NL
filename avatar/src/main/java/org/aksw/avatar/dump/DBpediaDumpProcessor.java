@@ -272,7 +272,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 					if (r >= 3) {
 						Query q = QueryFactory.create(entry.query, Syntax.syntaxARQ);
 						if(triplePatternExtractor.extractTriplePattern(q).size() >= 2){
-							queries.append(q.toString() + "\n++++++++++++++++++++++++++++\n");
+							queries.append(q.toString()).append("\n++++++++++++++++++++++++++++\n");
 						}
 						line += "\n";
 						os.write(line.getBytes());
@@ -341,8 +341,8 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 				is = new GZIPInputStream(is);
 			}
 			BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-			List<LogEntry> entries = new ArrayList<LogEntry>();
-			List<String> lines = new ArrayList<String>();
+			List<LogEntry> entries = new ArrayList<>();
+			List<String> lines = new ArrayList<>();
 			String line = null;
 			while ((line = reader.readLine()) != null) {System.out.println(line);
 				entries.add(processDumpLine(line));
@@ -388,7 +388,7 @@ public class DBpediaDumpProcessor implements DumpProcessor {
 	}
 
     public List<LogEntry> processDump(String file, boolean omitQueriesWithEmptyResults, int limit) {
-    	List<LogEntry> results = new ArrayList<LogEntry>();
+    	List<LogEntry> results = new ArrayList<>();
         int queryScore;
         int count = 0;
         String s = "";

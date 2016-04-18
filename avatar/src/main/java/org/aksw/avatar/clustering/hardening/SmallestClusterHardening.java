@@ -39,10 +39,10 @@ import org.aksw.avatar.clustering.WeightedGraph;
  */
 public class SmallestClusterHardening extends LargestClusterHardening{
      public List<Set<Node>> harden(Set<Set<Node>> clusters, WeightedGraph wg) {
-        Set<Node> nodes = new HashSet<Node>(wg.getNodes().keySet());
+        Set<Node> nodes = new HashSet<>(wg.getNodes().keySet());
         double min, weight;
         Set<Node> bestCluster;
-        List<Set<Node>> result = new ArrayList<Set<Node>>();
+        List<Set<Node>> result = new ArrayList<>();
         while (!nodes.isEmpty()) {
             min = Double.MAX_VALUE;
             bestCluster = null;

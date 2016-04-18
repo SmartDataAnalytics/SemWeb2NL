@@ -131,7 +131,7 @@ public class PredicateMergeRule implements Rule {
         fusedPhrase.getVerb().setPlural(true);
 
         //now create the final result
-        List<SPhraseSpec> result = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> result = new ArrayList<>();
         result.add(fusedPhrase);
         for (int index = 0; index < phrases.size(); index++) {
             if (!toMerge.contains(index)) {
@@ -164,7 +164,7 @@ public class PredicateMergeRule implements Rule {
         s3.setObject("apples");
         s3.getObject().setPlural(true);
 
-        List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+        List<SPhraseSpec> phrases = new ArrayList<>();
         phrases.add(s1);
         phrases.add(s2);
         phrases.add(s3);

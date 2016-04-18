@@ -41,7 +41,7 @@ public class DumpStatistics {
     
     public Set<Set<Node>> clusterProperties(Map<Set<Node>, Integer> properties)
     {
-        return new HashSet<Set<Node>>();
+        return new HashSet<>();
         
 //        Model m = ModelFactory.createDefaultModel();
 //        Property m.createProperty(null, null);

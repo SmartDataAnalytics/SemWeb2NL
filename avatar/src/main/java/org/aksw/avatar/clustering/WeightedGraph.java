@@ -42,9 +42,9 @@ public class WeightedGraph implements Serializable{
     Map<Node, Map<Node, Double>> edges;
 
     public WeightedGraph() {
-        nodes = new HashMap<Node, Double>();
-        edges = new HashMap<Node, Map<Node, Double>>();
-        nodeIndex = new HashMap<String, Set<Node>>();
+        nodes = new HashMap<>();
+        edges = new HashMap<>();
+        nodeIndex = new HashMap<>();
     }
 
     /**
@@ -58,7 +58,7 @@ public class WeightedGraph implements Serializable{
         Node n = new Node(label);
         nodes.put(n, weight);
         if (!nodeIndex.containsKey(label)) {
-            nodeIndex.put(label, new HashSet<Node>());
+            nodeIndex.put(label, new HashSet<>());
         }
         nodeIndex.get(label).add(n);
         return n;
@@ -74,7 +74,7 @@ public class WeightedGraph implements Serializable{
     public void addNode(Node node, double weight) {
         nodes.put(node, weight);
         if (!nodeIndex.containsKey(node.label)) {
-            nodeIndex.put(node.label, new HashSet<Node>());
+            nodeIndex.put(node.label, new HashSet<>());
         }
         nodeIndex.get(node.label).add(node);
     }
@@ -87,7 +87,7 @@ public class WeightedGraph implements Serializable{
         if (edges.containsKey(n)) {
             return edges.get(n).keySet();
         } else {
-            return new HashSet<Node>();
+            return new HashSet<>();
         }
     }
 
@@ -102,7 +102,7 @@ public class WeightedGraph implements Serializable{
     public boolean addEdge(Node n1, Node n2, double weight) {
         if (nodes.containsKey(n1) && nodes.containsKey(n2)) {
             if (!edges.containsKey(n1)) {
-                edges.put(n1, new HashMap<Node, Double>());
+                edges.put(n1, new HashMap<>());
             }
             edges.get(n1).put(n2, weight);
             return true;
@@ -174,8 +174,8 @@ public class WeightedGraph implements Serializable{
 
     public void scale(double factor) {
         double w;
-        Map<Node, Double> ns = new HashMap<Node, Double>();
-        Map<Node, Map<Node, Double>> es = new HashMap<Node, Map<Node, Double>>();
+        Map<Node, Double> ns = new HashMap<>();
+        Map<Node, Map<Node, Double>> es = new HashMap<>();
         //scale node weights
         for (Node n : nodes.keySet()) {
             w = nodes.get(n);
@@ -187,7 +187,7 @@ public class WeightedGraph implements Serializable{
         //scale edge weights
 
         for (Node n1 : edges.keySet()) {
-            es.put(n1, new HashMap<Node, Double>());
+            es.put(n1, new HashMap<>());
             for (Node n2 : edges.get(n1).keySet()) {
                 w = edges.get(n1).get(n2);
                 w = w / factor;
@@ -198,13 +198,13 @@ public class WeightedGraph implements Serializable{
     }
 
     public void addClique(Set<Node> nodeSet) {
-        List<Node> nodeList = new ArrayList<Node>(nodeSet);
+        List<Node> nodeList = new ArrayList<>(nodeSet);
         // add nodes to the graph
         for (Node n : nodeList) {
             if (!nodes.containsKey(n)) {
                 nodes.put(n, 0d);
                 if (!nodeIndex.containsKey(n.label)) {
-                    nodeIndex.put(n.label, new HashSet<Node>());
+                    nodeIndex.put(n.label, new HashSet<>());
                 }
                 nodeIndex.get(n.label).add(n);
             }
@@ -221,7 +221,7 @@ public class WeightedGraph implements Serializable{
             // add all nodes as sources for edges
             for (int i = 0; i < nodeList.size(); i++) {
                 if (!edges.containsKey(nodeList.get(i))) {
-                    edges.put(nodeList.get(i), new HashMap<Node, Double>());
+                    edges.put(nodeList.get(i), new HashMap<>());
                 }
             }
 
@@ -243,7 +243,7 @@ public class WeightedGraph implements Serializable{
         for (Node n : g.nodes.keySet()) {
             if (!nodeIndex.containsKey(n.label)) {
                 nodes.put(n, g.getNodeWeight(n));
-                Set<Node> ns = new HashSet<Node>();
+                Set<Node> ns = new HashSet<>();
                 ns.add(n);
                 nodeIndex.put(n.label, ns);
             }
@@ -258,7 +258,7 @@ public class WeightedGraph implements Serializable{
         for (Node n1 : g.edges.keySet()) {
             for (Node n2 : g.edges.get(n1).keySet()) {
                 if (!edges.containsKey(n1)) {
-                    edges.put(n1, new HashMap<Node, Double>());
+                    edges.put(n1, new HashMap<>());
                 }
                 Map<Node, Double> map = edges.get(n1);
                 if (!map.containsKey(n2)) {
@@ -286,7 +286,7 @@ public class WeightedGraph implements Serializable{
         for (Node n1 : g.edges.keySet()) {
             for (Node n2 : g.edges.get(n1).keySet()) {
                 if (!edges.containsKey(n1)) {
-                    edges.put(n1, new HashMap<Node, Double>());
+                    edges.put(n1, new HashMap<>());
                 }
                 Map<Node, Double> map = edges.get(n1);
                 if (!map.containsKey(n2)) {
@@ -316,7 +316,7 @@ public class WeightedGraph implements Serializable{
         wg.addEdge(n3, n4, 1.0);
         wg.addEdge(n2, n3, 2.0);
         System.out.println(wg);
-        Set<Node> nodes = new HashSet<Node>();
+        Set<Node> nodes = new HashSet<>();
         nodes.add(n1);
         nodes.add(n2);
         nodes.add(n5);

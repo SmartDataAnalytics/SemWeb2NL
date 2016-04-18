@@ -23,10 +23,10 @@ import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.owl2nl.exception.OWLAxiomConversionException;
+import org.aksw.owl2nl.util.OWLClassExpressionUtils;
 import org.aksw.triple2nl.TripleConverter;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
-import org.dllearner.kb.SparqlEndpointKS;
 import org.dllearner.utilities.OwlApiJenaUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.ToStringRenderer;
@@ -40,9 +40,11 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
+import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
 import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
 import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Converts OWL axioms into natural language.
@@ -127,11 +129,18 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		
 		// convert the superclass
 		OWLClassExpression superClass = axiom.getSuperClass();
-		NLGElement superClassElement = ceConverter.asNLGElement(superClass);
+		NLGElement superClassElement = ceConverter.asNLGElement(superClass, false, subClass.isAnonymous());
 		logger.debug("SuperClass: " + realiser.realise(superClassElement));
-		
-		SPhraseSpec clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
-		superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+
+		SPhraseSpec clause;
+		if(subClass.isAnonymous() || OWLClassExpressionUtils.hasNamedClassOnTopLevel(superClass)) { // LHS is complex CE
+			clause = nlgFactory.createClause(subClassElement, "be", superClassElement);
+			superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+		} else {// LHS is named class
+			clause = nlgFactory.createClause(subClassElement, null, superClassElement);
+			superClassElement.setFeature(Feature.COMPLEMENTISER, null);
+		}
+
 
 		nlgElement = clause;
 	}
@@ -297,8 +306,6 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	@Override
 	public void visit(OWLObjectPropertyAssertionAxiom axiom) {
-		SPhraseSpec clause = nlgFactory.createClause();
-
 		Triple triple;
 		if(axiom.getProperty().isAnonymous()) {
 			triple = Triple.create(
@@ -312,20 +319,18 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 					NodeFactory.createURI(axiom.getProperty().getNamedProperty().toStringID()),
 					NodeFactory.createURI(axiom.getSubject().toStringID()));
 		}
-		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+		SPhraseSpec phrase = tripleConverter.convertToPhrase(triple, false, axiom.getProperty().isAnonymous());
 
 		nlgElement = phrase;
 	}
 	
 	@Override
 	public void visit(OWLDataPropertyAssertionAxiom axiom) {
-		SPhraseSpec clause = nlgFactory.createClause();
-
 		Triple triple = Triple.create(
 				NodeFactory.createURI(axiom.getSubject().toStringID()),
 				OwlApiJenaUtils.asNode(axiom.getProperty().asOWLDataProperty()),
 				NodeFactory.createLiteral(OwlApiJenaUtils.getLiteral(axiom.getObject())));
-		SPhraseSpec phrase = tripleConverter.convertTriple(triple, false, axiom.getProperty().isAnonymous());
+		SPhraseSpec phrase = tripleConverter.convertToPhrase(triple, false, axiom.getProperty().isAnonymous());
 
 		nlgElement = phrase;
 	}
@@ -396,17 +401,28 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	
 	public static void main(String[] args) throws Exception {
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
+		ToStringRenderer.getInstance().setRenderer(new ManchesterOWLSyntaxOWLObjectRendererImpl());
 		String ontologyURL = "http://130.88.198.11/2008/iswc-modtut/materials/koala.owl";
 		ontologyURL = "http://rpc295.cs.man.ac.uk:8080/repository/download?ontology=http://reliant.teknowledge.com/DAML/Transportation.owl&format=RDF/XML";
 		ontologyURL = "http://protege.cim3.net/file/pub/ontologies/travel/travel.owl";
 		ontologyURL = "https://raw.githubusercontent.com/pezra/pretty-printer/master/Jenna-2.6.3/testing/ontology/bugs/koala.owl";
-		ontologyURL = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
+//		ontologyURL = "http://protege.stanford.edu/ontologies/pizza/pizza.owl";
 		OWLOntologyManager man = OWLManager.createOWLOntologyManager();
 		OWLOntology ontology = man.loadOntology(IRI.create(ontologyURL));
 		
 		OWLAxiomConverter converter = new OWLAxiomConverter(ontology);
-		for (OWLAxiom axiom : ontology.getAxioms()) {
-			converter.convert(axiom);
+		System.out.println("\tAxiom\tAs SubClassOf Axiom\tVerbalization");
+		for (OWLAxiom axiom : new TreeSet<>(ontology.getLogicalAxioms())) {
+			String axiomStr = axiom.toString();
+			String axiomSubClsStr = "";
+			boolean isSubClassOfAxiom = axiom.getAxiomType() == AxiomType.SUBCLASS_OF;
+			if(axiom instanceof OWLSubClassOfAxiomShortCut) {
+				axiomSubClsStr = ((OWLSubClassOfAxiomShortCut) axiom).asOWLSubClassOfAxiom().toString();
+				isSubClassOfAxiom = true;
+			}
+			String nl = converter.convert(axiom);
+
+			System.out.println((isSubClassOfAxiom ? "x\t" : "\t") + axiomStr + "\t" + axiomSubClsStr + "\t" + nl);
 		}
 	}
 
