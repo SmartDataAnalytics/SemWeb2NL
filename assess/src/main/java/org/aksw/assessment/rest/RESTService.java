@@ -22,37 +22,12 @@
  */
 package org.aksw.assessment.rest;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import javax.servlet.ServletContext;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import org.aksw.assessment.AbstractQuestionGenerator;
-import org.aksw.assessment.JeopardyQuestionGenerator;
-import org.aksw.assessment.MultipleChoiceQuestionGenerator;
-import org.aksw.assessment.QuestionGenerator;
-import org.aksw.assessment.TrueFalseQuestionGenerator;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.ontology.OntModelSpec;
+import com.hp.hpl.jena.rdf.model.Model;
+import com.hp.hpl.jena.rdf.model.ModelFactory;
+import org.aksw.assessment.*;
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
@@ -78,18 +53,24 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-//import org.apache.log4j.Logger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
-
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
+
+import javax.servlet.ServletContext;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
+import java.net.URL;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
+
+//import org.apache.log4j.Logger;
 
 /**
  * @author Lorenz Buehmann
@@ -202,7 +183,6 @@ public class RESTService extends Application{
 
 	public static void init(ServletContext context){
 		try {
-			System.err.println(context.getServletContextName());
 			String path = (context == null) ? "assess_config_dbpedia.ini" : context.getRealPath(context.getInitParameter("configFile"));
 			logger.info("Loading config from " + path + "...");
 			HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
@@ -214,81 +194,6 @@ public class RESTService extends Application{
 		} catch (Exception e) {
 			logger.error("Illegal endpoint URL.", e);
 		}
-	}
-	
-	@GET
-	@Context
-	@Path("/questionsold")
-	@Produces(MediaType.APPLICATION_JSON)
-	public RESTQuestions getQuestionsJSON(@Context ServletContext context, @QueryParam("domain") String domain, @QueryParam("type") List<String> questionTypes, @QueryParam("limit") int maxNrOfQuestions) {
-		logger.info("REST Request - Get questions\nDomain:" + domain + "\nQuestionTypes:" + questionTypes + "\n#Questions:" + maxNrOfQuestions);
-		
-		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
-		
-		Map<OWLEntity, Set<OWLObjectProperty>> domains = new HashMap<>();
-		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<>());
-		
-		// set up the question generators
-		for (String type : questionTypes) {
-			AbstractQuestionGenerator generator = null;
-			if(type.equals(QuestionType.MC.getName())){
-				generator = new MultipleChoiceQuestionGenerator(qef, cacheDirectory, domains);
-			} else if(type.equals(QuestionType.JEOPARDY.getName())){
-				generator = new JeopardyQuestionGenerator(qef, cacheDirectory, domains);
-			} else if(type.equals(QuestionType.TRUEFALSE.getName())){
-				generator = new TrueFalseQuestionGenerator(qef, cacheDirectory, domains);
-			}
-			generator.setPersonTypes(personTypes);
-			generator.setEntityBlackList(blackList);
-			generator.setNamespace(namespace);
-			generators.put(generator.getQuestionType(), generator);
-		}
-		List<RESTQuestion> restQuestions = new ArrayList<>();
-		
-		// get random numbers for max. computed questions per type
-		List<Integer> randomNumbers = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
-		
-		int i = 0;
-		for (Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
-			QuestionType questionType = entry.getKey();
-			QuestionGenerator generator = entry.getValue();
-		
-			//randomly set the max number of questions
-			int max = randomNumbers.get(i);
-			
-			Set<Question> questions = generator.getQuestions(null, 1, max);
-			
-			for (Question question : questions) {
-				RESTQuestion q = new RESTQuestion();
-				q.setQuestion(question.getText());
-				q.setQuestionType(questionType.getName());
-				List<RESTAnswer> correctAnswers = new ArrayList<>();
-				for (Answer answer : question.getCorrectAnswers()) {
-					RESTAnswer a = new RESTAnswer();
-					a.setAnswer(answer.getText());
-					if(questionType == QuestionType.MC){
-						a.setAnswerHint(answer.getHint());
-					}
-					correctAnswers.add(a);
-				}
-				q.setCorrectAnswers(correctAnswers);
-				List<RESTAnswer> wrongAnswers = new ArrayList<>();
-				for (Answer answer : question.getWrongAnswers()) {
-					RESTAnswer a = new RESTAnswer();
-					a.setAnswer(answer.getText());
-					a.setAnswerHint("NO HINT");
-					wrongAnswers.add(a);
-				}
-				q.setWrongAnswers(wrongAnswers);
-				restQuestions.add(q);
-			}
-		}
-		
-		RESTQuestions result = new RESTQuestions();
-		result.setQuestions(restQuestions);
-		logger.info("Done.");
-		return result;
- 
 	}
 	
 	@POST
@@ -323,13 +228,15 @@ public class RESTService extends Application{
 		long start = System.currentTimeMillis();
 		// set up the question generators
 		for (String type : questionTypes) {
-			AbstractQuestionGenerator generator = null;
+			AbstractQuestionGenerator generator;
 			if (type.equals(QuestionType.MC.getName())) {
 				generator = new MultipleChoiceQuestionGenerator(qef, cacheDirectory, domains);
 			} else if (type.equals(QuestionType.JEOPARDY.getName())) {
 				generator = new JeopardyQuestionGenerator(qef, cacheDirectory, domains);
 			} else if (type.equals(QuestionType.TRUEFALSE.getName())) {
 				generator = new TrueFalseQuestionGenerator(qef, cacheDirectory, domains);
+			} else {
+				throw new IllegalArgumentException("Question type " + type + " not supported yet!");
 			}
 			generator.setPersonTypes(personTypes);
 			generator.setEntityBlackList(blackList);

@@ -61,7 +61,7 @@ public class TripleConverterTest {
 	}
 	
 	/**
-	 * Test method for {@link org.aksw.triple2nl.TripleConverter#convertTriplesToText(java.util.Collection)}.
+	 * Test method for {@link org.aksw.triple2nl.TripleConverter#convertTriplesToText(List)}.
 	 */
 	@Test
 	public void testConvertTriplesToText() {
