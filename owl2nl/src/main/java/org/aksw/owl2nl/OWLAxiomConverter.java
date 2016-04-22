@@ -66,6 +66,8 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	private String nl;
 
 	private NLGElement nlgElement;
+
+	private boolean returnAsSentence = true;
 	
 	public OWLAxiomConverter(OWLOntology ontology) {
 		this(ontology, Lexicon.getDefaultLexicon());
@@ -84,11 +86,13 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	}
 
 	/**
-	 * Converts the OWL axiom into natural language. Only logical axioms are 
-	 * supported, i.e. declaration axioms and annotation axioms are not 
+	 * Converts the OWL axiom into natural language. Only logical axioms are
+	 * supported, i.e. declaration axioms and annotation axioms are not
 	 * converted and <code>null</code> will be returned instead.
+	 *
 	 * @param axiom the OWL axiom
 	 * @return the natural language expression
+	 * @throws OWLAxiomConversionException if the conversion failed
 	 */
 	public String convert(OWLAxiom axiom) throws OWLAxiomConversionException {
 		reset();
@@ -98,7 +102,11 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 			try {
 				axiom.accept(this);
 				if(nlgElement != null) {
-					nl = realiser.realise(nlgElement).getRealisation();
+					if(returnAsSentence) {
+						nl = realiser.realiseSentence(nlgElement);
+					} else {
+						nl = realiser.realise(nlgElement).getRealisation();
+					}
 					logger.debug("Axiom:" + nl);
 				}
 				return nl;
@@ -110,7 +118,16 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 		logger.warn("Conversion of non-logical axioms not supported yet!");
 		return null;
 	}
-	
+
+	/**
+	 * Whether the style of the returned result is a proper English sentence or just a phrase.
+	 *
+	 * @param returnAsSentence
+	 */
+	public void setReturnAsSentence(boolean returnAsSentence) {
+		this.returnAsSentence = returnAsSentence;
+	}
+
 	private void reset() {
 		nl = null;
 		nlgElement = null;

@@ -48,13 +48,16 @@ public class OWLClassExpressionConverterTest {
 	private static OWLObjectProperty birthPlace;
 	private static OWLObjectProperty worksFor;
 	private static OWLObjectProperty ledBy;
+	private static OWLObjectProperty hasChildren;
 	private static OWLDataProperty nrOfInhabitants;
 	private static OWLClass place;
 	private static OWLClass company;
 	private static OWLClass person;
+	private static OWLClass female;
 	private static OWLDataFactoryImpl df;
 	private static OWLNamedIndividual leipzig;
 	private static OWLLiteral literal;
+	private static OWLClassExpression oneOfFemale;
 	
 	OWLClassExpression ce;
 	String text;
@@ -73,16 +76,20 @@ public class OWLClassExpressionConverterTest {
 		birthPlace = df.getOWLObjectProperty("birthPlace", pm);
 		worksFor = df.getOWLObjectProperty("worksFor", pm);
 		ledBy = df.getOWLObjectProperty("isLedBy", pm);
-		
+		hasChildren = df.getOWLObjectProperty("hasChildren", pm);
+
 		nrOfInhabitants = df.getOWLDataProperty("nrOfInhabitants", pm);
 		dataRange = df.getOWLDatatypeMinInclusiveRestriction(10000000);
 		
 		place = df.getOWLClass("Place", pm);
 		company = df.getOWLClass("Company", pm);
 		person = df.getOWLClass("Person", pm);
+		female = df.getOWLClass("Female", pm);
 		
 		leipzig = df.getOWLNamedIndividual("Leipzig", pm);
 		literal = df.getOWLLiteral(1000000);
+
+		oneOfFemale = df.getOWLObjectOneOf(df.getOWLNamedIndividual("Female", pm));
 		
 		ToStringRenderer.getInstance().setRenderer(new DLSyntaxObjectRenderer());
 	}
@@ -167,8 +174,16 @@ public class OWLClassExpressionConverterTest {
 		ce = df.getOWLObjectExactCardinality(3, worksFor, company);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
-		
+
 		ce = df.getOWLDataExactCardinality(3, nrOfInhabitants, dataRange);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+
+		ce = df.getOWLObjectExactCardinality(3, hasChildren, oneOfFemale);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+
+		ce = df.getOWLObjectExactCardinality(3, hasChildren, female);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
