@@ -96,6 +96,8 @@ public class TripleConverter {
 	//for multiple types use 'as well as' to coordinate the last type
 	private boolean useAsWellAsCoordination = true;
 
+	private boolean returnAsSentence = true;
+
 	public TripleConverter() {
 		this(new QueryExecutionFactoryModel(ModelFactory.createDefaultModel()), DEFAULT_CACHE_DIR, Lexicon.getDefaultLexicon());
 	}
@@ -173,8 +175,13 @@ public class TripleConverter {
 	 */
 	public String convert(Triple t, boolean negated){
 		NLGElement phrase = convertToPhrase(t, negated);
-		phrase = realiser.realise(phrase);
-		return phrase.getRealisation();
+		String text;
+		if(returnAsSentence) {
+			text = realiser.realiseSentence(phrase);
+		} else {
+			text = realiser.realise(phrase).getRealisation();
+		}
+		return text;
 	}
 	
 	/**
@@ -494,6 +501,15 @@ public class TripleConverter {
 						new OWLObjectPropertyImpl(IRI.create(triple.getPredicate().getURI()))) 
 					|| reasoner.getRange(
 							new OWLDataPropertyImpl(IRI.create(triple.getPredicate().getURI()))).asOWLDatatype().getIRI().equals(OWL2Datatype.XSD_BOOLEAN.getIRI()));
+	}
+
+	/**
+	 * Whether the style of the returned result is a proper English sentence or just a phrase.
+	 *
+	 * @param returnAsSentence
+	 */
+	public void setReturnAsSentence(boolean returnAsSentence) {
+		this.returnAsSentence = returnAsSentence;
 	}
 	
 	/**
