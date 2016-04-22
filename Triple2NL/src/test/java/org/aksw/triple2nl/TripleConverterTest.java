@@ -61,7 +61,7 @@ public class TripleConverterTest {
 	}
 	
 	/**
-	 * Test method for {@link org.aksw.triple2nl.TripleConverter#convertTriplesToText(java.util.Collection)}.
+	 * Test method for {@link org.aksw.triple2nl.TripleConverter#convert(List)} .
 	 */
 	@Test
 	public void testConvertTriplesToText() {
@@ -332,5 +332,26 @@ public class TripleConverterTest {
 		System.out.println(t + " -> " + text);
 //		assertEquals("Living Bird is not peer reviewed", text);
 		
+	}
+
+	@Test
+	public void testConvertTriplesNoOntology() throws Exception {
+		TripleConverter converter = new TripleConverter();
+		Triple t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Baruch_Spinoza"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/influenced"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Albert_Einstein"));
+		String text = converter.convert(t);
+		System.out.println(t + " -> " + text);
+//		assertEquals("Mathematics of Computation is peer reviewed", text);
+
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/resource/Baruch_Spinoza"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/influencedBy"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/Albert_Einstein"));
+		text = converter.convert(t);
+		System.out.println(t + " -> " + text);
+//		assertEquals("Living Bird is not peer reviewed", text);
+
 	}
 }

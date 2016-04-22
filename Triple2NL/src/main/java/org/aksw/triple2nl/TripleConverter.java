@@ -642,13 +642,4 @@ public class TripleConverter {
 
 		return object;
 	}
-
-	public static void main(String[] args) throws Exception {
-		System.out.println(new TripleConverter().convert(
-				Triple.create(
-						NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
-						NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
-						NodeFactory.createURI("http://dbpedia.org/resource/Ulm")
-						)));
-	}
 }
