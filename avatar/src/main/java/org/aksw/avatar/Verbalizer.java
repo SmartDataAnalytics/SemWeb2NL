@@ -554,11 +554,10 @@ public class Verbalizer {
     	logger.debug("Getting the most specific type of " + ind);
     	String query = String.format("select distinct ?type where {"
     			+ " <%s> a ?type ."
-    			+ "?type a owl:Class ."
+//    			+ "?type a owl:Class ." // too strict, thus currently omitted
     			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
     			ind.toStringID(), ind.toStringID());
-    	
-    	SortedSet<OWLClass> types = new TreeSet<>();
+		SortedSet<OWLClass> types = new TreeSet<>();
     	
     	QueryExecution qe = qef.createQueryExecution(query);
     	ResultSet rs = qe.execSelect();
