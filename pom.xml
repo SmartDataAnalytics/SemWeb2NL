@@ -171,6 +171,7 @@
 				<artifactId>jwnl</artifactId>
 				<version>1.4.1.RC2</version>
 			</dependency> -->
+
 			<!-- WordNet ExtJWNL -->
 			<dependency>
 				<groupId>net.sf.extjwnl</groupId>

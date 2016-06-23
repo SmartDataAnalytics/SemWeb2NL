@@ -122,7 +122,7 @@ public class OWLAxiomConverter implements OWLAxiomVisitor{
 	/**
 	 * Whether the style of the returned result is a proper English sentence or just a phrase.
 	 *
-	 * @param returnAsSentence
+	 * @param returnAsSentence Whether the style of the returned result is a proper English sentence or just a phrase.
 	 */
 	public void setReturnAsSentence(boolean returnAsSentence) {
 		this.returnAsSentence = returnAsSentence;

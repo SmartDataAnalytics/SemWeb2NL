@@ -24,13 +24,13 @@ public class WordNetUtils {
 	/**
 	 * Returns the derived adjective with the same word form for the most common sense of the given noun if exists.
 	 *
-	 * @param word the noun
+	 * @param noun the noun
 	 */
-	public String getDerivedAdjective(String word) {
+	public String getDerivedAdjective(String noun) {
 		try {
-			IndexWord noun = dict.lookupIndexWord(POS.NOUN, word);
+			IndexWord nounIW = dict.lookupIndexWord(POS.NOUN, noun);
 
-			List<Synset> senses = noun.getSenses();
+			List<Synset> senses = nounIW.getSenses();
 
 			Synset mainSense = senses.get(0);
 
@@ -39,7 +39,10 @@ public class WordNetUtils {
 			for (Pointer pointer : pointers) {
 				Synset derivedSynset = pointer.getTargetSynset();
 				if(derivedSynset.getPOS() == POS.ADJECTIVE) {
-					return derivedSynset.getWords().get(0).getLemma();
+//					return derivedSynset.getWords().get(0).getLemma();
+				}
+				if(derivedSynset.getPOS() == POS.VERB) {
+					System.out.println(derivedSynset);
 				}
 			}
 		} catch (JWNLException e) {
@@ -49,7 +52,12 @@ public class WordNetUtils {
 	}
 
 	public static void main(String[] args) throws Exception {
-		String adj = new WordNetUtils().getDerivedAdjective("female");
-		System.out.println(adj);
+		String[] nouns = {"female", "male", "person", "book", "actor"};
+		WordNetUtils utils = new WordNetUtils();
+
+		for (String noun : nouns) {
+			System.out.println(noun + ":");
+			System.out.println(utils.getDerivedAdjective(noun));
+		}
 	}
 }
