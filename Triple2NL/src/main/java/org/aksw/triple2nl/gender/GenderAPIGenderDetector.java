@@ -20,7 +20,7 @@
 /**
  * 
  */
-package org.aksw.avatar.gender;
+package org.aksw.triple2nl.gender;
 
 import java.io.BufferedReader;
 import java.io.IOException;

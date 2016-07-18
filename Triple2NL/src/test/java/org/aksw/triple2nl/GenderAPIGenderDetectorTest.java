@@ -20,11 +20,14 @@
 /**
  * 
  */
-package org.aksw.avatar.gender;
+package org.aksw.triple2nl;
 
-import static org.junit.Assert.*;
-
+import org.aksw.triple2nl.gender.Gender;
+import org.aksw.triple2nl.gender.GenderAPIGenderDetector;
+import org.aksw.triple2nl.gender.GenderDetector;
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Lorenz Buehmann
@@ -33,7 +36,7 @@ import org.junit.Test;
 public class GenderAPIGenderDetectorTest {
 
 	/**
-	 * Test method for {@link org.aksw.avatar.gender.GenderAPIGenderDetector#getGender(java.lang.String)}.
+	 * Test method for {@link GenderAPIGenderDetector#getGender(String)}.
 	 */
 	@Test
 	public void testGetGender() {

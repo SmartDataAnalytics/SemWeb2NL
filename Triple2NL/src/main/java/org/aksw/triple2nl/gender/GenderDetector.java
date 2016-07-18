@@ -17,8 +17,23 @@
  * limitations under the License.
  * #L%
  */
-package org.aksw.avatar.gender;
+/**
+ *
+ */
+package org.aksw.triple2nl.gender;
 
-public enum Gender {
-	MALE, FEMALE, UNKNOWN;
+
+/**
+ * Detects the gender of a given name.
+ * @author Lorenz Buehmann
+ *
+ */
+public interface GenderDetector {
+	
+	/**
+	 * Returns the gender of the given name.
+	 * @param name the name
+	 * @return the gender
+	 */
+    Gender getGender(String name);
 }
