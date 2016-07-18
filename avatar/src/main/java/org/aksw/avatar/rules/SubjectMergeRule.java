@@ -23,15 +23,9 @@
  */
 package org.aksw.avatar.rules;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
-import org.aksw.avatar.gender.Gender;
-
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
-
+import org.aksw.triple2nl.gender.Gender;
 import simplenlg.aggregation.Aggregator;
 import simplenlg.aggregation.ForwardConjunctionReductionRule;
 import simplenlg.features.Feature;
@@ -43,6 +37,10 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  *

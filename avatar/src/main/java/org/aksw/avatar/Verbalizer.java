@@ -47,14 +47,13 @@ import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
-import org.aksw.avatar.gender.Gender;
-import org.aksw.avatar.gender.LexiconBasedGenderDetector;
-import org.aksw.avatar.gender.TypeAwareGenderDetector;
 import org.aksw.avatar.rules.*;
-import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.triple2nl.gender.Gender;
+import org.aksw.triple2nl.gender.LexiconBasedGenderDetector;
+import org.aksw.triple2nl.gender.TypeAwareGenderDetector;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
@@ -79,7 +78,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A verbalizer for triples without variables.
