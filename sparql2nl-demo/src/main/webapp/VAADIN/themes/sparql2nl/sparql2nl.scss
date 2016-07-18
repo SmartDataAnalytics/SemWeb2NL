@@ -5,6 +5,17 @@
 
   /* An actual theme rule */
   .v-button {
-    color: blue;
+    //color: blue;
+  }
+
+
+  .v-table-cell-content .v-label .table-link a {
+    color:  black;
+  }
+
+  .header .heading{
+    font-family: "HelveticaW01-RoundedBd","Helvetica Neue","Helvetica","Arial","Microsoft YaHei New","Microsoft Yahei","SimSun","STXihei",sans-serif;
+    font-weight: bold;
+    font-size: 48px;
   }
 }

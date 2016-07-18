@@ -1,7 +1,7 @@
 @import "addons.scss";
 @import "sparql2nl.scss";
 
-.mytheme {
+.sparql2nl {
   @include addons;
   @include sparql2nl;
 }
