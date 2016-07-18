@@ -30,6 +30,8 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 
+import com.hp.hpl.jena.query.ParameterizedSparqlString;
+import com.hp.hpl.jena.query.QueryExecution;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
@@ -257,12 +259,25 @@ public class DefaultIRIConverter implements IRIConverter{
 	}
 	
 	private String getLabelFromKnowledgebase(String iri){
-		String query = "SELECT ?label WHERE {<%s> <%s> ?label. FILTER (LANGMATCHES(LANG(?label),'" + language + "' ))} ORDER BY DESC(?label) LIMIT 1";
-		
+		ParameterizedSparqlString query = new ParameterizedSparqlString(
+				"SELECT ?label WHERE {" +
+						"?s ?p1 ?o ." +
+						"optional {" +
+						"		?s ?p ?label. " +
+						"		FILTER (LANGMATCHES(LANG(?label),'" + language + "' ))" +
+						"	}" +
+						"optional {" +
+						"     ?s ?p ?label" +
+						"   }" +
+						"} " +
+						"ORDER BY DESC(?label) LIMIT 1");
+		query.setIri("s", iri);
 		// for each label property
 		for (String labelProperty : labelProperties) {
-			try {
-				ResultSet rs = executeSelect(String.format(query, iri, labelProperty));
+			query.setIri("p", labelProperty);
+			System.out.println(query.toString());
+			try (QueryExecution qe = qef.createQueryExecution(query.toString())){
+				ResultSet rs = qe.execSelect();
 				if(rs.hasNext()){
 					return rs.next().getLiteral("label").getLexicalForm();
 				}
@@ -352,12 +367,7 @@ public class DefaultIRIConverter implements IRIConverter{
 //    	      " "
 //    	   );
     	}
-    
-    private ResultSet executeSelect(String query){
-    	ResultSet rs = qef.createQueryExecution(query).execSelect();
-    	return rs;
-    }
-    
+
     public static void main(String[] args) {
     	DefaultIRIConverter converter = new DefaultIRIConverter(SparqlEndpoint.getEndpointDBpedia());
     	

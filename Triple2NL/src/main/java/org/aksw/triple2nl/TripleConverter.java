@@ -39,6 +39,9 @@ import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.converter.LiteralConverter;
+import org.aksw.triple2nl.gender.Gender;
+import org.aksw.triple2nl.gender.GenderDetector;
+import org.aksw.triple2nl.gender.LexiconBasedGenderDetector;
 import org.aksw.triple2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
@@ -98,6 +101,10 @@ public class TripleConverter {
 
 	private boolean returnAsSentence = true;
 
+	private boolean useGenderInformation = true;
+
+	private GenderDetector genderDetector;
+
 	public TripleConverter() {
 		this(new QueryExecutionFactoryModel(ModelFactory.createDefaultModel()), DEFAULT_CACHE_DIR, Lexicon.getDefaultLexicon());
 	}
@@ -154,6 +161,8 @@ public class TripleConverter {
 		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);
 		
 		reasoner = new SPARQLReasoner(qef);
+
+		genderDetector = new LexiconBasedGenderDetector();
 	}
 	
 	/**
@@ -511,7 +520,14 @@ public class TripleConverter {
 	public void setReturnAsSentence(boolean returnAsSentence) {
 		this.returnAsSentence = returnAsSentence;
 	}
-	
+
+	/**
+	 * @param useGenderInformation whether to use the gender information about a resource
+	 */
+	public void setUseGenderInformation(boolean useGenderInformation) {
+		this.useGenderInformation = useGenderInformation;
+	}
+
 	/**
 	 * Process the node and return an NLG element that contains the textual
 	 * representation. The output depends on the node type, i.e.
@@ -569,7 +585,7 @@ public class TripleConverter {
 	}
 	
 	public NPPhraseSpec processVarNode(Node varNode) {
-		return nlgFactory.createNounPhrase(varNode.toString());
+		return nlgFactory.createNounPhrase(nlgFactory.createWord(varNode.toString(), LexicalCategory.NOUN));
 	}
 	
 	public NPPhraseSpec processLiteralNode(Node node) {
@@ -582,9 +598,27 @@ public class TripleConverter {
 	}
 	
 	public NPPhraseSpec processResourceNode(Node node) {
+		// get string from URI
 		String s = uriConverter.convert(node.getURI());
+
+		// create word
 		NLGElement word = nlgFactory.createWord(s, LexicalCategory.NOUN);
+
+		// add gender information if enabled
+		if(useGenderInformation) {
+			Gender gender = genderDetector.getGender(s);
+
+			if(gender == Gender.FEMALE) {
+				word.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);
+			} else if(gender == Gender.MALE) {
+				word.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.MASCULINE);
+			}
+		}
+
+		// should be a proper noun, thus, will not be pluralized by morphology
 		word.setFeature(LexicalFeature.PROPER, true);
+
+		// wrap in NP
 		NPPhraseSpec np = nlgFactory.createNounPhrase(word);
 		return np;
 	}

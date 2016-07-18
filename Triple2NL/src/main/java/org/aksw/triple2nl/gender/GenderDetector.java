@@ -25,15 +25,16 @@ package org.aksw.triple2nl.gender;
 
 /**
  * Detects the gender of a given name.
- * @author Lorenz Buehmann
  *
+ * @author Lorenz Buehmann
  */
 public interface GenderDetector {
-	
+
 	/**
 	 * Returns the gender of the given name.
+	 *
 	 * @param name the name
 	 * @return the gender
 	 */
-    Gender getGender(String name);
+	Gender getGender(String name);
 }

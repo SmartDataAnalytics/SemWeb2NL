@@ -40,7 +40,11 @@ import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.vocabulary.RDF;
 import com.hp.hpl.jena.vocabulary.RDFS;
 
+import simplenlg.features.Feature;
+import simplenlg.features.LexicalFeature;
 import simplenlg.lexicon.Lexicon;
+import simplenlg.phrasespec.SPhraseSpec;
+import simplenlg.realiser.english.Realiser;
 
 /**
  * @author Lorenz Buehmann
@@ -52,12 +56,16 @@ public class TripleConverterTest {
 	private static final SparqlEndpointKS KS = new SparqlEndpointKS(ENDPOINT_DBPEDIA);
 	
 	private static TripleConverter converter;
+
+	private static Realiser r;
 	
 	@BeforeClass
 	public static void init() throws Exception {
 		KS.init();
 		
 		converter = new TripleConverter(KS.getQueryExecutionFactory(), "cache", (Lexicon)null);
+
+		r = new Realiser();
 	}
 	
 	/**
@@ -164,7 +172,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/Social_Democratic_Party_of_Germany"));
 		String text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Leipzig's leader party is Social Democratic Party of Germany", text);
+		assertEquals("Leipzig's leader party is Social Democratic Party of Germany.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Brad_Pitt"),
@@ -172,7 +180,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/Shawnee,_Oklahoma"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Brad Pitt is born in Shawnee, Oklahoma", text);
+		assertEquals("Brad Pitt is born in Shawnee, Oklahoma.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Brad_Pitt"),
@@ -180,7 +188,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/ontology/OldActor"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Brad Pitt is an old actor", text);
+		assertEquals("Brad Pitt is an old actor.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Ferrari"),
@@ -188,7 +196,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/red"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Ferrari has color red", text);
+		assertEquals("Ferrari has color red.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/John"),
@@ -196,7 +204,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/Mary"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("John likes Mary", text);
+		assertEquals("John likes Mary.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Mount_Everest"),
@@ -204,7 +212,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("8000", XSDDatatype.XSDinteger));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Mount Everest's height is 8000", text);
+		assertEquals("Mount Everest's height is 8000.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
@@ -212,7 +220,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/Ulm"));
 		text = converter.convert(t, false);
 		System.out.println(t + " -> " + text);
-		assertEquals("Albert Einstein's birth place is Ulm", text);
+		assertEquals("Albert Einstein's birth place is Ulm.", text);
 	
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Mount_Everest"),
@@ -220,7 +228,7 @@ public class TripleConverterTest {
 				NodeFactory.createURI("http://dbpedia.org/resource/K2"));
 		text = converter.convert(t, false);
 		System.out.println(t + " -> " + text);
-		assertEquals("Mount Everest is larger than K 2", text);
+		assertEquals("Mount Everest is larger than K 2.", text);
 			
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
@@ -228,7 +236,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("1879-03-14", XSDDatatype.XSDdate));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Albert Einstein's birth date is 14 March 1879", text);
+		assertEquals("Albert Einstein's birth date is 14 March 1879.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
@@ -236,7 +244,7 @@ public class TripleConverterTest {
 				NodeFactory.createVariable("date"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Albert Einstein's birth date is ?date", text);
+		assertEquals("Albert Einstein's birth date is ?date.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Lionel_Messi"),
@@ -244,13 +252,13 @@ public class TripleConverterTest {
 				NodeFactory.createVariable("team"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Lionel Messi's team is ?team", text);
+		assertEquals("Lionel Messi's team is ?team.", text);
 		
 		converter.setDeterminePluralForm(true);
 		text = converter.convert(t);
 		converter.setDeterminePluralForm(false);
 		System.out.println(t + " -> " + text);
-		assertEquals("Lionel Messi's teams are ?team", text);
+		assertEquals("Lionel Messi's teams are ?team.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Living_Bird_III"),
@@ -258,7 +266,7 @@ public class TripleConverterTest {
 				NodeFactory.createVariable("isReviewed"));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Living Bird III is peer reviewed ?isReviewed", text);
+		assertEquals("Living Bird III is peer reviewed ?isReviewed.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Lionel_Messi"),
@@ -266,7 +274,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("Lionel Messi", "en", null));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Lionel Messi's English label is \"Lionel Messi\"", text);
+		assertEquals("Lionel Messi's English label is \"Lionel Messi\".", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/London"),
@@ -274,7 +282,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("1572.122782973952", null, new BaseDatatype("http://dbpedia.org/datatype/squareKilometre")));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("London's area total is 1572.122782973952 square kilometres", text);
+		assertEquals("London's area total is 1572.122782973952 square kilometres.", text);
 		
 		
 	}
@@ -287,7 +295,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("true", XSDDatatype.XSDboolean));
 		String text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Mathematics of Computation is peer reviewed", text);
+		assertEquals("Mathematics of Computation is peer reviewed.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Living_Bird"),
@@ -352,6 +360,27 @@ public class TripleConverterTest {
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
 //		assertEquals("Living Bird is not peer reviewed", text);
+
+	}
+
+	@Test
+	public void testConvertTriplePatterns() throws Exception {
+		TripleConverter converter = new TripleConverter();
+		Triple t = Triple.create(
+				NodeFactory.createVariable("person"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/occupation"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Writer"));
+		String text = converter.convert(t);
+		System.out.println(t + " -> " + text);
+
+		t = Triple.create(
+				NodeFactory.createURI("http://dbpedia.org/ontology/Albert"),
+				NodeFactory.createURI("http://dbpedia.org/ontology/occupation"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Writer"));
+		SPhraseSpec phrase = converter.convertToPhrase(t);
+		phrase.getSubject().getChildren().get(0).setFeature(Feature.PRONOMINAL, true);
+
+		System.out.println(t + " -> " + r.realise(phrase));
 
 	}
 }

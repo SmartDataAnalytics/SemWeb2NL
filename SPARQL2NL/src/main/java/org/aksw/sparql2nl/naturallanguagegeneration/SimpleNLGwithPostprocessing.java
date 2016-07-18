@@ -977,6 +977,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     public SPhraseSpec getNLForTriple(Triple t, boolean outgoing) {
         SPhraseSpec p = tripleConverter.convertToPhrase(t, false, !outgoing);
+        logger.info("TP:" + t + " -> " + realiser.realise(p));
         return p;
     }
 
@@ -1190,8 +1191,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "        { ?person dbo:occupation res:Surfing. }"
                 + "        ?person dbo:birthDate ?date."
                 + "        FILTER(?date > \"1950\"^^xsd:date) ."
-                + "        OPTIONAL {?person rdfs:label ?string"
-                + "        FILTER ( lang(?string) = \"en\" ) } }";
+                + "        }";
 
         String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> "
                 + "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
@@ -1271,8 +1271,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 //            ep = new SparqlEndpoint(new URL("http://linkedbrainz.org/sparql"), "http://musicbrainz.org/20140320");
 //            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            query = Joiner.on("\n").join(Files.readLines(new File("src/main/resources/sparql_query.txt"), Charsets.UTF_8));
-            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
+//            query = Joiner.on("\n").join(Files.readLines(new File("src/main/resources/sparql_query.txt"), Charsets.UTF_8));
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxARQ);
             System.out.println(sparqlQuery);
 //            Query sparqlQuery = QueryFactory.create(argentina1, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());

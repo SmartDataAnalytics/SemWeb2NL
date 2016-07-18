@@ -18,9 +18,12 @@
  * #L%
  */
 /**
- * 
+ *
  */
 package org.aksw.triple2nl.gender;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -28,16 +31,13 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-
 /**
- * Returns the gender of a name by using Gender API at https://gender-api.com/ 
- * @author Lorenz Buehmann
+ * Returns the gender of a name by using Gender API at https://gender-api.com/
  *
+ * @author Lorenz Buehmann
  */
 public class GenderAPIGenderDetector implements GenderDetector {
-	
+
 	private static final String API_URL = "https://gender-api.com/get?name=";
 
 	/*
@@ -61,9 +61,9 @@ public class GenderAPIGenderDetector implements GenderDetector {
 				String gender = json.get("gender").getAsString();
 				//parse one of the possible values male, female, unknown
 				return Gender.valueOf(gender.toUpperCase());
-			} catch(Exception e){
+			} catch (Exception e) {
 				e.printStackTrace();
-			} finally{
+			} finally {
 				conn.disconnect();
 			}
 		} catch (IOException e) {

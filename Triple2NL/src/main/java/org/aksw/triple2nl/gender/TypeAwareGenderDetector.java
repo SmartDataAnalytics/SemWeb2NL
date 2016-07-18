@@ -22,9 +22,10 @@
  */
 package org.aksw.triple2nl.gender;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import com.google.common.collect.Sets;
+import com.hp.hpl.jena.query.QuerySolution;
+import com.hp.hpl.jena.query.ResultSet;
+import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.jena.web.HttpSC;
@@ -32,10 +33,8 @@ import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Sets;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @author Lorenz Buehmann
