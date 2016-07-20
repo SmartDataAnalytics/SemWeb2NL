@@ -3,7 +3,6 @@ package org.sparql2nl.demo.view;
 import com.hp.hpl.jena.query.*;
 import com.hp.hpl.jena.rdf.model.RDFNode;
 import com.hp.hpl.jena.sparql.core.Var;
-import com.vaadin.data.Property.ValueChangeEvent;
 import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.data.util.IndexedContainer;
 import com.vaadin.event.ItemClickEvent;
@@ -17,24 +16,23 @@ import com.vaadin.shared.ui.MultiSelectMode;
 import com.vaadin.shared.ui.label.ContentMode;
 import com.vaadin.ui.*;
 import com.vaadin.ui.themes.ValoTheme;
+import de.fatalix.vaadin.addon.codemirror.CodeMirror;
+import de.fatalix.vaadin.addon.codemirror.CodeMirrorLanguage;
+import de.fatalix.vaadin.addon.codemirror.CodeMirrorTheme;
 import org.sparql2nl.demo.Manager;
 import org.sparql2nl.demo.SPARQL2NLSession;
 import org.sparql2nl.demo.model.Knowledgebase;
 import org.sparql2nl.demo.model.Language;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
 public class MainView extends Panel implements View{
 	
-//	private VerticalLayout mainPanel = new VerticalLayout();
-	private View currentView;
-	
 	private Label nlrLabel;
-//	private CodeMirror sparqlQueryInput;
-	private TextArea sparqlQueryInput;
+	private CodeMirror sparqlQueryInput;
+//	private TextArea sparqlQueryInput;
 	private VerticalLayout resultTableHolder;
 	private Query currentQuery;
 	private Table currentTable;
@@ -94,9 +92,11 @@ public class MainView extends Panel implements View{
 		footer.addStyleName("footer");
 
 		Resource res = new ThemeResource("img/citec_logo.gif");
+
 		Link link = new Link("", new ExternalResource("http://www.cit-ec.de/"));
 	    link.setIcon(res);
 	    link.setHeight("40px");
+		link.addStyleName("logo");
 	    footer.addComponent(link);
 
 	    Label pad = new Label();
@@ -108,6 +108,7 @@ public class MainView extends Panel implements View{
 		link = new Link("", new ExternalResource("http://www.aksw.org"));
 	    link.setIcon(res);
 	    link.setHeight("40px");
+		link.addStyleName("logo");
 	    footer.addComponent(link);
 
 		return footer;
@@ -116,10 +117,12 @@ public class MainView extends Panel implements View{
 	private Component buildContent(){
 		dashboardPanels = new CssLayout();
 
+		// use 3x3 grid as layout
 		GridLayout grid = new GridLayout(3, 3);
 		grid.setSizeFull();
 		grid.setSpacing(true);
-//		grid.setHeight("800px");
+
+		// add the 4 views
 		grid.addComponent(createQueryPortal(), 0, 0);
 		grid.addComponent(createNLRPortal(), 2, 0);
 		grid.addComponent(createQueryResultPortal(), 0, 2);
@@ -128,61 +131,36 @@ public class MainView extends Panel implements View{
 		grid.setRowExpandRatio(2, 0.5f);
 		grid.setColumnExpandRatio(0, 0.5f);
 		grid.setColumnExpandRatio(2, 0.5f);
-		
-		//translate button
-        Button b = new Button("Translate");
-//        b.addStyleName(ValoTheme.BUTTON_QUIET);
-		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
-		b.setIcon(FontAwesome.CHEVRON_RIGHT);
 
-//        b.setWidth("128px");
-//        b.setHeight("128px");
+		// add the buttons
+		// translate button
+        Button b = new Button("Translate");
+//		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
+//		b.setIcon(FontAwesome.CHEVRON_RIGHT);
         b.setDescription("Click to translate the SPARQL query into natural language.");
-        b.addClickListener(new Button.ClickListener() {
-			@Override
-			public void buttonClick(Button.ClickEvent event) {
-				onTranslateQuery();
-			}
-		});
+        b.addClickListener((Button.ClickListener) event -> onTranslateQuery());
         grid.addComponent(b, 1, 0);
         grid.setComponentAlignment(b, Alignment.MIDDLE_CENTER);
 
-        //run button
+        // run button
 		b = new Button("Execute");
-//		b.addStyleName(ValoTheme.BUTTON_QUIET);
-		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
-		b.setIcon(FontAwesome.CHEVRON_DOWN);
-//		b.addStyleName(ValoTheme.BUTTON_BORDERLESS);
-//        b.setWidth("128px");
-//        b.setHeight("128px");
+//		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
+//		b.setIcon(FontAwesome.CHEVRON_DOWN);
         b.setDescription("Click to execute the SPARQL query and show the result set in the panel below.");
-        b.addClickListener(new Button.ClickListener() {
-			@Override
-			public void buttonClick(Button.ClickEvent event) {
-				onExecuteQuery();
-			}
-		});
+        b.addClickListener((Button.ClickListener) event -> onExecuteQuery());
 		grid.addComponent(b, 0, 1);
 		grid.setComponentAlignment(b, Alignment.MIDDLE_CENTER);
 
-        //explain button
+        // explain button
 		b = new Button("Explain");
-//		b.addStyleName(ValoTheme.BUTTON_QUIET);
-		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
-		b.setIcon(FontAwesome.CHEVRON_RIGHT);
-//        b.setWidth("128px");
-//        b.setHeight("128px");
+//		b.addStyleName(ValoTheme.BUTTON_ICON_ALIGN_RIGHT);
+//		b.setIcon(FontAwesome.CHEVRON_RIGHT);
         b.setDescription("Click to see why selected rows belong to result set.");
-        b.addClickListener(new Button.ClickListener() {
-			@Override
-			public void buttonClick(Button.ClickEvent event) {
-				onExplain();
-			}
-		});
+        b.addClickListener((Button.ClickListener) event -> onExplain());
 		grid.addComponent(b, 1, 2);
 		grid.setComponentAlignment(b, Alignment.MIDDLE_CENTER);
 //
-        //central DBpedia image
+        // central DBpedia image
 		grid.addComponent(createKnowledgeBaseSelector(), 1, 1);
 
 		return grid;
@@ -210,35 +188,21 @@ public class MainView extends Panel implements View{
 
 		MenuBar tools = new MenuBar();
 		tools.addStyleName(ValoTheme.MENUBAR_BORDERLESS);
-		MenuBar.MenuItem max = tools.addItem("", FontAwesome.EXPAND, new MenuBar.Command() {
-
-			@Override
-			public void menuSelected(final MenuBar.MenuItem selectedItem) {
-				if (!slot.getStyleName().contains("max")) {
-					selectedItem.setIcon(FontAwesome.COMPRESS);
-					toggleMaximized(slot, true);
-				} else {
-					slot.removeStyleName("max");
-					selectedItem.setIcon(FontAwesome.EXPAND);
-					toggleMaximized(slot, false);
-				}
+		MenuBar.MenuItem max = tools.addItem("", FontAwesome.EXPAND, (MenuBar.Command) selectedItem -> {
+			if (!slot.getStyleName().contains("max")) {
+				selectedItem.setIcon(FontAwesome.COMPRESS);
+				toggleMaximized(slot, true);
+			} else {
+				slot.removeStyleName("max");
+				selectedItem.setIcon(FontAwesome.EXPAND);
+				toggleMaximized(slot, false);
 			}
 		});
 		max.setStyleName("icon-only");
 		MenuBar.MenuItem root = tools.addItem("", FontAwesome.COG, null);
-		root.addItem("Configure", new MenuBar.Command() {
-			@Override
-			public void menuSelected(final MenuBar.MenuItem selectedItem) {
-				Notification.show("Not implemented in this demo");
-			}
-		});
+		root.addItem("Configure", (MenuBar.Command) selectedItem -> Notification.show("Not implemented in this demo"));
 		root.addSeparator();
-		root.addItem("Close", new MenuBar.Command() {
-			@Override
-			public void menuSelected(final MenuBar.MenuItem selectedItem) {
-				Notification.show("Not implemented in this demo");
-			}
-		});
+		root.addItem("Close", (MenuBar.Command) selectedItem -> Notification.show("Not implemented in this demo"));
 
 		toolbar.addComponents(caption, tools);
 		toolbar.setExpandRatio(caption, 1);
@@ -255,13 +219,12 @@ public class MainView extends Panel implements View{
 	}
 
 	private void toggleMaximized(final Component panel, final boolean maximized) {
-		for (Iterator<Component> it = root.iterator(); it.hasNext();) {
-			it.next().setVisible(!maximized);
+		for (Component aRoot : root) {
+			aRoot.setVisible(!maximized);
 		}
 		dashboardPanels.setVisible(true);
 
-		for (Iterator<Component> it = dashboardPanels.iterator(); it.hasNext();) {
-			Component c = it.next();
+		for (Component c : dashboardPanels) {
 			c.setVisible(!maximized);
 		}
 
@@ -274,13 +237,16 @@ public class MainView extends Panel implements View{
 	}
 	
 	private Component createQueryPortal(){
-//		sparqlQueryInput = new CodeMirror(null, CodeStyle.TEXT);
-		sparqlQueryInput = new TextArea();
-		sparqlQueryInput.addStyleName("nlrView");
-		sparqlQueryInput.setCaption("Enter your SPARQL query:");
-//		sparqlQueryInput.setWidth("100%");
-//		sparqlQueryInput.setHeight("300px");
+		sparqlQueryInput = new CodeMirror();
+		sparqlQueryInput.setTheme(CodeMirrorTheme.DEFAULT);
+		sparqlQueryInput.setLanguage(CodeMirrorLanguage.SPARQL);
 		sparqlQueryInput.setSizeFull();
+
+
+//		sparqlQueryInput = new TextArea();
+//		sparqlQueryInput.addStyleName("sparqlquery-view");
+//		sparqlQueryInput.setCaption("Enter your SPARQL query:");
+//		sparqlQueryInput.setSizeFull();
 
 		return createContentWrapper(sparqlQueryInput);
 	}
@@ -303,17 +269,12 @@ public class MainView extends Panel implements View{
 		knowledgebaseSelector.setNullSelectionAllowed(false);
 		knowledgebaseSelector.setContainerDataSource(ic);
 		knowledgebaseSelector.setImmediate(true);
-		knowledgebaseSelector.addListener(new ValueChangeListener() {
-			
-			@Override
-			public void valueChange(ValueChangeEvent event) {
-				onChangeKnowledgebase();
-			}
-		});
+		knowledgebaseSelector.addValueChangeListener((ValueChangeListener) event -> onChangeKnowledgebase());
         l.addComponent(knowledgebaseSelector);
         
 		centerLogo = new Embedded("");
 		centerLogo.setSizeFull();
+		centerLogo.setHeight("80px");
 		l.addComponent(centerLogo);
 		l.setExpandRatio(centerLogo, 1f);
 		
@@ -323,7 +284,7 @@ public class MainView extends Panel implements View{
 	private Component createNLRPortal() {
 		nlrLabel = new Label();
 		nlrLabel.setCaption("Translation");
-		nlrLabel.addStyleName("nlrView");
+		nlrLabel.addStyleName("nlr-view");
 		nlrLabel.setSizeFull();
 
 		//create option to change language in header of the portal
@@ -360,22 +321,22 @@ public class MainView extends Panel implements View{
 		explanationHolder = new VerticalLayout();
 		explanationHolder.setWidth("100%");
 		explanationHolder.setHeight(null);
-		explanationHolder.addStyleName("nlrView");
 		explanationHolder.setSpacing(true);
-		VerticalLayout wrapper = new VerticalLayout();
-		wrapper.setSizeFull();
-		wrapper.setCaption("Explanations");
+		explanationHolder.addStyleName("explanations-view");
+
 		Panel p = new Panel();
-		p.addStyleName("nlrView");
 		p.setSizeFull();
 		p.setContent(explanationHolder);
-		wrapper.addComponent(p);
 
-		return createContentWrapper(explanationHolder);
+		return createContentWrapper(p);
+	}
+
+	private String getCurrentQuery() {
+		return sparqlQueryInput.getCode();
 	}
 	
 	private void onTranslateQuery(){
-		String queryStr = sparqlQueryInput.getValue().toString();
+		String queryStr = getCurrentQuery();
 		
 		try {
 			//check if query has correct syntax
@@ -415,7 +376,7 @@ public class MainView extends Panel implements View{
 	public void reset(){
 		SPARQL2NLSession.getManager().reset();
 		knowledgebaseSelector.setValue(SPARQL2NLSession.getManager().getCurrentKnowledgebase());
-		sparqlQueryInput.setValue(QueryFactory.create(SPARQL2NLSession.getManager().getCurrentKnowledgebase().getExampleQuery(), Syntax.syntaxARQ).toString());
+		sparqlQueryInput.setCode(QueryFactory.create(SPARQL2NLSession.getManager().getCurrentKnowledgebase().getExampleQuery(), Syntax.syntaxARQ).toString());
 		resultTableHolder.removeAllComponents();
 		explanationHolder.removeAllComponents();
 		centerLogo.setSource(SPARQL2NLSession.getManager().getCurrentKnowledgebase().getIcon());
@@ -428,7 +389,7 @@ public class MainView extends Panel implements View{
 			centerLogo.setSource(kb.getIcon());
 			centerLogo.setDescription(kb.getDescription());
 		}
-		sparqlQueryInput.setValue(QueryFactory.create(kb.getExampleQuery(), Syntax.syntaxARQ).toString());
+		sparqlQueryInput.setCode(QueryFactory.create(kb.getExampleQuery(), Syntax.syntaxARQ).toString());
 		SPARQL2NLSession.getManager().setCurrentKnowledgebase(kb);
 		explanationHolder.removeAllComponents();
 		resultTableHolder.removeAllComponents();
@@ -437,9 +398,8 @@ public class MainView extends Panel implements View{
 	
 	private void addExplanation(QuerySolution qs){
 		String exp = SPARQL2NLSession.getManager().getExplanationNLR(currentQuery, qs, true);
-		Label l = new Label(exp, Label.CONTENT_XHTML);
-		l.addStyleName("shadow");
-		l.addStyleName("wrap");
+		Label l = new Label(exp, ContentMode.HTML);
+		l.addStyleName("explanation");
 		l.setWidth("90%");
 		l.setHeight(null);
 		explanationHolder.addComponent(l);
@@ -447,7 +407,7 @@ public class MainView extends Panel implements View{
 	}
 	
 	private void onExecuteQuery(){
-		String queryStr = sparqlQueryInput.getValue().toString();
+		String queryStr = sparqlQueryInput.getCode();
 		
 		try {
 			//check if query has correct syntax
@@ -457,7 +417,7 @@ public class MainView extends Panel implements View{
 			table.setSelectable(true);
 			table.setMultiSelect(true);
 			table.setMultiSelectMode(MultiSelectMode.DEFAULT);
-			table.addListener(new ItemClickEvent.ItemClickListener() {
+			table.addItemClickListener(new ItemClickEvent.ItemClickListener() {
 	            private static final long serialVersionUID = 2068314108919135281L;
 
 	            public void itemClick(ItemClickEvent event) {
@@ -469,18 +429,17 @@ public class MainView extends Panel implements View{
 			
 			
 			for(Var var : currentQuery.getProjectVars()){
-//				table.addContainerProperty(var.getVarName(), String.class,  null);
-				table.addContainerProperty(var.getVarName(), Label.class,  null);
+				table.addContainerProperty(var.toString(), Label.class,  null);
 			}
 
 			ResultSet rs = SPARQL2NLSession.getManager().executeSelect(currentQuery);
 			QuerySolution qs;
 			List<Object> row;
 			int i = 1;
-			List<String> uriRows = new ArrayList<String>();
+			List<String> uriRows = new ArrayList<>();
 			while(rs.hasNext()){
 				qs = rs.next();
-				row = new ArrayList<Object>();
+				row = new ArrayList<>();
 				
 //				Item item = table.getItem(qs);
 //				
