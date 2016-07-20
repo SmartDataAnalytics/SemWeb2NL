@@ -91,7 +91,7 @@ public class TripleConverterTest {
 		
 		String text = converter.convert(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a person, whose's birth place is Ulm and whose's birth date is 14 March 1879.", text);
+		assertEquals("Albert Einstein is a person. His birth place is Ulm and his birth date is 14 March 1879.", text);
 		
 		triples = new ArrayList<Triple>();
 		triples.add(Triple.create(
@@ -120,7 +120,7 @@ public class TripleConverterTest {
 		
 		text = converter.convert(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a musican as well as a physican and its birth date is 14 March 1879.", text);
+		assertEquals("Albert Einstein is a musican as well as a physican. His birth date is 14 March 1879.", text);
 		
 		//more than 2 types
 		triples = new ArrayList<Triple>();
@@ -143,7 +143,7 @@ public class TripleConverterTest {
 		
 		text = converter.convert(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein is a physican and a philosopher as well as a musican and its birth date is 14 March 1879.", text);
+		assertEquals("Albert Einstein is a physican and a philosopher as well as a musican. His birth date is 14 March 1879.", text);
 		
 		//no type
 		triples = new ArrayList<Triple>();
@@ -158,7 +158,22 @@ public class TripleConverterTest {
 		
 		text = converter.convert(triples);
 		System.out.println(triples + "\n-> " + text);
-		assertEquals("Albert Einstein's birth place is Ulm and its birth date is 14 March 1879.", text);
+		assertEquals("Albert Einstein's birth place is Ulm and his birth date is 14 March 1879.", text);
+
+		// no type with verb
+		triples = new ArrayList<Triple>();
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Ulm")));
+		triples.add(Triple.create(
+				subject,
+				NodeFactory.createURI("http://dbpedia.org/ontology/influenced"),
+				NodeFactory.createURI("http://dbpedia.org/resource/Nathan_Rosen")));
+
+		text = converter.convert(triples);
+		System.out.println(triples + "\n-> " + text);
+		assertEquals("Albert Einstein's birth place is Ulm and he influenced Nathan Rosen.", text);
 	}
 
 	/**

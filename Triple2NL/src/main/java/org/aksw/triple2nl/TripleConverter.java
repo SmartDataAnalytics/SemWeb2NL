@@ -25,7 +25,6 @@ package org.aksw.triple2nl;
 import com.google.common.collect.Lists;
 import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
 import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.graph.Triple;
 import com.hp.hpl.jena.graph.impl.LiteralLabel;
 import com.hp.hpl.jena.rdf.model.ModelFactory;
@@ -48,6 +47,7 @@ import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizationType;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.aksw.triple2nl.util.GenericType;
+import org.apache.commons.collections15.ListUtils;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.semanticweb.owlapi.model.IRI;
@@ -57,11 +57,7 @@ import org.slf4j.LoggerFactory;
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.features.LexicalFeature;
-import simplenlg.features.Tense;
-import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.LexicalCategory;
-import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
+import simplenlg.framework.*;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -70,6 +66,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLDataPropertyImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Convert triple(s) into natural language.
@@ -202,24 +199,16 @@ public class TripleConverter {
 	 */
 	public String convert(List<Triple> triples){
 		// combine with conjunction
-		CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
+		CoordinatedPhraseElement typesConjunction = nlgFactory.createCoordinatedPhrase();
 		
-		// get the type triples first 
-		List<Triple> typeTriples = new ArrayList<>();
-		List<Triple> otherTriples = new ArrayList<>();
-		
-		for (Triple triple : triples) {
-			if(triple.predicateMatches(RDF.type.asNode())){
-				typeTriples.add(triple);
-			} else {
-				otherTriples.add(triple);
-			}
-		}
-		
+		// separate type triples from others
+		List<Triple> typeTriples = triples.stream().filter(t -> t.predicateMatches(RDF.type.asNode())).collect(Collectors.toList());
+		List<Triple> otherTriples = ListUtils.subtract(triples, typeTriples);
+
 		// convert the type triples
-		List<SPhraseSpec> typePhrases = convertToPhrase(typeTriples);
+		List<SPhraseSpec> typePhrases = convertToPhrases(typeTriples);
 		
-		// if there are more than one types, we combine them in a single clause
+		// if there is more than one type, we combine them into a single clause
 		if(typePhrases.size() > 1){
 			// combine all objects in a coordinated phrase
 			CoordinatedPhraseElement combinedObject = nlgFactory.createCoordinatedPhrase();
@@ -254,33 +243,46 @@ public class TripleConverter {
 			typePhrases = Lists.newArrayList(representative);
 		}
 		for (SPhraseSpec phrase : typePhrases) {
-			conjunction.addCoordinate(phrase);
+			typesConjunction.addCoordinate(phrase);
 		}
 		
-		//convert the other triples, but use place holders for the subject
-		//we have to use whose because the possessive form of who is who's
-		String placeHolderToken = (typeTriples.isEmpty() || otherTriples.size() == 1) ? "it" : "whose";
-		Node placeHolder = NodeFactory.createURI("http://sparql2nl.aksw.org/placeHolder/" + placeHolderToken);
-		Collection<Triple> placeHolderTriples = new ArrayList<>(otherTriples.size());
-		Iterator<Triple> iterator = otherTriples.iterator();
-		//we have to keep one triple with subject if we have no type triples
-		if(typeTriples.isEmpty() && iterator.hasNext()){
-			placeHolderTriples.add(iterator.next());
+		// convert the other triples
+		CoordinatedPhraseElement othersConjunction = nlgFactory.createCoordinatedPhrase();
+		List<SPhraseSpec> otherPhrases = convertToPhrases(otherTriples);
+		// we have to keep one triple with subject if we have no type triples
+		if(typeTriples.isEmpty()) {
+			othersConjunction.addCoordinate(otherPhrases.remove(0));
 		}
-		while (iterator.hasNext()) {
-			Triple triple = iterator.next();
-			Triple newTriple = Triple.create(placeHolder, triple.getPredicate(), triple.getObject());
-			placeHolderTriples.add(newTriple);
-		}
-		
-		Collection<SPhraseSpec> otherPhrases = convertToPhrase(placeHolderTriples);
-		
+		// make subject pronominal, i.e. -> he/she/it
+		otherPhrases.stream().forEach(p -> asPronoun(p.getSubject()));
 		for (SPhraseSpec phrase : otherPhrases) {
-			conjunction.addCoordinate(phrase);
+			othersConjunction.addCoordinate(phrase);
 		}
-        
-		String sentence = realiser.realiseSentence(conjunction);
-		return sentence;
+
+		List<DocumentElement> sentences = new ArrayList();
+		if(!typeTriples.isEmpty()) {
+			sentences.add(nlgFactory.createSentence(typesConjunction));
+		}
+
+		if(!otherTriples.isEmpty()) {
+			sentences.add(nlgFactory.createSentence(othersConjunction));
+		}
+
+		DocumentElement paragraph = nlgFactory.createParagraph(sentences);
+		String realisation = realiser.realise(paragraph).getRealisation().trim();
+
+		return realisation;
+	}
+
+	private void asPronoun(NLGElement el) {
+		if(el.hasFeature(InternalFeature.SPECIFIER)) {
+			NLGElement specifier = el.getFeatureAsElement(InternalFeature.SPECIFIER);
+			if(specifier.hasFeature(Feature.POSSESSIVE)) {
+				specifier.setFeature(Feature.PRONOMINAL, true);
+			}
+		} else {
+			el.setFeature(Feature.PRONOMINAL, true);
+		}
 	}
 
 	/**
@@ -417,6 +419,7 @@ public class TripleConverter {
 					p.setSubject(subjectElement);
 					p.setVerb(pp.getInfinitiveForm(predicateAsString));
 					p.setObject(objectElement);
+					p.setFeature(Feature.TENSE, propertyVerbalization.getTense());
 				}// in other cases, use the BOA pattern
 				else {
 
@@ -461,7 +464,7 @@ public class TripleConverter {
 		}
 		
 		// set present time as tense
-		p.setFeature(Feature.TENSE, Tense.PRESENT);
+//		p.setFeature(Feature.TENSE, Tense.PRESENT);
 //		System.out.println(realiser.realise(p));
 		return p;
 	}
@@ -472,7 +475,7 @@ public class TripleConverter {
 	 * @param triples the triples
 	 * @return a list of phrases
 	 */
-	public List<SPhraseSpec> convertToPhrase(Collection<Triple> triples) {
+	public List<SPhraseSpec> convertToPhrases(Collection<Triple> triples) {
 		List<SPhraseSpec> phrases = new ArrayList<>();
 		for (Triple triple : triples) {
 			phrases.add(convertToPhrase(triple));
