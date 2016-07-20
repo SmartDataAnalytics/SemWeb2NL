@@ -275,7 +275,6 @@ public class DefaultIRIConverter implements IRIConverter{
 		// for each label property
 		for (String labelProperty : labelProperties) {
 			query.setIri("p", labelProperty);
-			System.out.println(query.toString());
 			try (QueryExecution qe = qef.createQueryExecution(query.toString())){
 				ResultSet rs = qe.execSelect();
 				if(rs.hasNext()){

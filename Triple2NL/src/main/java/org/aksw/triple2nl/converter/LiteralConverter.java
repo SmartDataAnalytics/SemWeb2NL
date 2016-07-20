@@ -21,9 +21,14 @@ package org.aksw.triple2nl.converter;
 
 import java.text.DateFormat;
 import java.text.DateFormatSymbols;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicates;
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.OwlApiJenaUtils;
@@ -106,7 +111,10 @@ public class LiteralConverter {
 					s = '"' + s + '"';
 				}
             } else {// user-defined datatype
-                s = lit.getLexicalForm() + " " + StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(iriConverter.convert(dt.getURI(), false)), " ");
+				String text = iriConverter.convert(dt.getURI(), false).toLowerCase();
+				String[] split = StringUtils.splitByCharacterTypeCamelCase(text.trim());
+				String datatype = Joiner.on(" ").join(Arrays.asList(split).stream().filter(str -> !str.trim().isEmpty()).collect(Collectors.toList()));
+				s = lit.getLexicalForm() + " " + datatype;
             }
         }
         return s;

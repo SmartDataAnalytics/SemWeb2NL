@@ -33,10 +33,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
+import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.nlp.StanfordCoreNLPWrapper;
 import org.aksw.triple2nl.util.Preposition;
 import org.apache.log4j.Logger;
 
@@ -60,6 +62,7 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import net.sf.extjwnl.dictionary.Dictionary;
+import simplenlg.features.Tense;
 
 /**
  * Verbalize a property.
@@ -75,7 +78,7 @@ public class PropertyVerbalizer {
     private Dictionary database;
     
     private final String VERB_PATTERN = "^((VP)|(have NP)|(be NP P)|(be VP P)|(VP NP)).*";
-	private StanfordCoreNLP pipeline;
+	private StanfordCoreNLPWrapper pipeline;
 	private boolean useLinguisticalAnalysis = true;
 	
 	private final List<String> auxiliaryVerbs = Lists.newArrayList("do", "have", "be", "shall", "can", "may");
@@ -99,32 +102,37 @@ public class PropertyVerbalizer {
         Properties props = new Properties();
 		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
 		props.put("ssplit.isOneSentence","true");
-		pipeline = new StanfordCoreNLP(props);
+//		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLP(props));
+		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLPClient(props, "192.168.35.138", 9000));
     }
     
     public PropertyVerbalization verbalize(String propertyURI){
     	logger.debug("Getting lexicalization type for \"" + propertyURI + "\"...");
     	
-		//get textual representation for the property URI
+		// get textual representation for the property URI
 		String propertyText = uriConverter.convert(propertyURI);
 
-		//normalize the text, e.g. to lower case
+		// normalize the text, e.g. to lower case
 		propertyText = normalize(propertyText);
     	
-    	//try to use linguistic information
+    	// try to use linguistic information
     	PropertyVerbalization propertyVerbalization = getTypeByLinguisticAnalysis(propertyURI, propertyText);
     	
-    	//if this failed use WordNet heuristic
-    	if(propertyVerbalization.getVerbalizationType() == PropertyVerbalizationType.UNSPECIFIED){
-    		logger.debug("...using WordNet based analysis...");
-    		PropertyVerbalizationType verbalizationType = getTypeByWordnet(propertyText);
-    		propertyVerbalization.setVerbalizationType(verbalizationType);
-    	}
-    	
-    	//compute expanded form
+    	// if this failed use WordNet heuristic
+		if(propertyVerbalization.getVerbalizationType() == PropertyVerbalizationType.UNSPECIFIED || propertyText.split(" ").length == 1) {
+			logger.debug("...using WordNet-based analysis...");
+			PropertyVerbalizationType verbalizationType = getTypeByWordnet(propertyText);
+			propertyVerbalization.setVerbalizationType(verbalizationType);
+		}
+
+    	// compute expanded form
     	computeExpandedVerbalization(propertyVerbalization);
-    	
-    	logger.debug("Done.");
+
+		// determine tense
+		Tense tense = getTense(propertyText);
+		propertyVerbalization.setTense(tense);
+
+		logger.debug("Done.");
     	
     	return propertyVerbalization;
     }
@@ -202,7 +210,7 @@ public class PropertyVerbalizer {
         
         try {
 			// number of occurrences as noun
-			IndexWord iw = database.getIndexWord(POS.NOUN, token);
+			IndexWord iw = database.lookupIndexWord(POS.NOUN, token);
 			if(iw != null) {
 				synsets = iw.getSenses();
 				
@@ -217,7 +225,7 @@ public class PropertyVerbalizer {
 			
 
 			// number of occurrences as verb
-			iw = database.getIndexWord(POS.VERB, token);
+			iw = database.lookupIndexWord(POS.VERB, token); // does morphological processing, otherwise use getIndexWord
 			if(iw != null) {
 				synsets = iw.getSenses();
 				for (Synset synset : synsets) {
@@ -318,6 +326,18 @@ public class PropertyVerbalizer {
 		}
         return word;
     }
+
+	private Tense getTense(String word) {
+		String[] split = word.split(" ");
+		String verb = split[0];
+
+		if(verb.endsWith("ed") && split.length == 1) {
+			// probably past tense
+			return Tense.PAST;
+		} else {
+			return Tense.PRESENT;
+		}
+	}
     
 	private PropertyVerbalization getTypeByLinguisticAnalysis(String propertyURI, String propertyText) {
 		logger.debug("...using linguistical analysis...");
