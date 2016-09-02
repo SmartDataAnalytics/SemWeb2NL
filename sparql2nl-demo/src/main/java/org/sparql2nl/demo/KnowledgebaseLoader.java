@@ -6,6 +6,8 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.dllearner.kb.sparql.SparqlEndpoint;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sparql2nl.demo.model.Knowledgebase;
 
 import java.io.File;
@@ -17,8 +19,11 @@ import java.util.Iterator;
 import java.util.List;
 
 public class KnowledgebaseLoader {
+
+	private static final Logger LOGGER = LoggerFactory.getLogger(KnowledgebaseLoader.class);
 	
 	public static List<Knowledgebase> loadDatasets(String path){
+		LOGGER.info("loading knowledge bases from {}", path);
 		List<Knowledgebase> datasets = new ArrayList<Knowledgebase>();
 		HierarchicalConfiguration.setDefaultListDelimiter('\0');
 		try {
@@ -30,7 +35,7 @@ public class KnowledgebaseLoader {
 				datasets.add(createKnowledgebase(datasetConf));
 			}
 		} catch (ConfigurationException e) {
-			e.printStackTrace();
+			LOGGER.error("loading knowledge bases failed", e);
 		}
 		
 		return datasets;
@@ -57,8 +62,7 @@ public class KnowledgebaseLoader {
 			
 			return new SparqlEndpoint(url, Collections.singletonList(defaultGraphURI), Collections.<String>emptyList());
 		} catch (MalformedURLException e) {
-			System.err.println("Could not parse URL from SPARQL endpoint.");
-			e.printStackTrace();
+			LOGGER.error("Could not parse URL from SPARQL endpoint.", e);
 		}
 		return null;
 	}

@@ -3,13 +3,20 @@ package org.aksw.triple2nl.util;
 import net.sf.extjwnl.JWNLException;
 import net.sf.extjwnl.data.*;
 import net.sf.extjwnl.dictionary.Dictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
+ * Utilities for WordNet.
+ *
  * @author Lorenz Buehmann
  */
 public class WordNetUtils {
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(WordNetUtils.class);
 
 	private Dictionary dict;
 
@@ -49,6 +56,38 @@ public class WordNetUtils {
 			e.printStackTrace();
 		}
 		return null;
+	}
+
+	/**
+	 * Gets all synsets for the given word as VERB and NOUN.
+	 *
+	 * @param word the word
+	 * @return a representative word for each synset
+	 */
+	public List<String> getAllSynsets(String word) {
+		List<String> synsets = new ArrayList<>();
+
+		try {
+			// noun synsets
+			IndexWord iw = dict.getIndexWord(POS.NOUN, word);
+			if(iw != null) {
+				for (Synset synset : iw.getSenses()) {
+					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
+				}
+			}
+
+			// verb synsets
+			iw = dict.getIndexWord(POS.VERB, word);
+			if(iw != null) {
+				for (Synset synset : iw.getSenses()) {
+					synsets.add("VERB " + synset.getWords().get(0).getLemma());
+				}
+			}
+		} catch (JWNLException e) {
+			LOGGER.error("WordNet lookup failed.", e);
+		}
+
+		return synsets;
 	}
 
 	public static void main(String[] args) throws Exception {

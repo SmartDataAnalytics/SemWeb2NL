@@ -20,5 +20,5 @@
 package org.aksw.triple2nl.gender;
 
 public enum Gender {
-	MALE, FEMALE, UNKNOWN;
+	MALE, FEMALE, UNKNOWN
 }

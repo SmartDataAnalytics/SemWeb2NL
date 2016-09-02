@@ -52,7 +52,7 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.triple2nl.gender.Gender;
-import org.aksw.triple2nl.gender.LexiconBasedGenderDetector;
+import org.aksw.triple2nl.gender.DictionaryBasedGenderDetector;
 import org.aksw.triple2nl.gender.TypeAwareGenderDetector;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
@@ -129,7 +129,7 @@ public class Verbalizer {
         or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
 
-        gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
+        gender = new TypeAwareGenderDetector(qef, new DictionaryBasedGenderDetector());
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }

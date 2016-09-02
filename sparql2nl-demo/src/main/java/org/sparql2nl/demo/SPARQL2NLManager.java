@@ -11,7 +11,8 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sparql2nl.demo.model.Knowledgebase;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.realiser.english.Realiser;
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 public class SPARQL2NLManager {
 	
-	private static final Logger logger = Logger.getLogger(Manager.class);
+	private static final Logger logger = LoggerFactory.getLogger(Manager.class);
 	
 	private Lexicon lexicon;
 	private Realiser realiser;

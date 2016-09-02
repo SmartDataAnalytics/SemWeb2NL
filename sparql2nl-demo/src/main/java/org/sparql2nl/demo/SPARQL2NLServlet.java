@@ -15,7 +15,7 @@ import javax.servlet.annotation.WebServlet;
 @WebServlet(value = "/*",
 		asyncSupported = true)
 @VaadinServletConfiguration(
-		productionMode = false,
+		productionMode = true,
 		ui = SPARQL2NLDemoUI.class,
 		widgetset = "org.sparql2nl.demo.CustomWidgetset")
 public class SPARQL2NLServlet extends VaadinServlet implements SessionInitListener {

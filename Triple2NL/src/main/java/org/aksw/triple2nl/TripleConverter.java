@@ -40,7 +40,7 @@ import org.aksw.triple2nl.converter.IRIConverter;
 import org.aksw.triple2nl.converter.LiteralConverter;
 import org.aksw.triple2nl.gender.Gender;
 import org.aksw.triple2nl.gender.GenderDetector;
-import org.aksw.triple2nl.gender.LexiconBasedGenderDetector;
+import org.aksw.triple2nl.gender.DictionaryBasedGenderDetector;
 import org.aksw.triple2nl.nlp.relation.BoaPatternSelector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalization;
@@ -143,7 +143,7 @@ public class TripleConverter {
 		this.uriConverter = uriConverter;
 		
 		if(propertyVerbalizer == null){
-			propertyVerbalizer = new PropertyVerbalizer(uriConverter, cacheDirectory, wordnetDirectory);
+			propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
 		}
 		pp = propertyVerbalizer;
 		
@@ -159,7 +159,7 @@ public class TripleConverter {
 		
 		reasoner = new SPARQLReasoner(qef);
 
-		genderDetector = new LexiconBasedGenderDetector();
+		genderDetector = new DictionaryBasedGenderDetector();
 	}
 	
 	/**
@@ -516,9 +516,7 @@ public class TripleConverter {
 	}
 
 	/**
-	 * Whether the style of the returned result is a proper English sentence or just a phrase.
-	 *
-	 * @param returnAsSentence
+	 * @param returnAsSentence whether the style of the returned result is a proper English sentence or just a phrase
 	 */
 	public void setReturnAsSentence(boolean returnAsSentence) {
 		this.returnAsSentence = returnAsSentence;
@@ -529,6 +527,10 @@ public class TripleConverter {
 	 */
 	public void setUseGenderInformation(boolean useGenderInformation) {
 		this.useGenderInformation = useGenderInformation;
+	}
+
+	public void setGenderDetector(GenderDetector genderDetector) {
+		this.genderDetector = genderDetector;
 	}
 
 	/**
