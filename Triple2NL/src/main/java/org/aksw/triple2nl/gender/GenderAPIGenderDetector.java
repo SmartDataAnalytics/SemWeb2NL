@@ -57,6 +57,7 @@ public class GenderAPIGenderDetector implements GenderDetector {
 				Gson gson = new Gson();
 				//JSON structure:{"name":"bob","gender":"male","samples":15549,"accuracy":99,"duration":"39ms"}
 				JsonObject json = gson.fromJson(reader, JsonObject.class);
+				System.out.println(json);
 				//get the gender value
 				String gender = json.get("gender").getAsString();
 				//parse one of the possible values male, female, unknown

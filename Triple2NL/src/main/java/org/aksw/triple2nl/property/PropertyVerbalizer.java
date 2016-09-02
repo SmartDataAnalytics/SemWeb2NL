@@ -19,40 +19,12 @@
  */
 package org.aksw.triple2nl.property;
 
-import static org.aksw.triple2nl.util.PennTreebankTagSet.DETERMINER;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.FRAGMENT;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.NOUN_PHRASE;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.S;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SBAR;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SBARQ;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SINV;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.VERB_PHRASE;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-
-import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
-import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.triple2nl.converter.DefaultIRIConverter;
-import org.aksw.triple2nl.converter.IRIConverter;
-import org.aksw.triple2nl.nlp.StanfordCoreNLPWrapper;
-import org.aksw.triple2nl.util.Preposition;
-import org.apache.log4j.Logger;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-
-import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.util.CoreMap;
@@ -62,7 +34,20 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import net.sf.extjwnl.dictionary.Dictionary;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.nlp.StanfordCoreNLPWrapper;
+import org.aksw.triple2nl.util.Preposition;
+import org.apache.log4j.Logger;
 import simplenlg.features.Tense;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+
+import static org.aksw.triple2nl.util.PennTreebankTagSet.*;
 
 /**
  * Verbalize a property.
@@ -86,10 +71,10 @@ public class PropertyVerbalizer {
 	private IRIConverter uriConverter;
 	
 	public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDictionary) {
-		this(new DefaultIRIConverter(qef), cacheDirectory, wordnetDictionary);
+		this(new DefaultIRIConverter(qef, cacheDirectory), wordnetDictionary);
 	}
 	
-    public PropertyVerbalizer(IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDictionary) {
+    public PropertyVerbalizer(IRIConverter uriConverter, Dictionary wordnetDictionary) {
         this.uriConverter = uriConverter;
         try {
 			this.database = wordnetDictionary == null ? Dictionary.getDefaultResourceInstance() : wordnetDictionary;
@@ -256,32 +241,6 @@ public class PropertyVerbalizer {
         }
     }
 
-    private List<String> getAllSynsets(String word) {
-    	List<String> synsets = new ArrayList<>();
-    	
-    	try {
-    		// noun synsets
-			IndexWord iw = database.getIndexWord(POS.NOUN, word);
-			if(iw != null) {
-				for (Synset synset : iw.getSenses()) {
-					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
-				}
-			}
-
-			// verb synsets
-			iw = database.getIndexWord(POS.VERB, word);
-			if(iw != null) {
-				for (Synset synset : iw.getSenses()) {
-					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
-				}
-			}
-		} catch (JWNLException e) {
-			logger.error("WordNet lookup failed.", e);
-		}
-
-        return synsets;
-    }
-    
 	/**
 	 * Returns the infinitive form for a given word.
 	 * 

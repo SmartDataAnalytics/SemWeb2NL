@@ -318,7 +318,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Living Bird is not peer reviewed", text);
+		assertEquals("Living Bird is not peer reviewed.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Usain_Bolt"),
@@ -326,7 +326,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Usain Bolt is not gold medal winner", text);
+		assertEquals("Usain Bolt is not gold medal winner.", text);
 		
 		t = Triple.create(
 				NodeFactory.createURI("http://dbpedia.org/resource/Albury_railway_station"),
@@ -334,7 +334,7 @@ public class TripleConverterTest {
 				NodeFactory.createLiteral("false", XSDDatatype.XSDboolean));
 		text = converter.convert(t);
 		System.out.println(t + " -> " + text);
-		assertEquals("Albury railway station is not handicapped accessible", text);
+		assertEquals("Albury railway station is not handicapped accessible.", text);
 	}
 	
 	@Test

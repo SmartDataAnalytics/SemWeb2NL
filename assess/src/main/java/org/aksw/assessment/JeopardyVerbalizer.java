@@ -23,13 +23,8 @@
  */
 package org.aksw.assessment;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.hp.hpl.jena.rdf.model.Resource;
+import com.hp.hpl.jena.rdf.model.ResourceFactory;
 import org.aksw.avatar.Verbalizer;
 import org.aksw.avatar.clustering.BorderFlowX;
 import org.aksw.avatar.clustering.Node;
@@ -37,13 +32,12 @@ import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.clustering.hardening.HardeningFactory;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
-import org.aksw.avatar.gender.Gender;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.triple2nl.gender.Gender;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
-
 import simplenlg.features.Feature;
 import simplenlg.features.InternalFeature;
 import simplenlg.framework.CoordinatedPhraseElement;
@@ -51,9 +45,7 @@ import simplenlg.framework.NLGElement;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import java.util.*;
 
 /**
  * Extension of Avatar for verbalizing jeopardy questions.

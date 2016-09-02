@@ -23,6 +23,7 @@
 package org.aksw.triple2nl.gender;
 
 import com.google.common.collect.Sets;
+import com.hp.hpl.jena.query.QueryExecution;
 import com.hp.hpl.jena.query.QuerySolution;
 import com.hp.hpl.jena.query.ResultSet;
 import com.hp.hpl.jena.sparql.engine.http.QueryExceptionHTTP;
@@ -69,13 +70,14 @@ public class TypeAwareGenderDetector implements GenderDetector{
 			String queryTemplate = "select ?sub where{?sub <http://www.w3.org/2000/01/rdf-schema#subClassOf>* <%s>.}";
 			for (String type : personTypes) {
 				String query = String.format(queryTemplate, type);
-				ResultSet rs = qef.createQueryExecution(query).execSelect();
-				QuerySolution qs;
-				while(rs.hasNext()){
-					qs = rs.next();
-					inferredTypes.add(qs.getResource("sub").getURI());
+				try(QueryExecution qe = qef.createQueryExecution(query)) {
+					ResultSet rs = qe.execSelect();
+					while(rs.hasNext()){
+						inferredTypes.add(rs.next().getResource("sub").getURI());
+					}
 				}
 			}
+			personTypes.addAll(inferredTypes);
 		}
 	}
 	
@@ -98,20 +100,21 @@ public class TypeAwareGenderDetector implements GenderDetector{
 		if(personTypes.isEmpty()){
 			return true;
 		} else {
-			//get types of URI
+			//g et types of URI
 			Set<String> types = new HashSet<>();
 			try {
 				String query = "SELECT ?type WHERE {<" + uri + "> a ?type.}";
-				ResultSet rs = qef.createQueryExecution(query).execSelect();
-				QuerySolution qs;
-				while(rs.hasNext()){
-					qs = rs.next();
-					types.add(qs.getResource("type").getURI());
+				try(QueryExecution qe = qef.createQueryExecution(query)) {
+					ResultSet rs = qe.execSelect();
+					while(rs.hasNext()){
+						types.add(rs.next().getResource("type").getURI());
+					}
 				}
 			} catch (Exception e) {
 				int code = ((QueryExceptionHTTP)e.getCause()).getResponseCode();
 				logger.warn("SPARQL query execution failed: " + code + " - " + HttpSC.getCode(code).getMessage());
 			}
+			// check for overlap between types of entity and person types
 			return !Sets.intersection(personTypes, types).isEmpty();
 		}
 	}
