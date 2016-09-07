@@ -87,7 +87,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	public OWLClassExpressionConverter(Lexicon lexicon, IRIConverter iriConverter) {
 		this.iriConverter = iriConverter;
 
-		propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
+		propertyVerbalizer = new PropertyVerbalizer(iriConverter, null);
 		literalConverter = new LiteralConverter(iriConverter);
 
 		nlgFactory = new NLGFactory(lexicon);
@@ -526,7 +526,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 				
 				String[] posTags = propertyVerbalization.getPOSTags().split(" ");
 				String firstTag = posTags[0];
-				String secondTag = posTags[1];
+				String secondTag = posTags.length > 1 ? posTags[1] : "";
 				
 				if(firstTag.startsWith("V") && secondTag.startsWith("N")){
 //				if(tokens[0].equals("has") || tokens[0].equals("have")){

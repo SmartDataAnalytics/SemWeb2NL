@@ -58,7 +58,8 @@ public class OWLClassExpressionConverterTest {
 	private static OWLNamedIndividual leipzig;
 	private static OWLLiteral literal;
 	private static OWLClassExpression oneOfFemale;
-	
+	private static OWLObjectProperty married;
+
 	OWLClassExpression ce;
 	String text;
 	private static OWLDataRange dataRange;
@@ -77,6 +78,7 @@ public class OWLClassExpressionConverterTest {
 		worksFor = df.getOWLObjectProperty("worksFor", pm);
 		ledBy = df.getOWLObjectProperty("isLedBy", pm);
 		hasChildren = df.getOWLObjectProperty("hasChildren", pm);
+		married = df.getOWLObjectProperty("married", pm);
 
 		nrOfInhabitants = df.getOWLDataProperty("nrOfInhabitants", pm);
 		dataRange = df.getOWLDatatypeMinInclusiveRestriction(10000000);
@@ -111,6 +113,11 @@ public class OWLClassExpressionConverterTest {
 				
 		// works for a company
 		ce = df.getOWLObjectSomeValuesFrom(worksFor, company);
+		text = converter.convert(ce);
+		System.out.println(ce + " = " + text);
+
+		// works for a company
+		ce = df.getOWLObjectSomeValuesFrom(married, person);
 		text = converter.convert(ce);
 		System.out.println(ce + " = " + text);
 	}
