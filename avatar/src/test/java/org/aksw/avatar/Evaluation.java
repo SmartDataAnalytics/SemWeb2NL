@@ -52,11 +52,11 @@ import org.semanticweb.owlapi.model.OWLIndividual;
 import simplenlg.framework.NLGElement;
 import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 
-import com.hp.hpl.jena.query.ParameterizedSparqlString;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
+import org.apache.jena.query.ParameterizedSparqlString;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
 
 /**
  * @author Lorenz Buehmann

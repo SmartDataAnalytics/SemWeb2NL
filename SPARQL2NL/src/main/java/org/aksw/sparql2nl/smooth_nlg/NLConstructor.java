@@ -38,8 +38,8 @@ import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.sparql.engine.http.QueryEngineHTTP;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
 
 /**
  *

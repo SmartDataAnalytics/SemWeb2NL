@@ -1,7 +1,7 @@
 package org.sparql2nl.demo.model;
 
-import com.hp.hpl.jena.query.QueryExecutionFactory;
-import com.hp.hpl.jena.query.ResultSet;
+import org.apache.jena.query.QueryExecutionFactory;
+import org.apache.jena.query.ResultSet;
 import com.vaadin.server.Resource;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 

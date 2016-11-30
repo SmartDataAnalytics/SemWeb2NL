@@ -44,8 +44,8 @@ import simplenlg.realiser.english.Realiser;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.TreeMultimap;
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.Triple;
 
 /**
  *

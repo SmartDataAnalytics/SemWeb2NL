@@ -42,16 +42,16 @@ import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.sparql.expr.E_Regex;
-import com.hp.hpl.jena.sparql.expr.Expr;
-import com.hp.hpl.jena.sparql.syntax.Element;
-import com.hp.hpl.jena.sparql.syntax.ElementFilter;
-import com.hp.hpl.jena.sparql.syntax.ElementGroup;
-import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
-import com.hp.hpl.jena.sparql.syntax.ElementUnion;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.sparql.expr.E_Regex;
+import org.apache.jena.sparql.expr.Expr;
+import org.apache.jena.sparql.syntax.Element;
+import org.apache.jena.sparql.syntax.ElementFilter;
+import org.apache.jena.sparql.syntax.ElementGroup;
+import org.apache.jena.sparql.syntax.ElementPathBlock;
+import org.apache.jena.sparql.syntax.ElementUnion;
 
 /**
  *
@@ -273,11 +273,11 @@ public class GenericNLG implements Sparql2NLConverter {
         (new GenericNLG()).generateNL(typeMap, null);
     }
 
-    public String getNLR(com.hp.hpl.jena.query.Query query) {
+    public String getNLR(org.apache.jena.query.Query query) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 
-    public DocumentElement convert2NLE(com.hp.hpl.jena.query.Query query) {
+    public DocumentElement convert2NLE(org.apache.jena.query.Query query) {
         throw new UnsupportedOperationException("Not supported yet.");
     }
 

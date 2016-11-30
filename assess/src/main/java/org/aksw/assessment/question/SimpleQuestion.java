@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.aksw.assessment.answer.Answer;
 
-import com.hp.hpl.jena.query.Query;
+import org.apache.jena.query.Query;
 
 /**
  *

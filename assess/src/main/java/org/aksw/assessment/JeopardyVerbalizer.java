@@ -23,8 +23,8 @@
  */
 package org.aksw.assessment;
 
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.aksw.avatar.Verbalizer;
 import org.aksw.avatar.clustering.BorderFlowX;
 import org.aksw.avatar.clustering.Node;

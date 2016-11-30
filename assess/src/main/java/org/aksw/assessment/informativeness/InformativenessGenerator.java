@@ -22,7 +22,7 @@
  */
 package org.aksw.assessment.informativeness;
 
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.graph.Triple;
 
 /**
  * @author Lorenz Buehmann

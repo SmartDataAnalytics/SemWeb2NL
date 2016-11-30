@@ -45,12 +45,12 @@ import org.semanticweb.owlapi.model.OWLObjectProperty;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Resource;
 
 import simplenlg.features.Feature;
 import simplenlg.features.InterrogativeType;

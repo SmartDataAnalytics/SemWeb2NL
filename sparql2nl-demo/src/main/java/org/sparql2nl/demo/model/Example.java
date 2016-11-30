@@ -1,7 +1,7 @@
 package org.sparql2nl.demo.model;
 
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.rdf.model.Model;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.rdf.model.Model;
 
 public class Example {
 	

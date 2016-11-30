@@ -19,8 +19,8 @@
  */
 package org.aksw.owl2nl;
 
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.Triple;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.owl2nl.exception.OWLAxiomConversionException;
 import org.aksw.owl2nl.util.OWLClassExpressionUtils;

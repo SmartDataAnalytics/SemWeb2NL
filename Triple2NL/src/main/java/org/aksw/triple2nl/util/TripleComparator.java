@@ -25,8 +25,8 @@ package org.aksw.triple2nl.util;
 import java.util.Comparator;
 
 import com.google.common.collect.ComparisonChain;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.sparql.util.NodeComparator;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.sparql.util.NodeComparator;
 
 /**
  * Comparator to sort a list of triples by subject, predicate, and object to

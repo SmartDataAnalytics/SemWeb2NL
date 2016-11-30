@@ -55,7 +55,7 @@ private RESTService restService = new RESTService();
 	/**
 	 * Test method for {@link org.aksw.assessment.rest.RESTService#getQuestionsJSON(ServletContext, String, List, int)}.
 	 */
-	@Test
+	//@Test
 	public void testGetQuestionsJSON() {
 		fail("Not yet implemented");
 	}

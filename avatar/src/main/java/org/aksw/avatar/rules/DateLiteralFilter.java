@@ -30,11 +30,11 @@ import org.aksw.triple2nl.converter.LiteralConverter;
 import org.apache.log4j.Logger;
 
 import com.google.common.collect.Lists;
-import com.hp.hpl.jena.datatypes.RDFDatatype;
-import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.impl.LiteralLabel;
 
 /**
  * Returns only canonical forms of numeric literals, e.g. for 800 cm and 8.00m the digits are the same.

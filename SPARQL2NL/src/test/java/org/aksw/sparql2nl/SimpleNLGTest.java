@@ -22,14 +22,12 @@
  */
 package org.aksw.sparql2nl;
 
-import static org.junit.Assert.*;
-
 import org.aksw.sparql2nl.naturallanguagegeneration.TriplePatternConverter;
-import org.aksw.triple2nl.TripleConverter;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.Triple;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 import simplenlg.features.Feature;
 import simplenlg.features.Gender;
 import simplenlg.features.LexicalFeature;
@@ -41,9 +39,6 @@ import simplenlg.lexicon.NIHDBLexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
-
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
 
 /**
  * @author Lorenz Buehmann
@@ -83,7 +78,7 @@ public class SimpleNLGTest {
 		System.out.println(nounPhrase.getRealisation());
 	}
 	
-	@Test
+	//@Test
 	public void testNIHLexicon() {
 		String cls = "airport";
 		Lexicon lexicon = new NIHDBLexicon("/home/me/tools/lexAccess2013lite/data/HSqlDb/lexAccess2013.data");

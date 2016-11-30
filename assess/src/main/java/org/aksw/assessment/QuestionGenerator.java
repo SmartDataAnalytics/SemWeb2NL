@@ -24,7 +24,7 @@ import java.util.Set;
 
 import org.aksw.assessment.question.Question;
 
-import com.hp.hpl.jena.graph.Triple;
+import org.apache.jena.graph.Triple;
 
 /**
  * A generator for questions.

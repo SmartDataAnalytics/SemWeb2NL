@@ -32,7 +32,7 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.semanticweb.owlapi.model.OWLClass;
 
-import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Resource;
 
 /**
  * @author Lorenz Buehmann

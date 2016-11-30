@@ -31,7 +31,7 @@ import java.util.Set;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
-import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Resource;
 
 /**
  * This class contains set of properties that are meaningless for the generation of questions

@@ -22,7 +22,7 @@
  */
 package org.aksw.assessment.util;
 
-import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Resource;
 
 /**
  * A blacklist of entities that are not allowed.

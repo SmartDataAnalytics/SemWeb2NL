@@ -23,7 +23,7 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import com.hp.hpl.jena.query.Query;
+import org.apache.jena.query.Query;
 import simplenlg.framework.DocumentElement;
 
 /**

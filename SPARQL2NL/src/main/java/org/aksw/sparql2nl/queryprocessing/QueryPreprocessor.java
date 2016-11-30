@@ -40,8 +40,8 @@ import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.Syntax;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.Syntax;
 
 public class QueryPreprocessor {
 	
@@ -119,7 +119,7 @@ public class QueryPreprocessor {
 		return replacedQuery;
 	}
 	
-	public com.hp.hpl.jena.query.Query replaceVariablesWithTypes(com.hp.hpl.jena.query.Query query){
+	public org.apache.jena.query.Query replaceVariablesWithTypes(org.apache.jena.query.Query query){
 		return QueryFactory.create(replaceVariablesWithTypes(query.toString()), Syntax.syntaxARQ);
 	}
 	
@@ -180,7 +180,7 @@ public class QueryPreprocessor {
 				"	FILTER (?x > ?y)" +
 				"	OPTIONAL { ?uri rdfs:label ?string. FILTER (lang(?string) = 'en') }" +
 				"}";
-		com.hp.hpl.jena.query.Query query = QueryFactory.create(queryString, Syntax.syntaxSPARQL_11);
+		org.apache.jena.query.Query query = QueryFactory.create(queryString, Syntax.syntaxSPARQL_11);
 		System.out.println(nlg.getNLR(query));
 		String replacedQueryString = new QueryPreprocessor(SparqlEndpoint.getEndpointDBpedia()).replaceVariablesWithTypes(query.toString());
 		query = QueryFactory.create(replacedQueryString, Syntax.syntaxSPARQL_11);

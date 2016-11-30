@@ -1,8 +1,8 @@
 package org.sparql2nl.demo.view;
 
-import com.hp.hpl.jena.query.*;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.sparql.core.Var;
+import org.apache.jena.query.*;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.sparql.core.Var;
 import com.vaadin.data.Property.ValueChangeListener;
 import com.vaadin.data.util.IndexedContainer;
 import com.vaadin.event.ItemClickEvent;

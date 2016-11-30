@@ -24,8 +24,8 @@ package org.aksw.assessment.util;
 
 import java.util.Comparator;
 
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.sparql.util.NodeUtils;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.sparql.util.NodeUtils;
 
 /**
  * A comparator for RDFNode objects.
