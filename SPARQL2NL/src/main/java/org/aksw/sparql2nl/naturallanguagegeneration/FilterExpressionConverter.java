@@ -397,7 +397,7 @@ public class FilterExpressionConverter implements ExprVisitor{
 	}
 	
 	private String getLanguageForAbbreviation(String languageTag){
-		String language = Locale.forLanguageTag(languageTag.replace("\"", "").trim()).getDisplayLanguage();
+		String language = Locale.forLanguageTag(languageTag.replace("\"", "").trim()).getDisplayLanguage(Locale.ROOT);
 		return language;
 	}
 	

@@ -388,7 +388,7 @@ public class TripleConverter {
 					if(considerLiteralLanguage){
 						if(object.isLiteral() && object.getLiteralLanguage() != null && !object.getLiteralLanguage().isEmpty()){
 							String languageTag = object.getLiteralLanguage();
-							String language = Locale.forLanguageTag(languageTag).getDisplayLanguage();
+							String language = Locale.forLanguageTag(languageTag).getDisplayLanguage(Locale.ROOT);
 							predicateNounPhrase.setPreModifier(language);
 						}
 					}
