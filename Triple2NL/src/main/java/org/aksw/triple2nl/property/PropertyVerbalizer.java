@@ -88,7 +88,7 @@ public class PropertyVerbalizer {
 		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
 		props.put("ssplit.isOneSentence","true");
 //		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLP(props));
-		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLPClient(props, "192.168.35.138", 9000));
+		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLPClient(props, "titan.informatik.uni-leipzig.de", 9000));
     }
     
     public PropertyVerbalization verbalize(String propertyURI){
