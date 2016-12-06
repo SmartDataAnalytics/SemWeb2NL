@@ -25,6 +25,8 @@ package org.aksw.assessment.rest;
 import com.google.common.collect.Lists;
 import org.aksw.assessment.question.QuestionType;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
+import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.commons.lang3.SystemUtils;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
@@ -48,6 +50,12 @@ private RESTService restService = new RESTService();
 		HierarchicalINIConfiguration config = new HierarchicalINIConfiguration();
 		try(InputStream is = RESTServiceTest.class.getClassLoader().getResourceAsStream("assess_test_config_dbpedia.ini")){
 			config.load(is);
+		}
+		if (SystemUtils.IS_OS_WINDOWS) {
+			SubnodeConfiguration section = config.getSection("endpoint");
+			String cacheDirectory = section.getString("cacheDirectory", "cache");
+			section.setProperty("cacheDirectory", cacheDirectory
+					.replaceFirst("^/tmp/", SystemUtils.JAVA_IO_TMPDIR.replaceAll("\\\\","/") + "/").replaceAll("//","/"));
 		}
 		RESTService.loadConfig(config);
 	}

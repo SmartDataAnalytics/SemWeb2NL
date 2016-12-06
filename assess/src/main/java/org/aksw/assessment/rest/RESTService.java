@@ -22,37 +22,9 @@
  */
 package org.aksw.assessment.rest;
 
-import java.io.File;
-import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-
-import javax.servlet.ServletContext;
-import javax.ws.rs.*;
-import javax.ws.rs.core.Application;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-
-import org.aksw.assessment.AbstractQuestionGenerator;
-import org.aksw.assessment.JeopardyQuestionGenerator;
-import org.aksw.assessment.MultipleChoiceQuestionGenerator;
-import org.aksw.assessment.QuestionGenerator;
-import org.aksw.assessment.TrueFalseQuestionGenerator;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import org.aksw.assessment.*;
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.question.Question;
 import org.aksw.assessment.question.QuestionType;
@@ -66,6 +38,9 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.jena.ontology.OntModelSpec;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -78,18 +53,25 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLEntity;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
-//import org.apache.log4j.Logger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import org.apache.jena.ontology.OntModelSpec;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 import uk.ac.manchester.cs.owl.owlapi.OWLObjectPropertyImpl;
+
+import javax.servlet.ServletContext;
+import javax.ws.rs.*;
+import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import java.io.File;
+import java.net.URL;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.concurrent.*;
+
+//import org.apache.log4j.Logger;
 
 /**
  * @author Lorenz Buehmann
@@ -161,7 +143,7 @@ public class RESTService extends Application{
 		RESTService.namespace = namespace;
 		
 		String cacheDirectory = section.getString("cacheDirectory", "cache");
-		if(cacheDirectory.startsWith("/")){
+		if(Paths.get(cacheDirectory).isAbsolute()){
 			RESTService.cacheDirectory = cacheDirectory;
 		} else {
 			RESTService.cacheDirectory = context != null ? context.getRealPath(cacheDirectory) : cacheDirectory;
