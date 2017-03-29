@@ -550,10 +550,11 @@ public class Verbalizer {
      */
     private OWLClass getMostSpecificType(OWLIndividual ind){
     	logger.debug("Getting the most specific type of " + ind);
-    	String query = String.format("select distinct ?type where {"
-    			+ " <%s> a ?type ."
+    	String query = String.format("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+					    + "select distinct ?type where {"
+					    + " <%s> a ?type ."
 //    			+ "?type a owl:Class ." // too strict, thus currently omitted
-    			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
+					    + "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
     			ind.toStringID(), ind.toStringID());
 		SortedSet<OWLClass> types = new TreeSet<>();
     	
