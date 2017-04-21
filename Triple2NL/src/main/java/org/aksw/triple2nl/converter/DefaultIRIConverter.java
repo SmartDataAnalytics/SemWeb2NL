@@ -19,25 +19,24 @@
  */
 package org.aksw.triple2nl.converter;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-
-import org.apache.jena.query.ParameterizedSparqlString;
-import org.apache.jena.query.QueryExecution;
+import com.google.common.collect.Lists;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections15.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.jena.query.ParameterizedSparqlString;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Literal;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
+import org.apache.jena.vocabulary.XSD;
 import org.apache.jena.web.HttpSC;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.OwlApiJenaUtils;
@@ -48,16 +47,15 @@ import org.semanticweb.owlapi.util.SimpleIRIShortFormProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.Lists;
-import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.Literal;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Statement;
-import org.apache.jena.sparql.engine.http.QueryExceptionHTTP;
-import org.apache.jena.vocabulary.RDF;
-import org.apache.jena.vocabulary.RDFS;
-import org.apache.jena.vocabulary.XSD;
+import java.io.File;
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.List;
 
 /**
  * Converts IRIs into natural language.
@@ -154,7 +152,7 @@ public class DefaultIRIConverter implements IRIConverter{
 			} catch (Exception e) {
 				logger.error("Getting label for " + iri + " from knowledge base failed.", e);
 			}
-			
+
 			// 2. try to get the label from the endpoint
 			if(label == null){
 				 try {
@@ -177,7 +175,11 @@ public class DefaultIRIConverter implements IRIConverter{
             if(label == null){
             	try {
 					label = sfp.getShortForm(IRI.create(URLDecoder.decode(iri, "UTF-8")));
-				} catch (UnsupportedEncodingException e) {
+
+		            // do some normalization, e.g. remove underscores
+		            label = normalize(label);
+
+            	} catch (UnsupportedEncodingException e) {
 					logger.error("Getting short form of " + iri + "failed.", e);
 				}
             }
@@ -186,9 +188,7 @@ public class DefaultIRIConverter implements IRIConverter{
             if(label == null){
             	label = iri;
             }
-            
-            // do some normalization, e.g. remove underscores
-            label = normalize(label);
+
 		}
 	    
 		// put into cache
