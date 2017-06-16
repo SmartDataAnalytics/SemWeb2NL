@@ -644,11 +644,19 @@ public class TripleConverter {
 	}
 
 	public static void main(String[] args) throws Exception {
+		// http://protege.stanford.edu/plugins/owl/owl-library/koala.owl#Felix http://protege.stanford.edu/plugins/owl/owl-library/koala.owl#isHardWorking ""false""^^http://www.w3.org/2001/XMLSchema#boolean"
 		System.out.println(new TripleConverter().convert(
 				Triple.create(
 						NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
 						NodeFactory.createURI("http://dbpedia.org/ontology/birthPlace"),
 						NodeFactory.createURI("http://dbpedia.org/resource/Ulm")
 						)));
+
+		System.out.println(new TripleConverter().convert(
+				Triple.create(
+						NodeFactory.createURI("http://dbpedia.org/resource/Albert_Einstein"),
+						NodeFactory.createURI("http://dbpedia.org/ontology/isHardWorking"),
+						NodeFactory.createLiteral("false", XSDDatatype.XSDboolean)
+				)));
 	}
 }
