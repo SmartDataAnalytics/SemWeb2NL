@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl.queryprocessing;
 
 import java.io.FileInputStream;
@@ -58,7 +77,7 @@ public class QueryPreprocessor {
 	}
 	
 	public String replaceVariablesWithTypes(String queryString){
-		Map<String, Set<String>> label2ReplacedVars = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> label2ReplacedVars = new HashMap<>();
 		
 		Map<String, Set<String>> var2TypesMap = typeExtr.extractTypes(QueryFactory.create(queryString, Syntax.syntaxARQ));
 		String replacedQuery = queryString;
@@ -75,7 +94,7 @@ public class QueryPreprocessor {
 				
 				if(label2ReplacedVars.containsKey(label)){
 					Set<String> oldReplacedVars = label2ReplacedVars.get(label);
-					Set<String> newReplacedVars = new HashSet<String>();
+					Set<String> newReplacedVars = new HashSet<>();
 					// replace the old replaced vars
 					int i = 1;
 					for(String rV : oldReplacedVars){
@@ -90,7 +109,7 @@ public class QueryPreprocessor {
 					label2ReplacedVars.put(label, newReplacedVars);
 					
 				} else {
-					Set<String> replacedVars = new HashSet<String>();
+					Set<String> replacedVars = new HashSet<>();
 					replacedVars.add(label);
 					replacedQuery = replacedQuery.replace("?" + var, "?" + label);
 					label2ReplacedVars.put(label, replacedVars);

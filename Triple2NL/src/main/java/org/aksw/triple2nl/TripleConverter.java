@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * Triple2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 /**
  * 
  */
@@ -140,7 +159,7 @@ public class TripleConverter {
 	 * @return a list of phrases
 	 */
 	public List<SPhraseSpec> convertTriples(Collection<Triple> triples) {
-		List<SPhraseSpec> phrases = new ArrayList<SPhraseSpec>();
+		List<SPhraseSpec> phrases = new ArrayList<>();
 		for (Triple triple : triples) {
 			phrases.add(convertTriple(triple));
 		}
@@ -159,8 +178,8 @@ public class TripleConverter {
 		CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
 		
 		// get the type triples first 
-		List<Triple> typeTriples = new ArrayList<Triple>();
-		List<Triple> otherTriples = new ArrayList<Triple>();
+		List<Triple> typeTriples = new ArrayList<>();
+		List<Triple> otherTriples = new ArrayList<>();
 		
 		for (Triple triple : triples) {
 			if(triple.predicateMatches(RDF.type.asNode())){
@@ -215,7 +234,7 @@ public class TripleConverter {
 		//we have to use whose because the possessive form of who is who's
 		String placeHolderToken = (typeTriples.isEmpty() || otherTriples.size() == 1) ? "it" : "whose";
 		Node placeHolder = NodeFactory.createURI("http://sparql2nl.aksw.org/placeHolder/" + placeHolderToken);
-		Collection<Triple> placeHolderTriples = new ArrayList<Triple>(otherTriples.size());
+		Collection<Triple> placeHolderTriples = new ArrayList<>(otherTriples.size());
 		Iterator<Triple> iterator = otherTriples.iterator();
 		//we have to keep one triple with subject if we have no type triples
 		if(typeTriples.isEmpty() && iterator.hasNext()){
@@ -502,7 +521,7 @@ public class TripleConverter {
 	 * @return the NL phrase
 	 */
 	public NPPhraseSpec processClassNode(Node node, boolean plural) {
-		NPPhraseSpec object = null;
+		NPPhraseSpec object;
 		if (node.equals(OWL.Thing.asNode())) {
 			object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
 		} else if (node.equals(RDFS.Literal.asNode())) {
@@ -591,7 +610,7 @@ public class TripleConverter {
 	 * @return the noun phrase
 	 */
 	public NPPhraseSpec getNPPhrase(String uri, boolean plural, boolean isClass) {
-		NPPhraseSpec object = null;
+		NPPhraseSpec object;
 		if (uri.equals(OWL.Thing.getURI())) {
 			object = nlgFactory.createNounPhrase(GenericType.ENTITY.getNlr());
 		} else if (uri.equals(RDFS.Literal.getURI())) {

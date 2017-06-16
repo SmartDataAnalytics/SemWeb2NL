@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * Triple2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.triple2nl.nlp.relation;
 
 import java.io.IOException;
@@ -48,32 +67,30 @@ public class BoaPatternSelector {
 
     /**
      * Returns an ordered list of natural language representations for a given
-     * property uri. The list is ordered from highest first to lowest.
+     * property URI. The list is ordered from highest first to lowest.
      * 
-     * @param propertyUri
-     * @return
+     * @param propertyUri the property URI
+     * @param maxResults the maximum number of returned patterns
+     * @return the list of natural language representations
      */
     public static List<Pattern> getNaturalLanguageRepresentation(String propertyUri, int maxResults) {
 
         // query the index to get all useful patterns
-        List<Pattern> patterns = new ArrayList<Pattern>(BoaPatternSelector.querySolrIndex(propertyUri));
+        List<Pattern> patterns = new ArrayList<>(BoaPatternSelector.querySolrIndex(propertyUri));
 
         // sort them by the score
-        Collections.sort(patterns, new Comparator<Pattern>() {
+        Collections.sort(patterns, (pattern1, pattern2) -> {
 
-            public int compare(Pattern pattern1, Pattern pattern2) {
-
-                double x = (pattern2.naturalLanguageScore - pattern1.naturalLanguageScore);
-                if (x < 0)
-                    return -1;
-                if (x == 0)
-                    return 0;
-                return 1;
-            }
-        });
+			double x = (pattern2.naturalLanguageScore - pattern1.naturalLanguageScore);
+			if (x < 0)
+				return -1;
+			if (x == 0)
+				return 0;
+			return 1;
+		});
 
         int i = 50;
-        Set<Pattern> preResults = new LinkedHashSet<Pattern>();
+        Set<Pattern> preResults = new LinkedHashSet<>();
         for (Pattern pattern : patterns) {
 
             if (preResults.size() >= i)
@@ -82,27 +99,24 @@ public class BoaPatternSelector {
                 preResults.add(pattern);
         }
 
-        List<Pattern> results = new ArrayList<Pattern>(preResults);
-        Collections.sort(results, new Comparator<Pattern>() {
+        List<Pattern> results = new ArrayList<>(preResults);
+        Collections.sort(results, (pattern1, pattern2) -> {
 
-            public int compare(Pattern pattern1, Pattern pattern2) {
-
-                double x = (pattern2.features.get("SUPPORT_NUMBER_OF_PAIRS_LEARNED_FROM") - pattern1.features.get("SUPPORT_NUMBER_OF_PAIRS_LEARNED_FROM"));
-                if (x < 0)
-                    return -1;
-                if (x == 0)
-                    return 0;
-                return 1;
-            }
-        });
+			double x = (pattern2.features.get("SUPPORT_NUMBER_OF_PAIRS_LEARNED_FROM") - pattern1.features.get("SUPPORT_NUMBER_OF_PAIRS_LEARNED_FROM"));
+			if (x < 0)
+				return -1;
+			if (x == 0)
+				return 0;
+			return 1;
+		});
 
         return results.size() > maxResults ? results.subList(0, maxResults) : results;
     }
 
     private static boolean isSuitable(Pattern pattern) {
 
-        List<String> wordTokensList = new ArrayList<String>(Arrays.asList(pattern.naturalLanguageRepresentation.split(" ")));
-        List<String> posTagTokens = new ArrayList<String>(Arrays.asList(pattern.posTags.split(" ")));
+        List<String> wordTokensList = new ArrayList<>(Arrays.asList(pattern.naturalLanguageRepresentation.split(" ")));
+        List<String> posTagTokens = new ArrayList<>(Arrays.asList(pattern.posTags.split(" ")));
 
         String[] wordTokens = pattern.naturalLanguageRepresentation.split(" ");
         String[] tagTokens = pattern.posTags.split(" ");
@@ -134,11 +148,6 @@ public class BoaPatternSelector {
 
     }
 
-    /**
-     * 
-     * @param pattern
-     * @return
-     */
     private static Double calculateNaturalLanguageScore(Pattern pattern) {
 
         return REVERB_BOOST_FACTOR * pattern.features.get("REVERB") + WORDNET_DISTANCE_BOOST_FACTOR * pattern.features.get("WORDNET_DISTANCE")
@@ -151,12 +160,12 @@ public class BoaPatternSelector {
      * Returns all patterns from the index and their features for reverb and the
      * wordnet distance and the overall boa-boaScore.
      * 
-     * @param propertyUri
+     * @param propertyUri the property URI
      * @return a list of patterns
      */
     private static Set<Pattern> querySolrIndex(String propertyUri) {
 
-        Map<Integer, Pattern> patterns = new HashMap<Integer, Pattern>();
+        Map<Integer, Pattern> patterns = new HashMap<>();
 
         try {
 
@@ -212,7 +221,7 @@ public class BoaPatternSelector {
             System.out.println("Could not execute query: " + e);
             e.printStackTrace();
         }
-        return new HashSet<Pattern>(patterns.values());
+        return new HashSet<>(patterns.values());
     }
 
     public static void main(String[] args) throws IOException {
@@ -240,7 +249,7 @@ public class BoaPatternSelector {
 
         String queryString = new String (Files.readAllBytes(filePath),Charset.forName("UTF-8"));
 
-        Map<String, Integer> distribution = new HashMap<String, Integer>();
+        Map<String, Integer> distribution = new HashMap<>();
         Matcher matcher = java.util.regex.Pattern.compile("db[op]:\\p{Lower}\\w+\\s").matcher(queryString);
         while (matcher.find()) {
 
@@ -250,7 +259,7 @@ public class BoaPatternSelector {
             else
                 distribution.put(property, 1);
         }
-        List<String> result = new ArrayList<String>();
+        List<String> result = new ArrayList<>();
         for (Map.Entry<String, Integer> entry : distribution.entrySet()) {
 
             result.add(entry.getValue() + ": " + entry.getKey());

@@ -8,7 +8,7 @@
 	</parent>
 	<artifactId>triple2nl</artifactId>
 	<name>Triple2NL</name>
-	<description>Triple to Natural Language Converter</description>
+	<description>RDF Triple to Natural Language Converter</description>
 
 	<dependencies>
 		<dependency>

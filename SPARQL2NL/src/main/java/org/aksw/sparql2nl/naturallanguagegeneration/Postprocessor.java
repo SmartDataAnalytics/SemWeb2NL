@@ -1,4 +1,22 @@
-
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
 import java.util.ArrayList;
@@ -59,35 +77,35 @@ public class Postprocessor {
         lexicon = Lexicon.getDefaultLexicon();
         nlg = new NLGFactory(lexicon);
         realiser = new Realiser(lexicon);
-        selects = new ArrayList<NPPhraseSpec>();
-        primaries = new HashSet<String>();
-        secondaries = new HashSet<String>();
-        sentences = new HashSet<Sentence>();
-        unions = new HashSet<Union>();
-        filters = new HashSet<Filter>();
-        orderbylimit = new HashSet<Sentence>();
+        selects = new ArrayList<>();
+        primaries = new HashSet<>();
+        secondaries = new HashSet<>();
+        sentences = new HashSet<>();
+        unions = new HashSet<>();
+        filters = new HashSet<>();
+        orderbylimit = new HashSet<>();
         output = null;
         additionaloutput = null;
         id = 0;
-        hash = new HashMap<String,Set<Sentence>>();
-        equalities = new HashMap<String,String>();
+        hash = new HashMap<>();
+        equalities = new HashMap<>();
         ask = false;
         relativeClause = false;
     }
     
     public void flush() {
-        selects = new ArrayList<NPPhraseSpec>();
-        primaries = new HashSet<String>();
-        secondaries = new HashSet<String>();
-        sentences = new HashSet<Sentence>();
-        unions = new HashSet<Union>();
-        filters = new HashSet<Filter>();
-        orderbylimit = new HashSet<Sentence>();
+        selects = new ArrayList<>();
+        primaries = new HashSet<>();
+        secondaries = new HashSet<>();
+        sentences = new HashSet<>();
+        unions = new HashSet<>();
+        filters = new HashSet<>();
+        orderbylimit = new HashSet<>();
         output = null;
         additionaloutput = null;
         id = 0;
-        hash = new HashMap<String,Set<Sentence>>();
-        equalities = new HashMap<String,String>();
+        hash = new HashMap<>();
+        equalities = new HashMap<>();
         ask = false;
         relativeClause = false;
     }
@@ -139,7 +157,7 @@ public class Postprocessor {
             setPassive();
             realiseOptionality();
             
-            Set<String> bodyParts = new HashSet<String>();
+            Set<String> bodyParts = new HashSet<>();
             sentences = fuseObjectWithSubject(sentences,bodyParts); // this should be the last operation before flattening, as fused output is of type String            
             bodyParts.addAll(flattenAll());
                
@@ -155,7 +173,7 @@ public class Postprocessor {
             addRemainingStuffToEqualities(bodyParts);      
             replaceEqualities(bodyParts);
                      
-            List<String> final_bodyParts = new ArrayList<String>(bodyParts);
+            List<String> final_bodyParts = new ArrayList<>(bodyParts);
             final_bodyParts = replaceVarOccurrencesByPronouns(final_bodyParts);
             final_bodyParts = order(final_bodyParts);
             final_bodyParts = replaceVarOccurencesByIndefinites(final_bodyParts);
@@ -194,8 +212,8 @@ public class Postprocessor {
     
     private void removeDuplicatesInSentences() {
         
-        Set<Sentence> duplicates = new HashSet<Sentence>();
-        Set<String> realisations = new HashSet<String>();
+        Set<Sentence> duplicates = new HashSet<>();
+        Set<String> realisations = new HashSet<>();
         
         for (Sentence s : sentences) {
             String realisation = realiser.realiseSentence(s.sps);
@@ -207,11 +225,11 @@ public class Postprocessor {
     }
     private void removeDuplicatesInUnions() {
  
-        Set<Union> singleton_unions = new HashSet<Union>();
+        Set<Union> singleton_unions = new HashSet<>();
         
         for (Union union : unions) {
-            Set<Sentence> duplicates = new HashSet<Sentence>();
-            Set<String> realisations = new HashSet<String>();
+            Set<Sentence> duplicates = new HashSet<>();
+            Set<String> realisations = new HashSet<>();
         
             // collect duplicates
             for (Set<Sentence> un : union.sentences) {
@@ -222,7 +240,7 @@ public class Postprocessor {
                 }
             }
             // remove duplicates
-            Set<Set<Sentence>> empty_uns = new HashSet<Set<Sentence>>();
+            Set<Set<Sentence>> empty_uns = new HashSet<>();
             for (Set<Sentence> un : union.sentences) {
                 un.removeAll(duplicates);
                 if (un.isEmpty()) empty_uns.add(un);
@@ -242,9 +260,9 @@ public class Postprocessor {
        
     private HashMap<String,Set<Sentence>> groupSentencesByVar() { 
        
-        HashMap<String,Set<Sentence>> hash = new HashMap<String,Set<Sentence>>(primaries.size()+secondaries.size());
+        HashMap<String,Set<Sentence>> hash = new HashMap<>(primaries.size() + secondaries.size());
         
-        Set<String> allVars = new HashSet<String>();
+        Set<String> allVars = new HashSet<>();
         allVars.addAll(primaries); allVars.addAll(secondaries);
         for (String var : allVars) {
              Set<Sentence> sents = collectAllSentencesContaining(var);
@@ -256,7 +274,7 @@ public class Postprocessor {
     
     private Set<Sentence> collectAllSentencesContaining(String var) {
 
-        Set<Sentence> out = new HashSet<Sentence>();
+        Set<Sentence> out = new HashSet<>();
 
         for (Sentence sentence : sentences) {
             addSentence(var,out,sentence);           
@@ -301,7 +319,7 @@ public class Postprocessor {
     
     private void collectEqualities() {
         
-        Set<Sentence> delete = new HashSet<Sentence>();
+        Set<Sentence> delete = new HashSet<>();
         for (Sentence s : sentences) {
              if (getVerb(s.sps).equals("be")) {
                  String subj_str = realiser.realise(s.sps.getSubject()).toString();
@@ -330,7 +348,7 @@ public class Postprocessor {
     private void flattenUnionsAndFilters() {
         
         Set<Sentence> fused;
-        Set<Union> delete = new HashSet<Union>();
+        Set<Union> delete = new HashSet<>();
         for (Union union : unions) {
             Sentence sent = union.removeRedundancy(realiser);
             if (sent != null) {
@@ -339,7 +357,7 @@ public class Postprocessor {
                 break;
             }
             boolean flattened = true;
-            Set<Sentence> flattened_parts = new HashSet<Sentence>();
+            Set<Sentence> flattened_parts = new HashSet<>();
             for (Set<Sentence> un : union.sentences) {  
                  fused = fuseSubjects(fuseObjects(un,"and"),"and");
                  if (fused.size() == 1) 
@@ -357,7 +375,7 @@ public class Postprocessor {
         }
         unions.removeAll(delete);
         
-        Set<Filter> delete_too = new HashSet<Filter>();
+        Set<Filter> delete_too = new HashSet<>();
         for (Filter f : filters) {
              fused = fuseSubjects(fuseObjects(f.sentences,f.coord),f.coord);
              if (fused.size() == 1) {
@@ -370,7 +388,7 @@ public class Postprocessor {
     
        private Set<String> flattenAll() {
         
-        Set<String> realisations = new HashSet<String>();
+        Set<String> realisations = new HashSet<>();
         
         for (Sentence s : sentences) {
              realisations.add(realiser.realise(s.sps).toString());
@@ -390,7 +408,7 @@ public class Postprocessor {
         for (Union union : unions) {
             CoordinatedPhraseElement c = nlg.createCoordinatedPhrase();
             c.setConjunction("or");
-            Set<NLGElement> conjuncts = new HashSet<NLGElement>();
+            Set<NLGElement> conjuncts = new HashSet<>();
             for (Set<Sentence> un : union.sentences) {
                 Set<NLGElement> fused = fuseRealisations(un,"and");
                 if (fused.size() == 1) {
@@ -537,8 +555,8 @@ public class Postprocessor {
         
         if (sentences.size() == 1) return sentences;
         
-        Hashtable<String,Sentence> memory = new Hashtable<String,Sentence>();
-        HashSet<Sentence> failed = new HashSet<Sentence>();
+        Hashtable<String,Sentence> memory = new Hashtable<>();
+        HashSet<Sentence> failed = new HashSet<>();
         
         for (Sentence sentence : sentences) {
             
@@ -563,8 +581,8 @@ public class Postprocessor {
 
         if (sentences.size() == 1) return sentences;
            
-        Hashtable<String,Sentence> memory = new Hashtable<String,Sentence>();
-        HashSet<Sentence> failed = new HashSet<Sentence>();
+        Hashtable<String,Sentence> memory = new Hashtable<>();
+        HashSet<Sentence> failed = new HashSet<>();
         
         for (Sentence sentence : sentences) {
             
@@ -590,7 +608,7 @@ public class Postprocessor {
         // SUBJ is ?x . ?x V  OBJ -> SUBJ V OBJ
         // SUBJ V  ?x . ?x is OBJ -> SUBJ V OBJ
         
-        if (sentences == null) return new HashSet<Sentence>();
+        if (sentences == null) return new HashSet<>();
         if (sentences.size() == 1) return sentences;
                 
         Sentence objsent  = null;
@@ -712,7 +730,7 @@ public class Postprocessor {
     
     private Set<NLGElement> fuseRealisations(Set<Sentence> e,String conjunction) {
             
-        Set<NLGElement> e_converted = new HashSet<NLGElement>();
+        Set<NLGElement> e_converted = new HashSet<>();
         for (Sentence s : e) e_converted.add(s.sps);
         
         return fuseRealisationsToo(e_converted,conjunction);
@@ -720,9 +738,9 @@ public class Postprocessor {
     
     private Set<NLGElement> fuseRealisationsToo(Set<NLGElement> e,String conjunction) {
         
-        Set<NLGElement> result = new HashSet<NLGElement>();
+        Set<NLGElement> result = new HashSet<>();
         
-        Set<NLGElement> used = new HashSet<NLGElement>();
+        Set<NLGElement> used = new HashSet<>();
         for (NLGElement s1 : e) {
              if (!used.contains(s1)) {
                  for (NLGElement s2 : e) {
@@ -816,7 +834,7 @@ public class Postprocessor {
                 Pattern less  = Pattern.compile(" the number of (\\?"+var.substring(1)+") is less than( or equal to)? ([0-9]+)");
                 Matcher m;
             
-                Set<Sentence> used = new HashSet<Sentence>();
+                Set<Sentence> used = new HashSet<>();
                 for (Sentence s : orderbylimit) {
                      m = more.matcher(realiser.realise(s.sps).toString());
                      if (m.find()) {
@@ -854,10 +872,10 @@ public class Postprocessor {
     
     private void replaceEqualities(Set<String> bodyParts) {
         
-        Set<String> deleteThese = new HashSet<String>();
-        Set<String> addThese    = new HashSet<String>();
-        Set<String> used_keys   = new HashSet<String>();
-        HashMap<String,String> indirectly_used = new HashMap<String,String>();
+        Set<String> deleteThese = new HashSet<>();
+        Set<String> addThese    = new HashSet<>();
+        Set<String> used_keys   = new HashSet<>();
+        HashMap<String,String> indirectly_used = new HashMap<>();
                 
         for (String var : equalities.keySet()) {
                         
@@ -926,8 +944,8 @@ public class Postprocessor {
                      if (delete != null) selects.remove(delete);
                  }
             }
-            bodyParts.removeAll(deleteThese); deleteThese = new HashSet<String>();
-            bodyParts.addAll(addThese);       addThese    = new HashSet<String>();
+            bodyParts.removeAll(deleteThese); deleteThese = new HashSet<>();
+            bodyParts.addAll(addThese);       addThese    = new HashSet<>();
             
             // and orderbylimits
             if (additionaloutput != null) {
@@ -968,10 +986,10 @@ public class Postprocessor {
     
     private List<String> order(List<String> bodyParts) {
                
-        List<String> primary_declaratives   = new ArrayList<String>();
-        List<String> primary_others         = new ArrayList<String>();
-        List<String> secondary_declaratives = new ArrayList<String>();
-        List<String> secondary_others       = new ArrayList<String>();
+        List<String> primary_declaratives   = new ArrayList<>();
+        List<String> primary_others         = new ArrayList<>();
+        List<String> secondary_declaratives = new ArrayList<>();
+        List<String> secondary_others       = new ArrayList<>();
         
         for (String v : primaries) {
             for (String s : bodyParts) {
@@ -993,7 +1011,7 @@ public class Postprocessor {
             bodyParts.removeAll(secondary_others);
         }
         
-        List<String> ordered_bodyParts = new ArrayList<String>();
+        List<String> ordered_bodyParts = new ArrayList<>();
         ordered_bodyParts.addAll(primary_declaratives);
         ordered_bodyParts.addAll(primary_others);
         ordered_bodyParts.addAll(secondary_declaratives);
@@ -1005,9 +1023,9 @@ public class Postprocessor {
     
     private List<String> replaceVarOccurrencesByPronouns(List<String> bodyParts) {
         
-        List<String> result  = new ArrayList<String>();
+        List<String> result  = new ArrayList<>();
         
-        Set<String> vars = new HashSet<String>();
+        Set<String> vars = new HashSet<>();
         Pattern p = Pattern.compile("(^|.*)(\\?([\\w]*))(\\s|\\z|\\.|\\,|\\')");
         Matcher m;
         for (NPPhraseSpec sel : selects) {
@@ -1065,14 +1083,14 @@ public class Postprocessor {
     
     private List<String> replaceVarOccurencesByIndefinites(List<String> bodyParts) {
         
-            List<String> result  = new ArrayList<String>();
-            List<String> changed = new ArrayList<String>();
-            HashMap<String,Integer> order = new HashMap<String,Integer>();
+            List<String> result  = new ArrayList<>();
+            List<String> changed = new ArrayList<>();
+            HashMap<String,Integer> order = new HashMap<>();
             for (int i = 0; i < bodyParts.size(); i++) {
                  order.put(bodyParts.get(i),i);
                  result.add(i,null);
             }
-            HashMap<String,Boolean> descriptions = new HashMap<String,Boolean>();
+            HashMap<String,Boolean> descriptions = new HashMap<>();
             
             for (String s : secondaries) {
                  String var = "?"+s;
@@ -1135,7 +1153,7 @@ public class Postprocessor {
             
             for (String b : bodyParts) if (!result.contains(b) && !changed.contains(b)) result.add(order.get(b),b);
             
-            List<String> resultresult = new ArrayList<String>();
+            List<String> resultresult = new ArrayList<>();
             for (String r : result) if (r != null) resultresult.add(r);
             
             return resultresult;
@@ -1194,7 +1212,7 @@ public class Postprocessor {
     
     private void checkSelects() {
         
-        Set<NPPhraseSpec> unnecessary = new HashSet<NPPhraseSpec>();
+        Set<NPPhraseSpec> unnecessary = new HashSet<>();
         for (NPPhraseSpec sel : selects) {
             String s = realiser.realise(sel).toString();
             if (!s.contains("?") && realiser.realise(output).toString().contains(s)) {
@@ -1212,7 +1230,7 @@ public class Postprocessor {
     private String getSubject(NLGElement el) {
         if (el == null) return null;
         if (el.getFeature("subjects") != null) {
-            ArrayList<NLGElement> subjects = new ArrayList<NLGElement>(((Collection<NLGElement>) el.getFeature("subjects")));
+            ArrayList<NLGElement> subjects = new ArrayList<>(((Collection<NLGElement>) el.getFeature("subjects")));
             if (subjects != null && !subjects.isEmpty()) {
                 if (subjects.get(0).getFeature("head") != null) {
                     return subjects.get(0).getFeature("head").toString();
@@ -1222,7 +1240,7 @@ public class Postprocessor {
         else if (el.hasFeature("coordinates")) {
             for (NLGElement c : ((Collection<NLGElement>) el.getFeature("coordinates"))) {
                if (c.getFeature("subjects") != null) {
-                    ArrayList<NLGElement> subjects = new ArrayList<NLGElement>(((Collection<NLGElement>) c.getFeature("subjects")));
+                    ArrayList<NLGElement> subjects = new ArrayList<>(((Collection<NLGElement>) c.getFeature("subjects")));
                     if (subjects != null && !subjects.isEmpty()) {
                         if (subjects.get(0).getFeature("head") != null) {
                             return subjects.get(0).getFeature("head").toString();
@@ -1236,7 +1254,7 @@ public class Postprocessor {
     private String getObject(NLGElement el) {
         if (el == null) return null;
         if (el.hasFeature("verb_phrase") && ((NLGElement) el.getFeature("verb_phrase")).hasFeature("complements")) {
-            ArrayList<NLGElement> objects = new ArrayList<NLGElement>(((Collection<NLGElement>) ((NLGElement) el.getFeature("verb_phrase")).getFeature("complements")));
+            ArrayList<NLGElement> objects = new ArrayList<>(((Collection<NLGElement>) ((NLGElement) el.getFeature("verb_phrase")).getFeature("complements")));
             if (objects != null && !objects.isEmpty()) {
                 if (objects.get(0).getFeature("head") != null) {
                     return objects.get(0).getFeature("head").toString();
@@ -1246,7 +1264,7 @@ public class Postprocessor {
         else if (el.hasFeature("coordinates")) {
             for (NLGElement c : ((Collection<NLGElement>) el.getFeature("coordinates"))) {
                 if (c.hasFeature("verb_phrase") && ((NLGElement) c.getFeature("verb_phrase")).hasFeature("complements")) {
-                    ArrayList<NLGElement> objects = new ArrayList<NLGElement>(((Collection<NLGElement>) ((NLGElement) c.getFeature("verb_phrase")).getFeature("complements")));
+                    ArrayList<NLGElement> objects = new ArrayList<>(((Collection<NLGElement>) ((NLGElement) c.getFeature("verb_phrase")).getFeature("complements")));
                     if (objects != null && !objects.isEmpty()) {
                         if (objects.get(0).getFeature("head") != null) {
                             return objects.get(0).getFeature("head").toString();
@@ -1391,8 +1409,8 @@ public class Postprocessor {
          
          if (out != null) return out;
         
-         Set<Sentence> language = new HashSet<Sentence>();
-         Set<Sentence> usedlanguage = new HashSet<Sentence>();
+         Set<Sentence> language = new HashSet<>();
+         Set<Sentence> usedlanguage = new HashSet<>();
 
             for (Sentence sentence : sentences) {
                 SPhraseSpec s = sentence.sps;
@@ -1426,11 +1444,11 @@ public class Postprocessor {
         // attach filter information to object
         Matcher m = p.matcher(obj);
         if (m.find()) { // i.e. if the object is a variable at the end of the phrase
-            Set<Filter> usedFilters = new HashSet<Filter>();
+            Set<Filter> usedFilters = new HashSet<>();
             String var = m.group(1);
             String newhead = obj;
             for (Filter f : filters) {
-                Set<Sentence> used = new HashSet<Sentence>();
+                Set<Sentence> used = new HashSet<>();
                 for (Sentence s : f.sentences) {
                     String fstring = removeDots(realiser.realise(s.sps).toString());
                     if (fstring.startsWith(var + " matches ")) {
@@ -1503,10 +1521,10 @@ public class Postprocessor {
         p = Pattern.compile("(^|\\A)(\\?([\\w]*))((?!')||\\z)");
         m = p.matcher(subj);
         if (m.find()) { // i.e. if the subject is a variable at the beginning of the phrase
-            Set<Filter> usedFilters = new HashSet<Filter>();
+            Set<Filter> usedFilters = new HashSet<>();
             String var = m.group(2);
             for (Filter f : filters) {
-                Set<Sentence> used = new HashSet<Sentence>();
+                Set<Sentence> used = new HashSet<>();
                 for (Sentence s : f.sentences) {
                     String fstring = removeDots(realiser.realise(s.sps).toString());
                     if (fstring.startsWith(var+" does not exist")) {
@@ -1535,8 +1553,8 @@ public class Postprocessor {
     
     private void fuseWithSelects() {
         
-        HashMap<NPPhraseSpec,NPPhraseSpec> replacements = new HashMap<NPPhraseSpec,NPPhraseSpec>();
-        Set<SPhraseSpec> delete = new HashSet<SPhraseSpec>();
+        HashMap<NPPhraseSpec,NPPhraseSpec> replacements = new HashMap<>();
+        Set<SPhraseSpec> delete = new HashSet<>();
         String selstring;
         String var;
         int oc;
@@ -1664,7 +1682,7 @@ public class Postprocessor {
 //                            }
                             String pron = "their";
                             if (sel.hasFeature("premodifiers")) {
-                                List<NLGElement> premods = new ArrayList<NLGElement>((Collection) sel.getFeature("premodifiers"));
+                                List<NLGElement> premods = new ArrayList<>((Collection) sel.getFeature("premodifiers"));
                                 if (!premods.isEmpty() && premods.get(0).hasFeature("number")) {
                                     if (premods.get(0).getFeatureAsString("number").equals("SINGULAR")) pron = "its";
                                 }
@@ -1682,7 +1700,7 @@ public class Postprocessor {
     }
     
     private void removeFromSelects(String var) {
-        List<NPPhraseSpec> newselects = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> newselects = new ArrayList<>();
         for (NPPhraseSpec sel : selects) {
             if (!sel.getFeatureAsString("head").equals(var)) newselects.add(sel);
         }
@@ -1713,7 +1731,7 @@ public class Postprocessor {
                  if (sel.getFeatureAsString("head").equals(var)) {
                      String new_head = var;
                      String[] rests = null;
-                     Set<String> used = new HashSet<String>();
+                     Set<String> used = new HashSet<>();
                      if (rest != null) {
                          rests = rest.split(" and ");
                          for (String r : rests) {
@@ -1822,8 +1840,8 @@ public class Postprocessor {
     
     private void cleanUp() { // very stupid Java programming
         
-        Set<String> primariesLeft = new HashSet<String>();
-        Set<String> secondariesLeft = new HashSet<String>();
+        Set<String> primariesLeft = new HashSet<>();
+        Set<String> secondariesLeft = new HashSet<>();
         
         for (String var : primaries) {
             cleanUpVar(var,primariesLeft);

@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl.queryprocessing;
 
 import java.util.HashMap;
@@ -35,8 +54,8 @@ public class TypeExtractor2 {
 
        
 	public Map<String, Set<String>> extractTypes(Query query) {
-		var2AssertedTypesMap = new HashMap<String, Set<String>>();
-		var2InferredTypesMap = new HashMap<String, Set<String>>();
+		var2AssertedTypesMap = new HashMap<>();
+		var2InferredTypesMap = new HashMap<>();
 		
 		TriplePatternExtractor extr = new TriplePatternExtractor();
 		Set<Triple> triples = extr.extractTriplePattern((ElementGroup)query.getQueryPattern());
@@ -45,7 +64,7 @@ public class TypeExtractor2 {
 			processTriple(t);
 		}
 		
-		Map<String, Set<String>> var2TypesMap = new HashMap<String, Set<String>>();
+		Map<String, Set<String>> var2TypesMap = new HashMap<>();
 		if(preferAssertedTypes){
 			var2TypesMap.putAll(var2AssertedTypesMap);
 			for(Entry<String, Set<String>> entry : var2InferredTypesMap.entrySet()){
@@ -116,7 +135,7 @@ public class TypeExtractor2 {
 	private void addAssertedType(String variable, String type){
 		Set<String> types = var2AssertedTypesMap.get(variable);
 		if(types == null){
-			types = new HashSet<String>();
+			types = new HashSet<>();
 			var2AssertedTypesMap.put(variable, types);
 		}
 		types.add(type);
@@ -125,7 +144,7 @@ public class TypeExtractor2 {
 	private void addInferredType(String variable, String type){
 		Set<String> types = var2InferredTypesMap.get(variable);
 		if(types == null){
-			types = new HashSet<String>();
+			types = new HashSet<>();
 			var2InferredTypesMap.put(variable, types);
 		}
 		types.add(type);

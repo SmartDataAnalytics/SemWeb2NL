@@ -1,4 +1,23 @@
 /*
+ * #%L
+ * ASSESS
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+/*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -53,7 +72,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 	}
     
      public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, double threshold, DatasetBasedGraphGenerator.Cooccurrence cooccurrence, HardeningFactory.HardeningType hType) {
-        resource2Triples = new HashMap<Resource, Collection<Triple>>();
+        resource2Triples = new HashMap<>();
         
         // first get graph for class
         try {
@@ -69,7 +88,7 @@ public class JeopardyVerbalizer extends Verbalizer {
 				logger.info(cluster);
 			}
 
-			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<OWLIndividual, List<NLGElement>>();
+			Map<OWLIndividual, List<NLGElement>> verbalizations = new HashMap<>();
 
 			for (OWLIndividual ind : individuals) {
 			    //finally generateSentencesFromClusters

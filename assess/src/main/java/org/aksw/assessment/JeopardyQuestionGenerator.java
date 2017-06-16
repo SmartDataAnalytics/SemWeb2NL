@@ -1,4 +1,23 @@
 /*
+ * #%L
+ * ASSESS
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+/*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -212,7 +231,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 					
 					String query = asFilterInSPARQLQuery(triples, type);
 					
-					Set<Resource> wrongAnswerCandidatesTmp = new HashSet<Resource>();
+					Set<Resource> wrongAnswerCandidatesTmp = new HashSet<>();
 					ResultSet rs = executeSelectQuery(query);
 					QuerySolution qs;
 					while (rs.hasNext()) {
@@ -386,7 +405,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 		if(wrongAnswersByType.containsKey(type)){
 			wrongAnswerCandidates = wrongAnswersByType.get(type);
 		} else {
-			wrongAnswerCandidates = new ArrayList<Resource>(getMostProminentResources(restrictions.keySet()).keySet());
+			wrongAnswerCandidates = new ArrayList<>(getMostProminentResources(restrictions.keySet()).keySet());
 			wrongAnswerCandidates.remove(r);
 			Collections.shuffle(wrongAnswerCandidates, new Random(123));
 			wrongAnswersByType.put(type, wrongAnswerCandidates);
@@ -417,7 +436,7 @@ public class JeopardyQuestionGenerator extends MultipleChoiceQuestionGenerator {
 			System.out.println("Class:" + cls);
 			try {
 				Map<OWLEntity, Set<OWLObjectProperty>> restrictions = Maps.newHashMap();
-				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<OWLObjectProperty>());
+				restrictions.put(new OWLClassImpl(IRI.create(cls)), new HashSet<>());
 				
 				
 				SparqlEndpoint endpoint = SparqlEndpoint.create("http://sake.informatik.uni-leipzig.de:8890/sparql", "http://dbpedia.org");

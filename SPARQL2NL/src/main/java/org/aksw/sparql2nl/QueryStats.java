@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl;
 
 import java.io.OutputStreamWriter;
@@ -44,7 +63,7 @@ public class QueryStats {
 		// we need edge lables,
 		// https://github.com/jgrapht/jgrapht/wiki/LabeledEdges shows how to do
 		// it)
-		this.g = new DefaultDirectedGraph<Node, DefaultEdge>(
+		this.g = new DefaultDirectedGraph<>(
 				DefaultEdge.class);
 		for (Triple triple : triples) {
 			g.addVertex(triple.getSubject());
@@ -52,7 +71,7 @@ public class QueryStats {
 			g.addEdge(triple.getSubject(), triple.getObject());
 		}
 		
-		this.f = new FloydWarshallShortestPaths<Node, DefaultEdge>(g);		
+		this.f = new FloydWarshallShortestPaths<>(g);
 	}
 	
 	public String getQueryString() {
@@ -155,14 +174,14 @@ public class QueryStats {
 //		ge.export(new OutputStreamWriter(System.out), g);
 		
 		// bug report (diameter 0 instead of 1)
-		DirectedGraph<String, DefaultEdge> graph = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
+		DirectedGraph<String, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
 		String a = "a", b = "b", c = "c";
 		graph.addVertex(a);
 		graph.addVertex(b);
 		graph.addEdge(a, b);
 //		graph.addVertex(c);
 //		graph.addEdge(b, c);
-		FloydWarshallShortestPaths<String, DefaultEdge> fw = new FloydWarshallShortestPaths<String, DefaultEdge>(graph);
+		FloydWarshallShortestPaths<String, DefaultEdge> fw = new FloydWarshallShortestPaths<>(graph);
 //		System.out.println(fw.getDiameter());
 		
 	}

@@ -1,4 +1,23 @@
 /*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+/*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -54,7 +73,7 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
         SimpleGraphAccessor g1 = q1.getGraphRepresentation();
         SimpleGraphAccessor g2 = q2.getGraphRepresentation();
 
-        HashMap<String, String> nodeMapping = new HashMap<String, String>();
+        HashMap<String, String> nodeMapping = new HashMap<>();
         for (String s : cliqueList) {
             String[] split1 = s.split(Pattern.quote(", "));
             for (int i = 0; i < split1.length; i++) {
@@ -83,11 +102,11 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
             }
         }
         //get successor map at string level
-        HashMap<String, TreeSet<String>> successors1 = new HashMap<String, TreeSet<String>>();
+        HashMap<String, TreeSet<String>> successors1 = new HashMap<>();
         double edgeCount1 = 0;
         for (IGraphNode n : g1.getNodeSet()) {
             TreeSet<IGraphNode> succ = n.getSuccessorSet();
-            TreeSet<String> labels = new TreeSet<String>();
+            TreeSet<String> labels = new TreeSet<>();
             for (IGraphNode ns : succ) {
                 labels.add(ns.getLabel());
                 edgeCount1++;
@@ -95,11 +114,11 @@ public class NormedGraphIsomorphism implements QuerySimilarity {
             successors1.put(n.getLabel(), labels);
         }
 
-        HashMap<String, TreeSet<String>> successors2 = new HashMap<String, TreeSet<String>>();
+        HashMap<String, TreeSet<String>> successors2 = new HashMap<>();
         double edgeCount2 = 0;
         for (IGraphNode n : g2.getNodeSet()) {
             TreeSet<IGraphNode> succ = n.getSuccessorSet();
-            TreeSet<String> labels = new TreeSet<String>();
+            TreeSet<String> labels = new TreeSet<>();
             for (IGraphNode ns : succ) {
                 labels.add(ns.getLabel());
                 edgeCount2++;

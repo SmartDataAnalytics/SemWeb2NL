@@ -1,16 +1,29 @@
+/*
+ * #%L
+ * Evaluation
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 /**
  * 
  */
 package org.aksw.semweb2nl.evaluation;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
 import org.semanticweb.owlapi.io.ToStringRenderer;
@@ -24,6 +37,7 @@ import org.semanticweb.owlapi.model.OWLObjectIntersectionOf;
 import org.semanticweb.owlapi.model.OWLOntology;
 import org.semanticweb.owlapi.model.OWLOntologyManager;
 
+import org.semanticweb.owlapi.search.EntitySearcher;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
 import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
@@ -53,8 +67,8 @@ public class ExamplesGenerator {
 		individualGenerator.reset();
 		
 		// get the class expressions that describe the given class
-		Set<OWLClassExpression> superClassExpressions = cls.getSuperClasses(ontology);
-		superClassExpressions.addAll(cls.getEquivalentClasses(ontology));
+		Collection<OWLClassExpression> superClassExpressions = EntitySearcher.getSuperClasses(cls, ontology);
+		superClassExpressions.addAll(EntitySearcher.getEquivalentClasses(cls, ontology));
 //		superClassExpressions.addAll(cls.getSubClasses(ontology));
 
 		// rewrite as intersection for simplicity

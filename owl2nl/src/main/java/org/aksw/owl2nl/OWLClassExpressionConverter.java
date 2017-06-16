@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * OWL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 /**
  * 
  */
@@ -91,7 +110,7 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	IRIConverter iriConverter = new SimpleIRIConverter();
 	PropertyVerbalizer propertyVerbalizer = new PropertyVerbalizer(iriConverter, null, null);
 	LiteralConverter literalConverter = new LiteralConverter(iriConverter);
-	OWLDataFactory df = new OWLDataFactoryImpl(false, false);
+	OWLDataFactory df = new OWLDataFactoryImpl();
 	
 	boolean noun;
 	
@@ -217,8 +236,8 @@ public class OWLClassExpressionConverter implements OWLClassExpressionVisitorEx<
 	/**
 	 * Returns a list of operands ordered by class expressions types,
 	 * starting with the "more easy" first.
-	 * @param ce
-	 * @return
+	 * @param ce the class expression
+	 * @return a list of operands
 	 */
 	private List<OWLClassExpression> getOperandsByPriority(OWLNaryBooleanClassExpression ce){
 		return ce.getOperandsAsList();

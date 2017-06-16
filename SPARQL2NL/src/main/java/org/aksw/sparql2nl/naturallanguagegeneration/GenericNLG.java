@@ -1,4 +1,23 @@
 /*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
+/*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
@@ -67,7 +86,7 @@ public class GenericNLG implements Sparql2NLConverter {
         SPhraseSpec p = nlgFactory.createClause();
         p.setSubject("This query");
         p.setVerb("retrieve");
-        List<NPPhraseSpec> objects = new ArrayList<NPPhraseSpec>();
+        List<NPPhraseSpec> objects = new ArrayList<>();
 
         //process the type information to create the object(s)    
         for (String s : typeMap.keySet()) {
@@ -173,7 +192,7 @@ public class GenericNLG implements Sparql2NLConverter {
             CoordinatedPhraseElement cpe;
             //cast to union
             ElementUnion union = (ElementUnion) e;
-            List<Triple> triples = new ArrayList<Triple>();
+            List<Triple> triples = new ArrayList<>();
 
             //get all triples. We assume that the depth of union is always 1
             for (Element atom : union.getElements()) {
@@ -239,7 +258,7 @@ public class GenericNLG implements Sparql2NLConverter {
     }
 
     public static void test() {
-        Map<String, Set<String>> typeMap = new HashMap<String, Set<String>>();
+        Map<String, Set<String>> typeMap = new HashMap<>();
         String s = "x";
         HashSet type = new HashSet();
         type.add("Person");

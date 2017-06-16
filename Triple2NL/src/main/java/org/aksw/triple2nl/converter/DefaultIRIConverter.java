@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * Triple2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.triple2nl.converter;
 
 import java.io.File;
@@ -45,7 +64,7 @@ public class DefaultIRIConverter implements IRIConverter{
 	private static final Logger logger = LoggerFactory.getLogger(DefaultIRIConverter.class);
 	
 	private IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
-	private LRUMap<String, String> uri2LabelCache = new LRUMap<String, String>(200);
+	private LRUMap<String, String> uri2LabelCache = new LRUMap<>(200);
 	
 	private QueryExecutionFactory qef;
 	
@@ -262,7 +281,7 @@ public class DefaultIRIConverter implements IRIConverter{
 	 /**
      * Dereference the IRI and look for label property value.
      * @param iri the IRI
-     * @return
+     * @return the label if exist, otherwise <code>null</code>
      */
     private String getLabelFromLinkedData(String iri){
     	logger.debug("Get label for " + iri + " from Linked Data...");

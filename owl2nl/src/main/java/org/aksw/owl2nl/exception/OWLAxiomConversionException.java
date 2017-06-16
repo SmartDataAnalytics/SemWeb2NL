@@ -1,6 +1,6 @@
 /*
  * #%L
- * ASSESS
+ * OWL2NL
  * %%
  * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
  * %%
@@ -17,43 +17,37 @@
  * limitations under the License.
  * #L%
  */
+package org.aksw.owl2nl.exception;
+
+import org.semanticweb.owlapi.model.OWLAxiom;
+
 /**
+ * An exception which is thrown if the conversion of an OWL axiom into
+ * natural language failed.
  * 
- */
-package org.aksw.assessment.rest;
-
-import java.util.List;
-
-import javax.xml.bind.annotation.XmlRootElement;
-
-import com.google.common.base.Joiner;
-
-/**
  * @author Lorenz Buehmann
- * 
  */
-@XmlRootElement(name = "questions")
-public class RESTQuestions {
+public class OWLAxiomConversionException extends Exception {
+	
+	private final OWLAxiom axiom;
 
-	// @XmlElement(name = "question", type = RESTQuestions.class)
-	private List<RESTQuestion> questions;
-
-	public List<RESTQuestion> getQuestions() {
-		return questions;
+	public OWLAxiomConversionException(OWLAxiom axiom, Exception e) {
+		super(e);
+		this.axiom = axiom;
 	}
-
-	public void setQuestions(List<RESTQuestion> questions) {
-		this.questions = questions;
+	
+	/**
+	 * @return the OWL axiom for which the conversion failed
+	 */
+	public OWLAxiom getAxiom() {
+		return axiom;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#toString()
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Throwable#toString()
 	 */
 	@Override
 	public String toString() {
-		return Joiner.on("\n##################\n").join(questions);
+		return "The conversion of the axiom " + axiom + " failed.";
 	}
-
 }

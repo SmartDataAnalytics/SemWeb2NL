@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * ASSESS
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.assessment;
 
 import java.util.ArrayList;
@@ -192,14 +211,14 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
         
         // we pick at least 1 and at most N correct answers randomly
         Random rnd = new Random(123);
-        List<RDFNode> correctAnswerList = new ArrayList<RDFNode>(correctAnswers);
+        List<RDFNode> correctAnswerList = new ArrayList<>(correctAnswers);
         Collections.shuffle(correctAnswerList, rnd);
         int maxNumberOfCorrectAnswers = rnd.nextInt((maxNrOfAnswersPerQuestion - 1) + 1) + 1;
         correctAnswerList = correctAnswerList.subList(0, Math.min(correctAnswerList.size(), maxNumberOfCorrectAnswers));
         
         // we pick (N - #correctAnswers) wrong answers randomly
         rnd = new Random(123);
-        List<RDFNode> wrongAnswerList = new ArrayList<RDFNode>(wrongAnswerCandidates);
+        List<RDFNode> wrongAnswerList = new ArrayList<>(wrongAnswerCandidates);
         Collections.shuffle(wrongAnswerList, rnd);
         wrongAnswerList = wrongAnswerList.subList(0, Math.min(wrongAnswerList.size(), maxNrOfAnswersPerQuestion - correctAnswerList.size()));
         usedWrongAnswers.addAll(wrongAnswerList);
@@ -215,7 +234,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     
     private String selectQuestionProperty(Resource r, OWLEntity domain, boolean subjectPosition) {
     	// generate the property candidates
-    	Set<String> propertyCandidates = new HashSet<String>();
+    	Set<String> propertyCandidates = new HashSet<>();
     	
 		// first of all, we check if there exists any meaningful information about the given resource, 
 		// i.e. whether there are interesting triples
@@ -441,7 +460,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     
 	private Triple generateFocusTriple(Resource r, String property, boolean inSubjectPosition) {
 		logger.info("Generating focus triple...");
-		List<RDFNode> correctAnswers = new ArrayList<RDFNode>();
+		List<RDFNode> correctAnswers = new ArrayList<>();
 
 		Query query;
 		if (inSubjectPosition) {
@@ -513,7 +532,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     
     private Set<RDFNode> generateCorrectAnswerCandidates(Triple focusTriple, boolean inSubjectPosition, boolean hideSubject) {
     	 logger.info("Generating correct answers...");
-    	 Set<RDFNode> correctAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
+    	 Set<RDFNode> correctAnswers = new TreeSet<>(new RDFNodeComparator());
     	 
     	// get values for property, i.e. the correct answers
     	String query;
@@ -542,7 +561,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
     
     private Set<RDFNode> generateWrongAnswerCandidates(Triple focusTriple, boolean inSubjectPosition, boolean hideSubject) {
         logger.info("Generating wrong answer candidates...");
-        Set<RDFNode> wrongAnswers = new TreeSet<RDFNode>(new RDFNodeComparator());
+        Set<RDFNode> wrongAnswers = new TreeSet<>(new RDFNodeComparator());
    	 
     	Query query;
     	if(hideSubject) {
@@ -612,7 +631,7 @@ public class MultipleChoiceQuestionGenerator extends AbstractQuestionGenerator {
 		}
         
 //        Collections.shuffle(result);
-        logger.info("...got " + result.size() + " resources, e.g. " + new ArrayList<Resource>(result.keySet()).subList(0, Math.min(10, result.size())));
+        logger.info("...got " + result.size() + " resources, e.g. " + new ArrayList<>(result.keySet()).subList(0, Math.min(10, result.size())));
         return result;
     }
 	

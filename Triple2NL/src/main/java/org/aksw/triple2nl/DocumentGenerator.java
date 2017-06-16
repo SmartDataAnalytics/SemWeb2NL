@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * Triple2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 /**
  * 
  */
@@ -75,7 +94,7 @@ public class DocumentGenerator {
 	}
 
 	private Set<Triple> asTriples(Model model) {
-		Set<Triple> triples = new HashSet<Triple>((int) model.size());
+		Set<Triple> triples = new HashSet<>((int) model.size());
 		StmtIterator iterator = model.listStatements();
 		while (iterator.hasNext()) {
 			Statement statement = iterator.next();
@@ -88,7 +107,7 @@ public class DocumentGenerator {
 		DefaultDirectedGraph<Node, DefaultEdge> graph = asGraph(documentTriples);
 		
 		//divide the document into paragraphs for each connected component in the graph
-		ConnectivityInspector<Node, DefaultEdge> connectivityInspector = new ConnectivityInspector<Node, DefaultEdge>(graph);
+		ConnectivityInspector<Node, DefaultEdge> connectivityInspector = new ConnectivityInspector<>(graph);
 		List<Set<Node>> connectedNodes = connectivityInspector.connectedSets();
 		
 		for (Set<Node> nodes : connectedNodes) {
@@ -101,7 +120,7 @@ public class DocumentGenerator {
 		//do some sorting
 		subject2Triples = sort(documentTriples, subject2Triples);
 		
-		List<DocumentElement> sentences = new ArrayList<DocumentElement>();
+		List<DocumentElement> sentences = new ArrayList<>();
 		for (Entry<Node, Collection<Triple>> entry : subject2Triples.entrySet()) {
 			Node subject = entry.getKey();
 			Collection<Triple> triples = entry.getValue();
@@ -110,8 +129,8 @@ public class DocumentGenerator {
 			CoordinatedPhraseElement conjunction = nlgFactory.createCoordinatedPhrase();
 
 			// get the type triples first
-			Set<Triple> typeTriples = new HashSet<Triple>();
-			Set<Triple> otherTriples = new HashSet<Triple>();
+			Set<Triple> typeTriples = new HashSet<>();
+			Set<Triple> otherTriples = new HashSet<>();
 
 			for (Triple triple : triples) {
 				if (triple.predicateMatches(RDF.type.asNode())) {
@@ -166,7 +185,7 @@ public class DocumentGenerator {
 			// convert the other triples, but use place holders for the subject
 			String placeHolderToken = (typeTriples.isEmpty() || otherTriples.size() == 1) ? "it" : "whose";
 			Node placeHolder = NodeFactory.createURI("http://sparql2nl.aksw.org/placeHolder/" + placeHolderToken);
-			Collection<Triple> placeHolderTriples = new ArrayList<Triple>(otherTriples.size());
+			Collection<Triple> placeHolderTriples = new ArrayList<>(otherTriples.size());
 			Iterator<Triple> iterator = otherTriples.iterator();
 			// we have to keep one triple with subject if we have no type triples
 			if (typeTriples.isEmpty() && iterator.hasNext()) {
@@ -195,11 +214,11 @@ public class DocumentGenerator {
 	}
 	
 	/**
-	 * @param documentTriples 
-	 * @param subject2Triples
+	 * @param documentTriples the set of triples
+	 * @param subject2Triples a map that contains for each node the triples in which it occurs as subject
 	 */
 	private Map<Node, Collection<Triple>> sort(Set<Triple> documentTriples, Map<Node, Collection<Triple>> subject2Triples) {
-		Map<Node, Collection<Triple>> sortedTriples = new LinkedHashMap<Node, Collection<Triple>>();
+		Map<Node, Collection<Triple>> sortedTriples = new LinkedHashMap<>();
 		//we can order by occurrence, i.e. which subjects do not occur in object position
 		//for each subject we check how often they occur in subject/object position
 		Multimap<Node, Node> outgoing = HashMultimap.create();
@@ -218,7 +237,7 @@ public class DocumentGenerator {
 			Entry<Node, Collection<Triple>> entry = iterator.next();
 			Node subject = entry.getKey();
 			if(!incoming.containsKey(subject)){
-				sortedTriples.put(subject, new HashSet<Triple>(entry.getValue()));
+				sortedTriples.put(subject, new HashSet<>(entry.getValue()));
 				iterator.remove();
 			}
 		}
@@ -241,7 +260,7 @@ public class DocumentGenerator {
 	}
 	
 	private DefaultDirectedGraph<Node, DefaultEdge> asGraph(Set<Triple> triples){
-		DefaultDirectedGraph<Node, DefaultEdge> graph = new DefaultDirectedGraph<Node, DefaultEdge>(DefaultEdge.class);
+		DefaultDirectedGraph<Node, DefaultEdge> graph = new DefaultDirectedGraph<>(DefaultEdge.class);
 		for (Triple triple : triples) {
 			//we have to omit type triples to get connected subgraphs later on
 			if(!triple.predicateMatches(RDF.type.asNode())){

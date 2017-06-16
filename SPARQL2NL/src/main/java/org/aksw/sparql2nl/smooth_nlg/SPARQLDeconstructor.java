@@ -1,4 +1,22 @@
-
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl.smooth_nlg;
 
 import com.hp.hpl.jena.query.Query;
@@ -42,9 +60,9 @@ public class SPARQLDeconstructor {
         Map<String,Set<String>> typeMap = tEx.extractTypes(query);
                 
         List<Element> body = getWhereElements(query);
-        List<String> triples = new ArrayList<String>();
-        List<Element> filters = new ArrayList<Element>();
-        List<Element> optionals = new ArrayList<Element>();
+        List<String> triples = new ArrayList<>();
+        List<Element> filters = new ArrayList<>();
+        List<Element> optionals = new ArrayList<>();
         
         for (Element e : body) {
             if (e instanceof ElementOptional) {
@@ -58,7 +76,7 @@ public class SPARQLDeconstructor {
             }
         }
         
-        List<OrderBy> orderBys = new ArrayList<OrderBy>();
+        List<OrderBy> orderBys = new ArrayList<>();
         if (query.getOrderBy() != null) {
             long offset = 0; long limit = 0; 
             if (query.hasOffset()) { offset = query.getOffset(); }
@@ -72,13 +90,13 @@ public class SPARQLDeconstructor {
             }
         }
 
-        List<String> optionalVars = new ArrayList<String>();
+        List<String> optionalVars = new ArrayList<>();
         for (Element e : optionals) {
             for (Var var : PatternVars.vars(e)) {
                 optionalVars.add(var.toString().replace("?",""));
             }
         }
-        List<String> nonoptionalVars = new ArrayList<String>();
+        List<String> nonoptionalVars = new ArrayList<>();
         for (Element e : body) {
             for (Var var : PatternVars.vars(e)) {
                 if (!optionalVars.contains(var.toString())) {
@@ -88,7 +106,7 @@ public class SPARQLDeconstructor {
         }
         
         // BUILD PRIMARY ENTITIES for variables in SELECT clause        
-        List<Entity> primaries = new ArrayList<Entity>();
+        List<Entity> primaries = new ArrayList<>();
         for (String v : typeMap.keySet()) {
             if (nonoptionalVars.contains(v) && !optionalVars.contains(v)) {
                 primaries.add(buildEntity(v,typeMap,body,triples));
@@ -96,7 +114,7 @@ public class SPARQLDeconstructor {
         }
 
         // BUILD SECONDARY ENTITIES for all other variables occurring in the query
-        List<Entity> secondaries = new ArrayList<Entity>();
+        List<Entity> secondaries = new ArrayList<>();
         for (String v : nonoptionalVars) {
             if (!typeMap.containsKey(v.toString())) {
                 secondaries.add(buildEntity(v.toString(),typeMap,body,triples));
@@ -111,7 +129,7 @@ public class SPARQLDeconstructor {
         String var; 
         boolean count; 
         String type; 
-        Set<Predicate> properties = new HashSet<Predicate>();
+        Set<Predicate> properties = new HashSet<>();
         
         var = v;
             // Is it like COUNT(?v) ?
@@ -136,7 +154,7 @@ public class SPARQLDeconstructor {
                 break;
             }}
             // Collect properties.
-            List<String> usedTriples = new ArrayList<String>();
+            List<String> usedTriples = new ArrayList<>();
             for (String triple : triples) {
                 if (triple.contains("?"+v)) { // WARNING potential to confuse ?v and ?v1
                     String[] spo = triple.toString().trim().split(" ");
@@ -154,7 +172,7 @@ public class SPARQLDeconstructor {
     
     
     private static List<Element> getWhereElements(Query query) {
-        List<Element> result = new ArrayList<Element>();
+        List<Element> result = new ArrayList<>();
         ElementGroup elt = (ElementGroup) query.getQueryPattern();
         for (int i = 0; i < elt.getElements().size(); i++) {
             Element e = elt.getElements().get(i);

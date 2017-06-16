@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * SPARQL2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.sparql2nl.queryprocessing;
 
 import java.util.ArrayList;
@@ -101,7 +120,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Set<Triple> extractTriplePatterns(Query query, Node node){
-		Set<Triple> triplePatterns = new HashSet<Triple>();
+		Set<Triple> triplePatterns = new HashSet<>();
 		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
 		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
 		return triplePatterns;
@@ -115,7 +134,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Set<Triple> extractNonOptionalTriplePatterns(Query query, Node node){
-		Set<Triple> triplePatterns = new HashSet<Triple>();
+		Set<Triple> triplePatterns = new HashSet<>();
 		triplePatterns.addAll(extractIngoingTriplePatterns(query, node));
 		triplePatterns.addAll(extractOutgoingTriplePatterns(query, node));
 		triplePatterns.removeAll(optionalTriplePattern);
@@ -129,9 +148,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
 			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
@@ -146,9 +165,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractOutgoingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractOutgoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -169,9 +188,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractIncomingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIncomingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -185,9 +204,9 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	 * @return
 	 */
 	public Map<Var,Set<Triple>> extractIngoingTriplePatternsForProjectionVars(Query query){
-		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<Var,Set<Triple>>();
+		Map<Var,Set<Triple>> var2TriplePatterns = new HashMap<>();
 		for (Var var : query.getProjectVars()) {
-			Set<Triple> triplePatterns = new HashSet<Triple>();
+			Set<Triple> triplePatterns = new HashSet<>();
 			triplePatterns.addAll(extractIngoingTriplePatterns(query, var));
 			var2TriplePatterns.put(var, triplePatterns);
 		}
@@ -199,8 +218,8 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	public Set<Triple> extractTriplePattern(Query query, boolean ignoreOptionals){
-		triplePattern = new HashSet<Triple>();
-		optionalTriplePattern = new HashSet<Triple>();
+		triplePattern = new HashSet<>();
+		optionalTriplePattern = new HashSet<>();
 		
 		query.getQueryPattern().visit(this);
 		
@@ -208,7 +227,7 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 		if(!ignoreOptionals){
 			if(query.isSelectType()){
 				for(Triple t : optionalTriplePattern){
-					if(!ListUtils.intersection(new ArrayList<Var>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
+					if(!ListUtils.intersection(new ArrayList<>(VarUtils.getVars(t)), query.getProjectVars()).isEmpty()){
 						triplePattern.add(t);
 					}
 				}
@@ -227,8 +246,8 @@ public class TriplePatternExtractor extends ElementVisitorBase {
 	}
 	
 	public Set<Triple> extractTriplePattern(ElementGroup group, boolean ignoreOptionals){
-		triplePattern = new HashSet<Triple>();
-		optionalTriplePattern = new HashSet<Triple>();
+		triplePattern = new HashSet<>();
+		optionalTriplePattern = new HashSet<>();
 		
 		group.visit(this);
 		

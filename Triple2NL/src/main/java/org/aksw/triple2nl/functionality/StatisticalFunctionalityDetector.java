@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * Triple2NL
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 package org.aksw.triple2nl.functionality;
 
 import java.io.File;
@@ -5,15 +24,7 @@ import java.io.InputStream;
 import java.util.Set;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
-import org.semanticweb.owlapi.model.IRI;
-import org.semanticweb.owlapi.model.OWLAnnotation;
-import org.semanticweb.owlapi.model.OWLDataFactory;
-import org.semanticweb.owlapi.model.OWLDataPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLLiteral;
-import org.semanticweb.owlapi.model.OWLObjectPropertyAxiom;
-import org.semanticweb.owlapi.model.OWLOntology;
-import org.semanticweb.owlapi.model.OWLOntologyCreationException;
-import org.semanticweb.owlapi.model.OWLOntologyManager;
+import org.semanticweb.owlapi.model.*;
 
 public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 	
@@ -47,25 +58,35 @@ public class StatisticalFunctionalityDetector implements FunctionalityDetector{
 
 	@Override
 	public boolean isFunctional(String iri) {
-		Set<OWLDataPropertyAxiom> axioms = ontology.getAxioms(dataFactory.getOWLDataProperty(IRI.create(iri)));
+		// check as data property
+		Set<? extends OWLAxiom> axioms = ontology.getFunctionalDataPropertyAxioms(dataFactory.getOWLDataProperty(IRI.create(iri)));
 		if(!axioms.isEmpty()){
-			Set<OWLAnnotation> annotations = axioms.iterator().next().getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
-			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
-			double confidence = Double.valueOf(val.parseDouble());
-			if(confidence >= threshold){
+			Double confidence = getConfidenceValue(axioms.iterator().next());
+
+			if(confidence != null && confidence >= threshold){
 				return true;
 			} 
 		}
-		Set<OWLObjectPropertyAxiom> axioms2 = ontology.getAxioms(dataFactory.getOWLObjectProperty(IRI.create(iri)));
+
+		//check as object property
+		axioms = ontology.getFunctionalObjectPropertyAxioms(dataFactory.getOWLObjectProperty(IRI.create(iri)));
 		if(!axioms.isEmpty()){
-			Set<OWLAnnotation> annotations = axioms.iterator().next().getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
-			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
-			double confidence = Double.valueOf(val.parseDouble());
-			if(confidence >= threshold){
+			Double confidence = getConfidenceValue(axioms.iterator().next());
+
+			if(confidence != null && confidence >= threshold){
 				return true;
-			} 
+			}
 		}
 		return false;
+	}
+
+	private Double getConfidenceValue(OWLAxiom axiom) {
+		Set<OWLAnnotation> annotations = axiom.getAnnotations(dataFactory.getOWLAnnotationProperty(confidencePropertyIRI));
+		if(!annotations.isEmpty()) {
+			OWLLiteral val = (OWLLiteral) annotations.iterator().next().getValue();
+			return val.parseDouble();
+		}
+		return null;
 	}
 	
 	public static void main(String[] args) throws Exception{

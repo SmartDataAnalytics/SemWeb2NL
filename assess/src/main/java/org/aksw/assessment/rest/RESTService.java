@@ -1,3 +1,22 @@
+/*
+ * #%L
+ * ASSESS
+ * %%
+ * Copyright (C) 2015 Agile Knowledge Engineering and Semantic Web (AKSW)
+ * %%
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ * #L%
+ */
 /**
  * 
  */
@@ -208,7 +227,7 @@ public class RESTService {
 		Map<QuestionType, QuestionGenerator> generators = Maps.newLinkedHashMap();
 		
 		Map<OWLEntity, Set<OWLObjectProperty>> domains = new HashMap<>();
-		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<OWLObjectProperty>());
+		domains.put(new OWLClassImpl(IRI.create(domain)), new HashSet<>());
 		
 		// set up the question generators
 		for (String type : questionTypes) {
@@ -320,14 +339,14 @@ public class RESTService {
 		}
 		long end = System.currentTimeMillis();
 		System.out.println("Operation took " + (end - start) + "ms");
-		final List<RESTQuestion> restQuestions = Collections.synchronizedList(new ArrayList<RESTQuestion>(maxNrOfQuestions));
+		final List<RESTQuestion> restQuestions = Collections.synchronizedList(new ArrayList<>(maxNrOfQuestions));
 		
 		// get random numbers for max. computed questions per type
 		final List<Integer> partitionSizes = getRandomNumbers(maxNrOfQuestions, questionTypes.size());
 		
 		ExecutorService tp = Executors.newFixedThreadPool(generators.entrySet().size());
 		// submit a task for each question type
-        List<Future<List<RESTQuestion>>> list = new ArrayList<Future<List<RESTQuestion>>>();
+        List<Future<List<RESTQuestion>>> list = new ArrayList<>();
 		int i = 0;
 		for (final Entry<QuestionType, QuestionGenerator> entry : generators.entrySet()) {
 			QuestionType questionType = entry.getKey();
@@ -360,7 +379,7 @@ public class RESTService {
 		List<String> properties = propertiesCache.get(classURI);
 		
 		if(properties == null){
-			properties = new ArrayList<String>();
+			properties = new ArrayList<>();
 			for (OWLObjectProperty p : reasoner.getObjectProperties(new OWLClassImpl(IRI.create(classURI)))) {
 				if(!blackList.contains(p.toStringID())){
 					properties.add(p.toStringID());
@@ -384,7 +403,7 @@ public class RESTService {
 		List<String> classes = classesCache.get(ks);
 		
 		if(classes == null){
-			classes = new ArrayList<String>();
+			classes = new ArrayList<>();
 			for (OWLClass cls : reasoner.getNonEmptyOWLClasses()) {
 				if ((namespace != null && cls.toStringID().startsWith(namespace)) && 
 						!blackList.contains(cls.toStringID())) {
@@ -443,7 +462,7 @@ public class RESTService {
 	
 	private List<Integer> getRandomNumbers(int total, int groups){
 		Random rnd = new Random(123);
-		List<Integer> partitionSizes = new ArrayList<Integer>(groups);
+		List<Integer> partitionSizes = new ArrayList<>(groups);
 		for (int i = 0; i < groups - 1; i++) {
 			int number = rnd.nextInt(total-(groups - i)) + 1;
 			total -= number;
@@ -474,7 +493,7 @@ public class RESTService {
 			Set<Question> questions = questionGenerator.getQuestions(null, 1, maxNrOfQuestions);
 			
 			// convert to REST format
-			List<RESTQuestion> restQuestions = new ArrayList<RESTQuestion>(questions.size());
+			List<RESTQuestion> restQuestions = new ArrayList<>(questions.size());
 			for (Question question : questions) {
 				// convert question
 				RESTQuestion q = new RESTQuestion();

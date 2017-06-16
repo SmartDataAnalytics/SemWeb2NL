@@ -60,7 +60,7 @@
 	</developers>
 
 	<organization>
-		<name>Agile Knowledge Engineering and Semantic Web</name>
+		<name>Agile Knowledge Engineering and Semantic Web (AKSW)</name>
 		<url>http://aksw.org</url>
 	</organization>
 
@@ -342,12 +342,29 @@
 					</executions>
 				</plugin>
 
+				<!--<plugin>
+					<groupId>com.mycila</groupId>
+					<artifactId>license-maven-plugin</artifactId>
+					<version>2.11</version>
+					<configuration>
+						<header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</header>
+					</configuration>
+					<executions>
+						<execution>
+							<goals>
+								<goal>check</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>-->
+
 				<plugin>
 					<groupId>org.codehaus.mojo</groupId>
 					<artifactId>license-maven-plugin</artifactId>
 					<version>1.8</version>
 					<configuration>
 						<licenseName>apache_v2</licenseName>
+						<inceptionYear>2015</inceptionYear>
 						<addJavaLicenseAfterPackage>false</addJavaLicenseAfterPackage>
 						<failOnMissingHeader>true</failOnMissingHeader>
 						<failOnNotUptodateHeader>true</failOnNotUptodateHeader>
