@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.Map.Entry;
 
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.dlsyntax.renderer.DLSyntaxObjectRenderer;
 import org.semanticweb.owlapi.io.ToStringRenderer;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
@@ -39,7 +40,6 @@ import org.semanticweb.owlapi.model.OWLOntologyManager;
 
 import org.semanticweb.owlapi.search.EntitySearcher;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
-import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
 /**
  * @author Lorenz Buehmann

@@ -168,7 +168,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 			}
 			
 			@Override
-			public void edgeTraversed(EdgeTraversalEvent<Node, Edge> e) {
+			public void edgeTraversed(EdgeTraversalEvent<Edge> e) {
 			}
 			
 			@Override

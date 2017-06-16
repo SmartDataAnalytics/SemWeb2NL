@@ -29,7 +29,9 @@ import org.aksw.triple2nl.converter.DefaultIRIConverter;
 import org.aksw.triple2nl.converter.IRIConverter;
 import org.dllearner.utilities.OwlApiJenaUtils;
 import org.semanticweb.owlapi.apibinding.OWLManager;
+import org.semanticweb.owlapi.dlsyntax.renderer.DLSyntaxObjectRenderer;
 import org.semanticweb.owlapi.io.ToStringRenderer;
+import org.semanticweb.owlapi.manchestersyntax.renderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
 import org.semanticweb.owlapi.model.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,8 +42,6 @@ import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 import uk.ac.manchester.cs.owl.owlapi.OWLDataFactoryImpl;
-import uk.ac.manchester.cs.owl.owlapi.mansyntaxrenderer.ManchesterOWLSyntaxOWLObjectRendererImpl;
-import uk.ac.manchester.cs.owlapi.dlsyntax.DLSyntaxObjectRenderer;
 
 import java.util.List;
 import java.util.TreeSet;

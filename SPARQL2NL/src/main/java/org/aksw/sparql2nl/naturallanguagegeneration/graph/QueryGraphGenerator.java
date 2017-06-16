@@ -194,7 +194,7 @@ public class QueryGraphGenerator {
 				}
 				
 				@Override
-				public void edgeTraversed(EdgeTraversalEvent<Node, Edge> e) {
+				public void edgeTraversed(EdgeTraversalEvent<Edge> e) {
 				}
 				
 				@Override

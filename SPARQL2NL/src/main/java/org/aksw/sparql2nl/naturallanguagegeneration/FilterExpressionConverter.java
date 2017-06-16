@@ -87,7 +87,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		return element;
 	}
 
-	@Override
 	public void startVisit() {
 		stack = new Stack<>();
 	}
@@ -362,7 +361,6 @@ public class FilterExpressionConverter implements ExprVisitor{
 		stack.push(element);
 	}
 
-	@Override
 	public void finishVisit() {
 		// TODO Auto-generated method stub
 		
