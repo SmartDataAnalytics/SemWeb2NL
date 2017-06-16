@@ -22,11 +22,13 @@
  */
 package org.aksw.assessment.util;
 
-import com.hp.hpl.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.Resource;
+import org.springframework.core.io.ClassPathResource;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,7 +49,7 @@ public class DBpediaPropertyBlackList implements BlackList {
 	public static boolean onlyOntologyNamespace = true;
 
 	public DBpediaPropertyBlackList() throws IOException {
-		Stream<String> lines = Files.lines(Paths.get(getClass().getClassLoader().getResource(FILE_NAME).getPath()));
+		Stream<String> lines = new BufferedReader(new InputStreamReader(new ClassPathResource(FILE_NAME).getInputStream(), StandardCharsets.UTF_8)).lines();
 		blacklist = lines.collect(Collectors.toSet());
 	}
 

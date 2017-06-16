@@ -17,8 +17,8 @@
  * limitations under the License.
  * #L%
  */
-package org.aksw.avatar.gender;
+package org.aksw.triple2nl.gender;
 
 public enum Gender {
-	MALE, FEMALE, UNKNOWN;
+	MALE, FEMALE, UNKNOWN
 }

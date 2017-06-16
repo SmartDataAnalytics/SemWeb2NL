@@ -44,9 +44,9 @@ import org.semanticweb.owlapi.model.OWLProperty;
 import uk.ac.manchester.cs.owl.owlapi.OWLClassImpl;
 
 import com.google.common.collect.Multimap;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.vocabulary.RDF;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.vocabulary.RDF;
 
 /**
  *

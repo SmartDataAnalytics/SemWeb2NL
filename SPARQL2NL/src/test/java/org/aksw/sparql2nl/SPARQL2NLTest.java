@@ -23,32 +23,19 @@
  */
 package org.aksw.sparql2nl;
 
-import static org.junit.Assert.*;
-
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.Syntax;
-
-import java.net.URL;
-
-import org.aksw.sparql2nl.naturallanguagegeneration.Postprocessor;
-import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLG;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleSPARQL2NLConverter;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.Syntax;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-import org.junit.Test;
-
-import simplenlg.framework.DocumentElement;
-import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.lexicon.NIHDBLexicon;
-import simplenlg.phrasespec.NPPhraseSpec;
-import simplenlg.realiser.english.Realiser;
 
 
 public class SPARQL2NLTest {
 	
-	@Test
+	//@Test
 	public void testSPARQL2NL() throws Exception {
 		Lexicon lexicon = new NIHDBLexicon("/home/me/tools/lexAccess2013lite/data/HSqlDb/lexAccess2013.data");
 		SparqlEndpoint endpoint = SparqlEndpoint.getEndpointDBpedia();

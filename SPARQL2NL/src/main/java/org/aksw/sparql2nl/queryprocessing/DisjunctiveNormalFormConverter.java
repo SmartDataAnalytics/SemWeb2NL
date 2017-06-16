@@ -26,16 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.sparql.algebra.Algebra;
-import com.hp.hpl.jena.sparql.syntax.Element;
-import com.hp.hpl.jena.sparql.syntax.ElementGroup;
-import com.hp.hpl.jena.sparql.syntax.ElementOptional;
-import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
-import com.hp.hpl.jena.sparql.syntax.ElementUnion;
-import com.hp.hpl.jena.sparql.syntax.ElementVisitorBase;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.Syntax;
+import org.apache.jena.sparql.algebra.Algebra;
+import org.apache.jena.sparql.syntax.Element;
+import org.apache.jena.sparql.syntax.ElementGroup;
+import org.apache.jena.sparql.syntax.ElementOptional;
+import org.apache.jena.sparql.syntax.ElementPathBlock;
+import org.apache.jena.sparql.syntax.ElementUnion;
+import org.apache.jena.sparql.syntax.ElementVisitorBase;
 
 public class DisjunctiveNormalFormConverter extends ElementVisitorBase {
 	
@@ -46,7 +46,7 @@ public class DisjunctiveNormalFormConverter extends ElementVisitorBase {
 	
 	private Map<ElementUnion, ElementGroup> union2Group = new HashMap<>();
 	
-	public com.hp.hpl.jena.query.Query getDisjunctiveNormalForm(com.hp.hpl.jena.query.Query query){
+	public org.apache.jena.query.Query getDisjunctiveNormalForm(org.apache.jena.query.Query query){
 		Query copy = QueryFactory.create(query);
 		copy.getQueryPattern().visit(this);
 		

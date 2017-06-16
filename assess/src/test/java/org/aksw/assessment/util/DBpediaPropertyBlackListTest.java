@@ -19,7 +19,7 @@
  */
 package org.aksw.assessment.util;
 
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
+import org.apache.jena.rdf.model.ResourceFactory;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;

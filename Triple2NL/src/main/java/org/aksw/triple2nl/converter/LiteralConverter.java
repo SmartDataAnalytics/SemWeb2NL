@@ -19,32 +19,32 @@
  */
 package org.aksw.triple2nl.converter;
 
-import java.text.DateFormat;
-import java.text.DateFormatSymbols;
-import java.util.Calendar;
-import java.util.Locale;
-
+import com.google.common.base.Joiner;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.datatypes.DatatypeFormatException;
+import org.apache.jena.datatypes.RDFDatatype;
+import org.apache.jena.datatypes.xsd.IllegalDateTimeFieldException;
+import org.apache.jena.datatypes.xsd.XSDDatatype;
+import org.apache.jena.datatypes.xsd.XSDDateTime;
+import org.apache.jena.datatypes.xsd.impl.RDFLangString;
+import org.apache.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.impl.LiteralLabel;
+import org.apache.jena.rdf.model.Literal;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.OwlApiJenaUtils;
 import org.joda.time.DateTime;
 import org.joda.time.format.ISODateTimeFormat;
-import org.semanticweb.owlapi.model.OWLDatatype;
 import org.semanticweb.owlapi.model.OWLLiteral;
-import org.semanticweb.owlapi.vocab.Namespaces;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.hp.hpl.jena.datatypes.BaseDatatype;
-import com.hp.hpl.jena.datatypes.DatatypeFormatException;
-import com.hp.hpl.jena.datatypes.RDFDatatype;
-import com.hp.hpl.jena.datatypes.xsd.IllegalDateTimeFieldException;
-import com.hp.hpl.jena.datatypes.xsd.XSDDatatype;
-import com.hp.hpl.jena.datatypes.xsd.XSDDateTime;
-import com.hp.hpl.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.impl.LiteralLabel;
-import com.hp.hpl.jena.rdf.model.Literal;
+import java.text.DateFormat;
+import java.text.DateFormatSymbols;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.stream.Collectors;
 
 /**
  * A converter for literals.
@@ -92,7 +92,7 @@ public class LiteralConverter {
         RDFDatatype dt = lit.getDatatype();
 
         String s = lit.getLexicalForm();
-        if (dt == null) {// plain literal, i.e. omit language tag if exists
+        if (dt == null || dt instanceof RDFLangString) {// plain literal, i.e. omit language tag if exists
             s = lit.getLexicalForm();
             s = s.replaceAll("_", " ");
             if(encapsulateStringLiterals){
@@ -106,7 +106,10 @@ public class LiteralConverter {
 					s = '"' + s + '"';
 				}
             } else {// user-defined datatype
-                s = lit.getLexicalForm() + " " + StringUtils.join(StringUtils.splitByCharacterTypeCamelCase(iriConverter.convert(dt.getURI(), false)), " ");
+				String text = iriConverter.convert(dt.getURI(), false).toLowerCase();
+				String[] split = StringUtils.splitByCharacterTypeCamelCase(text.trim());
+				String datatype = Joiner.on(" ").join(Arrays.asList(split).stream().filter(str -> !str.trim().isEmpty()).collect(Collectors.toList()));
+				s = lit.getLexicalForm() + " " + datatype;
             }
         }
         return s;
@@ -124,10 +127,14 @@ public class LiteralConverter {
 					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL);
 				} else if(dt.equals(XSDDatatype.XSDgMonthDay)){
 					s = calendar.get(Calendar.DAY_OF_MONTH) + calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL);
-				} else if(dt.equals(XSDDatatype.XSDgYearMonth)){
+				} else if(dt.equals(XSDDatatype.XSDgYearMonth)) {
 					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL) + " " + calendar.get(Calendar.YEAR);
+				} else if(dt.equals(XSDDatatype.XSDgYear)) {
+					s = "" + calendar.get(Calendar.YEAR);
 				} else {
-					s = dateFormat.format(calendar.getTime());
+					s = calendar.getDisplayName(Calendar.MONTH, Calendar.LONG, ENGLISH_LOCAL) + " " + calendar.get(Calendar.DAY_OF_MONTH)
+					+ ", " + calendar.get(Calendar.YEAR);
+					// dateFormat.format(calendar.getTime());
 				}
 			}
 		} catch (DatatypeFormatException | IllegalDateTimeFieldException e) {
@@ -165,7 +172,7 @@ public class LiteralConverter {
             } catch (NumberFormatException e1) {
             }
         }
-        boolean isPlural = (lit.getDatatypeURI() != null) && !(lit.getDatatype() instanceof XSDDatatype) && !singular;
+        boolean isPlural = (lit.getDatatypeURI() != null) && !(lit.getDatatype() instanceof RDFLangString) && !(lit.getDatatype() instanceof XSDDatatype) && !singular;
         return isPlural;
     }
     

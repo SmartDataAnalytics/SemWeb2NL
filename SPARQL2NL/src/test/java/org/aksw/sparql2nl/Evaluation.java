@@ -19,26 +19,7 @@
  */
 package org.aksw.sparql2nl;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.aksw.sparql2nl.queryprocessing.DisjunctiveNormalFormConverter;
 import org.aksw.sparql2nl.queryprocessing.QueryPreprocessor;
@@ -46,8 +27,11 @@ import org.aksw.sparql2nl.queryprocessing.TriplePatternExtractor;
 import org.aksw.triple2nl.property.PropertyVerbalization;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.Syntax;
 import org.apache.log4j.Logger;
-import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -55,10 +39,12 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.Syntax;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import java.io.*;
+import java.util.*;
+import java.util.Map.Entry;
 
 public class Evaluation {
 	
@@ -93,7 +79,7 @@ public class Evaluation {
 //				System.out.println(line);
 				// we use JENA to expand all prefixes
 				try {
-					com.hp.hpl.jena.query.Query q = QueryFactory.create(line.substring(1, line.length()-1));
+					org.apache.jena.query.Query q = QueryFactory.create(line.substring(1, line.length()-1));
 					expandPrefixes(q);
 					queries.add(q.toString());
 				} catch (Exception e) {
@@ -162,7 +148,7 @@ public class Evaluation {
 		return queries;
 	}
 	
-	private void expandPrefixes(com.hp.hpl.jena.query.Query query){
+	private void expandPrefixes(org.apache.jena.query.Query query){
 		for(Entry<String, String> e : query.getPrefixMapping().getNsPrefixMap().entrySet()){
 			query.getPrefixMapping().removeNsPrefix(e.getKey());
 		}

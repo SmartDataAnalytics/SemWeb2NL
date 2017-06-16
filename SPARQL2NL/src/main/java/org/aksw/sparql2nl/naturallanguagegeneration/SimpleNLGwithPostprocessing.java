@@ -19,17 +19,27 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
-
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.SortCondition;
+import org.apache.jena.query.Syntax;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.sparql.core.TriplePath;
+import org.apache.jena.sparql.core.Var;
+import org.apache.jena.sparql.expr.Expr;
+import org.apache.jena.sparql.expr.ExprAggregator;
+import org.apache.jena.sparql.expr.ExprVar;
+import org.apache.jena.sparql.expr.aggregate.AggAvg;
+import org.apache.jena.sparql.expr.aggregate.AggCountVar;
+import org.apache.jena.sparql.expr.aggregate.AggSum;
+import org.apache.jena.sparql.expr.aggregate.Aggregator;
+import org.apache.jena.sparql.syntax.*;
+import org.apache.jena.vocabulary.OWL;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
+import net.sf.extjwnl.dictionary.Dictionary;
 import org.aksw.jena_sparql_api.cache.core.QueryExecutionFactoryCacheEx;
 import org.aksw.jena_sparql_api.cache.extra.CacheFrontend;
 import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
@@ -46,50 +56,19 @@ import org.aksw.triple2nl.functionality.SPARQLFunctionalityDetector;
 import org.aksw.triple2nl.nlp.stemming.PlingStemmer;
 import org.aksw.triple2nl.property.PropertyVerbalizer;
 import org.apache.commons.lang3.SystemUtils;
-import org.apache.log4j.Logger;
-import org.dllearner.kb.sparql.QueryExecutionFactoryHttp;
 import org.dllearner.kb.sparql.SparqlEndpoint;
-
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.io.Files;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.SortCondition;
-import com.hp.hpl.jena.query.Syntax;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.sparql.core.TriplePath;
-import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.sparql.expr.Expr;
-import com.hp.hpl.jena.sparql.expr.ExprAggregator;
-import com.hp.hpl.jena.sparql.expr.ExprVar;
-import com.hp.hpl.jena.sparql.expr.aggregate.AggAvg;
-import com.hp.hpl.jena.sparql.expr.aggregate.AggCountVar;
-import com.hp.hpl.jena.sparql.expr.aggregate.AggSum;
-import com.hp.hpl.jena.sparql.expr.aggregate.Aggregator;
-import com.hp.hpl.jena.sparql.syntax.Element;
-import com.hp.hpl.jena.sparql.syntax.ElementFilter;
-import com.hp.hpl.jena.sparql.syntax.ElementGroup;
-import com.hp.hpl.jena.sparql.syntax.ElementOptional;
-import com.hp.hpl.jena.sparql.syntax.ElementPathBlock;
-import com.hp.hpl.jena.sparql.syntax.ElementUnion;
-import com.hp.hpl.jena.sparql.syntax.PatternVars;
-import com.hp.hpl.jena.vocabulary.OWL;
-import com.hp.hpl.jena.vocabulary.RDF;
-import com.hp.hpl.jena.vocabulary.RDFS;
-
-import net.sf.extjwnl.dictionary.Dictionary;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import simplenlg.features.Feature;
-import simplenlg.framework.CoordinatedPhraseElement;
-import simplenlg.framework.DocumentElement;
-import simplenlg.framework.LexicalCategory;
-import simplenlg.framework.NLGElement;
-import simplenlg.framework.NLGFactory;
+import simplenlg.framework.*;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.phrasespec.SPhraseSpec;
 import simplenlg.realiser.english.Realiser;
+
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  *
@@ -98,7 +77,7 @@ import simplenlg.realiser.english.Realiser;
 public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 	
 	
-	private static final Logger logger = Logger.getLogger(SimpleNLGwithPostprocessing.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(SimpleNLGwithPostprocessing.class.getName());
 
     public Lexicon lexicon;
     public NLGFactory nlgFactory;
@@ -196,7 +175,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
         literalConverter = new LiteralConverter(uriConverter);
         expressionConverter = new FilterExpressionConverter(uriConverter, literalConverter);
 
-        propertyVerbalizer = new PropertyVerbalizer(uriConverter, cacheDirectory, wordnetDirectory);
+        propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
 
         functionalityDetector = new SPARQLFunctionalityDetector(qef);
         
@@ -977,6 +956,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     public SPhraseSpec getNLForTriple(Triple t, boolean outgoing) {
         SPhraseSpec p = tripleConverter.convertToPhrase(t, false, !outgoing);
+        logger.info("TP:" + t + " -> " + realiser.realise(p));
         return p;
     }
 
@@ -1190,8 +1170,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
                 + "        { ?person dbo:occupation res:Surfing. }"
                 + "        ?person dbo:birthDate ?date."
                 + "        FILTER(?date > \"1950\"^^xsd:date) ."
-                + "        OPTIONAL {?person rdfs:label ?string"
-                + "        FILTER ( lang(?string) = \"en\" ) } }";
+                + "        }";
 
         String argentina = "PREFIX  res:  <http://dbpedia.org/resource/> "
                 + "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
@@ -1271,8 +1250,8 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 //            ep = new SparqlEndpoint(new URL("http://linkedbrainz.org/sparql"), "http://musicbrainz.org/20140320");
 //            ep = new SparqlEndpoint(new URL("http://[2001:638:902:2010:0:168:35:138]/sparql"));
             SimpleNLGwithPostprocessing snlg = new SimpleNLGwithPostprocessing(ep);
-            query = Joiner.on("\n").join(Files.readLines(new File("src/main/resources/sparql_query.txt"), Charsets.UTF_8));
-            Query sparqlQuery = QueryFactory.create(query, Syntax.syntaxARQ);
+//            query = Joiner.on("\n").join(Files.readLines(new File("src/main/resources/sparql_query.txt"), Charsets.UTF_8));
+            Query sparqlQuery = QueryFactory.create(query10, Syntax.syntaxARQ);
             System.out.println(sparqlQuery);
 //            Query sparqlQuery = QueryFactory.create(argentina1, Syntax.syntaxARQ);
             System.out.println("Simple NLG: Query is distinct = " + sparqlQuery.isDistinct());

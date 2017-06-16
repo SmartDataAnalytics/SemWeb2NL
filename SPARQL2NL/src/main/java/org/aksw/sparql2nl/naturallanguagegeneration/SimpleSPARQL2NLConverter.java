@@ -63,17 +63,17 @@ import simplenlg.lexicon.NIHDBLexicon;
 import simplenlg.phrasespec.NPPhraseSpec;
 import simplenlg.realiser.english.Realiser;
 
-import com.hp.hpl.jena.graph.Node;
-import com.hp.hpl.jena.graph.NodeFactory;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.Query;
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.StmtIterator;
-import com.hp.hpl.jena.sparql.core.Var;
-import com.hp.hpl.jena.vocabulary.RDF;
-import com.hp.hpl.jena.vocabulary.RDFS;
+import org.apache.jena.graph.Node;
+import org.apache.jena.graph.NodeFactory;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.Query;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.StmtIterator;
+import org.apache.jena.sparql.core.Var;
+import org.apache.jena.vocabulary.RDF;
+import org.apache.jena.vocabulary.RDFS;
 
 /**
  * @author Lorenz Buehmann
@@ -121,7 +121,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	}
 
 	/* (non-Javadoc)
-	 * @see org.aksw.sparql2nl.naturallanguagegeneration.Sparql2NLConverter#getNLR(com.hp.hpl.jena.query.Query)
+	 * @see org.aksw.sparql2nl.naturallanguagegeneration.Sparql2NLConverter#getNLR(org.apache.jena.query.Query)
 	 */
 	@Override
 	public String getNLR(Query query) {
@@ -244,7 +244,7 @@ public class SimpleSPARQL2NLConverter implements Sparql2NLConverter{
 	}
 
 	/* (non-Javadoc)
-	 * @see org.aksw.sparql2nl.naturallanguagegeneration.Sparql2NLConverter#convert2NLE(com.hp.hpl.jena.query.Query)
+	 * @see org.aksw.sparql2nl.naturallanguagegeneration.Sparql2NLConverter#convert2NLE(org.apache.jena.query.Query)
 	 */
 	@Override
 	public DocumentElement convert2NLE(Query query) {

@@ -22,7 +22,7 @@ package org.aksw.sparql2nl.queryprocessing;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.kb.sparql.SparqlQuery;
 
-import com.hp.hpl.jena.query.ResultSet;
+import org.apache.jena.query.ResultSet;
 
 public class SPARQLDomainExtractor implements DomainExtractor{
 	

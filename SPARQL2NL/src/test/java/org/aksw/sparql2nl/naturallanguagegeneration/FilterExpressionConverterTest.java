@@ -22,25 +22,16 @@
  */
 package org.aksw.sparql2nl.naturallanguagegeneration;
 
-import java.util.Calendar;
-
 import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.apache.jena.sparql.expr.*;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.junit.Assert;
 import org.junit.Test;
-
 import simplenlg.framework.NLGElement;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.realiser.english.Realiser;
 
-import com.hp.hpl.jena.sparql.expr.E_Equals;
-import com.hp.hpl.jena.sparql.expr.E_GreaterThan;
-import com.hp.hpl.jena.sparql.expr.E_GreaterThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.E_LessThan;
-import com.hp.hpl.jena.sparql.expr.E_LessThanOrEqual;
-import com.hp.hpl.jena.sparql.expr.Expr;
-import com.hp.hpl.jena.sparql.expr.ExprVar;
-import com.hp.hpl.jena.sparql.expr.NodeValue;
+import java.util.Calendar;
 
 /**
  * @author Lorenz Buehmann
@@ -54,7 +45,7 @@ public class FilterExpressionConverterTest {
 
 	/**
 	 * Test method for
-	 * {@link org.aksw.sparql2nl.naturallanguagegeneration.FilterExpressionConverter#convert(com.hp.hpl.jena.sparql.expr.Expr)}
+	 * {@link org.aksw.sparql2nl.naturallanguagegeneration.FilterExpressionConverter#convert(org.apache.jena.sparql.expr.Expr)}
 	 * .
 	 */
 	@Test
@@ -106,7 +97,10 @@ public class FilterExpressionConverterTest {
 		 * date literals
 		 */
 		Calendar cal = Calendar.getInstance();
+
 		cal.set(1999, 11, 20);
+		cal.set(Calendar.ZONE_OFFSET, 0); // wtf
+
 		value = NodeValue.makeDate(cal);
 		String valueString = "December 20, 1999";
 

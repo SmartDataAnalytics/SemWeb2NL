@@ -39,8 +39,8 @@ import org.apache.jena.riot.WebContent;
 import org.apache.log4j.Logger;
 
 import com.google.common.net.UrlEscapers;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 
 /**
  * Class to retrieve triples based on the Linked Data dereferencing paradigm.

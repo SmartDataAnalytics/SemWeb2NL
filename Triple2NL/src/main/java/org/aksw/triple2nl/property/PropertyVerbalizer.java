@@ -19,38 +19,12 @@
  */
 package org.aksw.triple2nl.property;
 
-import static org.aksw.triple2nl.util.PennTreebankTagSet.DETERMINER;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.FRAGMENT;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.NOUN_PHRASE;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.S;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SBAR;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SBARQ;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.SINV;
-import static org.aksw.triple2nl.util.PennTreebankTagSet.VERB_PHRASE;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
-
-import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
-import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
-import org.aksw.triple2nl.converter.DefaultIRIConverter;
-import org.aksw.triple2nl.converter.IRIConverter;
-import org.aksw.triple2nl.util.Preposition;
-import org.apache.log4j.Logger;
-
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-
-import edu.stanford.nlp.ling.CoreAnnotations.LemmaAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.PartOfSpeechAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.SentencesAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TextAnnotation;
-import edu.stanford.nlp.ling.CoreAnnotations.TokensAnnotation;
+import edu.stanford.nlp.ling.CoreAnnotations.*;
 import edu.stanford.nlp.ling.CoreLabel;
 import edu.stanford.nlp.pipeline.Annotation;
-import edu.stanford.nlp.pipeline.StanfordCoreNLP;
+import edu.stanford.nlp.pipeline.StanfordCoreNLPClient;
 import edu.stanford.nlp.trees.Tree;
 import edu.stanford.nlp.trees.TreeCoreAnnotations.TreeAnnotation;
 import edu.stanford.nlp.util.CoreMap;
@@ -60,6 +34,20 @@ import net.sf.extjwnl.data.POS;
 import net.sf.extjwnl.data.Synset;
 import net.sf.extjwnl.data.Word;
 import net.sf.extjwnl.dictionary.Dictionary;
+import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
+import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.aksw.triple2nl.converter.DefaultIRIConverter;
+import org.aksw.triple2nl.converter.IRIConverter;
+import org.aksw.triple2nl.nlp.StanfordCoreNLPWrapper;
+import org.aksw.triple2nl.util.Preposition;
+import org.apache.log4j.Logger;
+import simplenlg.features.Tense;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Properties;
+
+import static org.aksw.triple2nl.util.PennTreebankTagSet.*;
 
 /**
  * Verbalize a property.
@@ -75,7 +63,7 @@ public class PropertyVerbalizer {
     private Dictionary database;
     
     private final String VERB_PATTERN = "^((VP)|(have NP)|(be NP P)|(be VP P)|(VP NP)).*";
-	private StanfordCoreNLP pipeline;
+	private StanfordCoreNLPWrapper pipeline;
 	private boolean useLinguisticalAnalysis = true;
 	
 	private final List<String> auxiliaryVerbs = Lists.newArrayList("do", "have", "be", "shall", "can", "may");
@@ -83,10 +71,10 @@ public class PropertyVerbalizer {
 	private IRIConverter uriConverter;
 	
 	public PropertyVerbalizer(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDictionary) {
-		this(new DefaultIRIConverter(qef), cacheDirectory, wordnetDictionary);
+		this(new DefaultIRIConverter(qef, cacheDirectory), wordnetDictionary);
 	}
 	
-    public PropertyVerbalizer(IRIConverter uriConverter, String cacheDirectory, Dictionary wordnetDictionary) {
+    public PropertyVerbalizer(IRIConverter uriConverter, Dictionary wordnetDictionary) {
         this.uriConverter = uriConverter;
         try {
 			this.database = wordnetDictionary == null ? Dictionary.getDefaultResourceInstance() : wordnetDictionary;
@@ -99,32 +87,37 @@ public class PropertyVerbalizer {
         Properties props = new Properties();
 		props.put("annotators", "tokenize, ssplit, pos, lemma, parse");
 		props.put("ssplit.isOneSentence","true");
-		pipeline = new StanfordCoreNLP(props);
+//		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLP(props));
+		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLPClient(props, "titan.informatik.uni-leipzig.de", 9000));
     }
     
     public PropertyVerbalization verbalize(String propertyURI){
     	logger.debug("Getting lexicalization type for \"" + propertyURI + "\"...");
     	
-		//get textual representation for the property URI
+		// get textual representation for the property URI
 		String propertyText = uriConverter.convert(propertyURI);
 
-		//normalize the text, e.g. to lower case
+		// normalize the text, e.g. to lower case
 		propertyText = normalize(propertyText);
     	
-    	//try to use linguistic information
+    	// try to use linguistic information
     	PropertyVerbalization propertyVerbalization = getTypeByLinguisticAnalysis(propertyURI, propertyText);
     	
-    	//if this failed use WordNet heuristic
-    	if(propertyVerbalization.getVerbalizationType() == PropertyVerbalizationType.UNSPECIFIED){
-    		logger.debug("...using WordNet based analysis...");
-    		PropertyVerbalizationType verbalizationType = getTypeByWordnet(propertyText);
-    		propertyVerbalization.setVerbalizationType(verbalizationType);
-    	}
-    	
-    	//compute expanded form
+    	// if this failed use WordNet heuristic
+		if(propertyVerbalization.getVerbalizationType() == PropertyVerbalizationType.UNSPECIFIED || propertyText.split(" ").length == 1) {
+			logger.debug("...using WordNet-based analysis...");
+			PropertyVerbalizationType verbalizationType = getTypeByWordnet(propertyText);
+			propertyVerbalization.setVerbalizationType(verbalizationType);
+		}
+
+    	// compute expanded form
     	computeExpandedVerbalization(propertyVerbalization);
-    	
-    	logger.debug("Done.");
+
+		// determine tense
+		Tense tense = getTense(propertyText);
+		propertyVerbalization.setTense(tense);
+
+		logger.debug("Done.");
     	
     	return propertyVerbalization;
     }
@@ -202,7 +195,7 @@ public class PropertyVerbalizer {
         
         try {
 			// number of occurrences as noun
-			IndexWord iw = database.getIndexWord(POS.NOUN, token);
+			IndexWord iw = database.lookupIndexWord(POS.NOUN, token);
 			if(iw != null) {
 				synsets = iw.getSenses();
 				
@@ -217,7 +210,7 @@ public class PropertyVerbalizer {
 			
 
 			// number of occurrences as verb
-			iw = database.getIndexWord(POS.VERB, token);
+			iw = database.lookupIndexWord(POS.VERB, token); // does morphological processing, otherwise use getIndexWord
 			if(iw != null) {
 				synsets = iw.getSenses();
 				for (Synset synset : synsets) {
@@ -248,32 +241,6 @@ public class PropertyVerbalizer {
         }
     }
 
-    private List<String> getAllSynsets(String word) {
-    	List<String> synsets = new ArrayList<>();
-    	
-    	try {
-    		// noun synsets
-			IndexWord iw = database.getIndexWord(POS.NOUN, word);
-			if(iw != null) {
-				for (Synset synset : iw.getSenses()) {
-					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
-				}
-			}
-
-			// verb synsets
-			iw = database.getIndexWord(POS.VERB, word);
-			if(iw != null) {
-				for (Synset synset : iw.getSenses()) {
-					synsets.add("NOUN " + synset.getWords().get(0).getLemma());
-				}
-			}
-		} catch (JWNLException e) {
-			logger.error("WordNet lookup failed.", e);
-		}
-
-        return synsets;
-    }
-    
 	/**
 	 * Returns the infinitive form for a given word.
 	 * 
@@ -318,6 +285,18 @@ public class PropertyVerbalizer {
 		}
         return word;
     }
+
+	private Tense getTense(String word) {
+		String[] split = word.split(" ");
+		String verb = split[0];
+
+		if(verb.endsWith("ed") && split.length == 1) {
+			// probably past tense
+			return Tense.PAST;
+		} else {
+			return Tense.PRESENT;
+		}
+	}
     
 	private PropertyVerbalization getTypeByLinguisticAnalysis(String propertyURI, String propertyText) {
 		logger.debug("...using linguistical analysis...");

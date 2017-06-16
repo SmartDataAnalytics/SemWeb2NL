@@ -19,7 +19,7 @@
  */
 package org.aksw.sparql2nl.smooth_nlg;
 
-import com.hp.hpl.jena.sparql.syntax.Element;
+import org.apache.jena.sparql.syntax.Element;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;

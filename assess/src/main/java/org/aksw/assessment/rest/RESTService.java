@@ -24,9 +24,6 @@ package org.aksw.assessment.rest;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.hp.hpl.jena.ontology.OntModelSpec;
-import com.hp.hpl.jena.rdf.model.Model;
-import com.hp.hpl.jena.rdf.model.ModelFactory;
 import org.aksw.assessment.*;
 import org.aksw.assessment.answer.Answer;
 import org.aksw.assessment.question.Question;
@@ -41,6 +38,9 @@ import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalINIConfiguration;
 import org.apache.commons.configuration.SubnodeConfiguration;
+import org.apache.jena.ontology.OntModelSpec;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.RDFDataMgr;
 import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
@@ -66,6 +66,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
@@ -142,7 +143,7 @@ public class RESTService extends Application{
 		RESTService.namespace = namespace;
 		
 		String cacheDirectory = section.getString("cacheDirectory", "cache");
-		if(cacheDirectory.startsWith("/")){
+		if(Paths.get(cacheDirectory).isAbsolute()){
 			RESTService.cacheDirectory = cacheDirectory;
 		} else {
 			RESTService.cacheDirectory = context != null ? context.getRealPath(cacheDirectory) : cacheDirectory;

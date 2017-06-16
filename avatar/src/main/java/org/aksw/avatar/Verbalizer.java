@@ -26,15 +26,15 @@ package org.aksw.avatar;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.query.QueryExecution;
-import com.hp.hpl.jena.query.QuerySolution;
-import com.hp.hpl.jena.query.ResultSet;
-import com.hp.hpl.jena.rdf.model.Property;
-import com.hp.hpl.jena.rdf.model.RDFNode;
-import com.hp.hpl.jena.rdf.model.Resource;
-import com.hp.hpl.jena.rdf.model.ResourceFactory;
-import com.hp.hpl.jena.vocabulary.RDF;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.Property;
+import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.Resource;
+import org.apache.jena.rdf.model.ResourceFactory;
+import org.apache.jena.vocabulary.RDF;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -47,14 +47,13 @@ import org.aksw.avatar.dataset.CachedDatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
-import org.aksw.avatar.gender.Gender;
-import org.aksw.avatar.gender.LexiconBasedGenderDetector;
-import org.aksw.avatar.gender.TypeAwareGenderDetector;
 import org.aksw.avatar.rules.*;
-import org.aksw.jena_sparql_api.cache.h2.CacheUtilsH2;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.triple2nl.gender.Gender;
+import org.aksw.triple2nl.gender.DictionaryBasedGenderDetector;
+import org.aksw.triple2nl.gender.TypeAwareGenderDetector;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
@@ -79,7 +78,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.concurrent.TimeUnit;
 
 /**
  * A verbalizer for triples without variables.
@@ -131,7 +129,7 @@ public class Verbalizer {
         or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
         sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
 
-        gender = new TypeAwareGenderDetector(qef, new LexiconBasedGenderDetector());
+        gender = new TypeAwareGenderDetector(qef, new DictionaryBasedGenderDetector());
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
@@ -552,13 +550,13 @@ public class Verbalizer {
      */
     private OWLClass getMostSpecificType(OWLIndividual ind){
     	logger.debug("Getting the most specific type of " + ind);
-    	String query = String.format("select distinct ?type where {"
-    			+ " <%s> a ?type ."
-    			+ "?type a owl:Class ."
-    			+ "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
+    	String query = String.format("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+					    + "select distinct ?type where {"
+					    + " <%s> a ?type ."
+//    			+ "?type a owl:Class ." // too strict, thus currently omitted
+					    + "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
     			ind.toStringID(), ind.toStringID());
-    	
-    	SortedSet<OWLClass> types = new TreeSet<>();
+		SortedSet<OWLClass> types = new TreeSet<>();
     	
     	QueryExecution qe = qef.createQueryExecution(query);
     	ResultSet rs = qe.execSelect();

@@ -23,8 +23,8 @@
  */
 package org.aksw.sparql2nl;
 
-import com.hp.hpl.jena.query.QueryFactory;
-import com.hp.hpl.jena.query.Syntax;
+import org.apache.jena.query.QueryFactory;
+import org.apache.jena.query.Syntax;
 import org.aksw.sparql2nl.smooth_nlg.CardBox;
 import org.aksw.sparql2nl.smooth_nlg.NLConstructor;
 import org.aksw.sparql2nl.smooth_nlg.SPARQLDeconstructor;
