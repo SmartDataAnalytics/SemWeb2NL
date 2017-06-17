@@ -25,7 +25,7 @@ public class CoreNLPGenderDetector implements GenderDetector {
 
 	public CoreNLPGenderDetector() {
 		Properties props = new Properties();
-		props.setProperty("annotators", "tokenize,ssplit,pos,parse,gender");
+		props.setProperty("annotators", "tokenize,ssplit,pos,lemma,ner,gender");
 		props.put("ssplit.isOneSentence","true");
 
 		pipeline = new StanfordCoreNLPWrapper(new StanfordCoreNLP(props));
