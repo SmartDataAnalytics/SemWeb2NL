@@ -26,17 +26,6 @@ package org.aksw.avatar;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.aksw.triple2nl.gender.*;
-import org.aksw.avatar.util.EntityDataDownloader;
-import org.apache.jena.graph.Triple;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.Property;
-import org.apache.jena.rdf.model.RDFNode;
-import org.apache.jena.rdf.model.Resource;
-import org.apache.jena.rdf.model.ResourceFactory;
-import org.apache.jena.vocabulary.RDF;
 import joptsimple.OptionException;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -50,9 +39,21 @@ import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.rules.*;
+import org.aksw.avatar.util.DBpediaEntityDataDownloader;
+import org.aksw.avatar.util.EntityDataDownloader;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.triple2nl.gender.DictionaryBasedGenderDetector;
+import org.aksw.triple2nl.gender.Gender;
+import org.aksw.triple2nl.gender.TypeAwareGenderDetector;
+import org.apache.jena.graph.Triple;
+import org.apache.jena.query.ParameterizedSparqlString;
+import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
+import org.apache.jena.query.ResultSet;
+import org.apache.jena.rdf.model.*;
+import org.apache.jena.vocabulary.RDF;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
@@ -83,9 +84,9 @@ import java.util.Map.Entry;
  *
  * @author ngonga
  */
-public class Verbalizer {
-	
-	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
+public class Verbalizer2 {
+
+	private static final Logger logger = Logger.getLogger(Verbalizer2.class.getName());
 
 	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
 
@@ -110,15 +111,15 @@ public class Verbalizer {
     public DatasetBasedGraphGenerator graphGenerator;
     int maxShownValuesPerProperty = DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY;
     boolean omitContentInBrackets = true;
-    
-    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory) {
+
+    public Verbalizer2(QueryExecutionFactory qef, String cacheDirectory) {
     	this.qef = qef;
 
 		if(cacheDirectory == null) {
 			cacheDirectory = DEFAULT_CACHE_BASE_DIR;
 		}
 		cacheDirectory = new File(cacheDirectory, "avatar-cache/sparql").getAbsolutePath();
-    	
+
         nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
         labels = new HashMap<>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
@@ -132,15 +133,15 @@ public class Verbalizer {
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
-    
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
+
+    public Verbalizer2(SparqlEndpoint endpoint, String cacheDirectory) {
     	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
     }
 
-	public Verbalizer(SparqlEndpoint endpoint) {
+	public Verbalizer2(SparqlEndpoint endpoint) {
 		this(endpoint, DEFAULT_CACHE_BASE_DIR);
 	}
-    
+
     /**
      * @param blacklist a blacklist of properties that are omitted when building the summary
      */
@@ -162,16 +163,12 @@ public class Verbalizer {
         this.omitContentInBrackets = omitContentInBrackets;
     }
 
-    public void setGenderDetector(TypeAwareGenderDetector genderDetector) {
-        this.gender = genderDetector;
-    }
-
     /**
      * Gets all triples for resource r and property p.
      * If outgoing is true it returns all triples with <r,p,o>, else <s,p,r>
      *
-     * @param r the resource 
-     * @param p the property 
+     * @param r the resource
+     * @param p the property
      * @param outgoing whether to get outgoing or ingoing triples
      * @return A set of triples
      */
@@ -197,17 +194,12 @@ public class Verbalizer {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        // merge triple with redundant objects modulo syntactic difference
-//        result.stream().map(t -> t.getObject()).filter(o -> o.isLiteral()).forEach(l -> System.out.println(l.getLiteral().getValue()));
-
-
         return result;
     }
-    
+
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,
-			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
+			Cooccurrence cooccurrence) {
 		Set<Node> properties = new HashSet<>();
 		WeightedGraph wg;
 		try {
@@ -263,11 +255,11 @@ public class Verbalizer {
 
         //get a list of possible subject replacements
         List<NPPhraseSpec> subjects = generateSubjects(resource, namedClass, g);
-        
+
         List<NLGElement> result = new ArrayList<>();
         Collection<Triple> allTriples = new ArrayList<>();
         DateLiteralFilter dateFilter = new DateLiteralFilter();
-//      
+//
         for (Set<Node> propertySet : clusters) {
             //add up all triples for the given set of properties
             Set<Triple> triples = new HashSet<>();
@@ -325,7 +317,7 @@ public class Verbalizer {
     private List<Triple> sortByObjectPopularity(Set<Triple> triples) {
         List<Triple> orderedTriples = new ArrayList<>();
 
-        //if one of the objects is a literal we do not sort 
+        //if one of the objects is a literal we do not sort
         if (triples.iterator().next().getObject().isLiteral()) {
             orderedTriples.addAll(triples);
         } else {
@@ -442,7 +434,7 @@ public class Verbalizer {
     public SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
         return nlg.getNLForTriple(triple);
     }
-    
+
     /**
      * Generates a simple phrase for a triple
      *
@@ -459,7 +451,7 @@ public class Verbalizer {
 
     public Map<OWLIndividual, List<NLGElement>> verbalize(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
         resource2Triples = new HashMap<>();
-        
+
         // first get graph for nc
         try {
 			WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, namespace, cooccurrence);
@@ -492,22 +484,10 @@ public class Verbalizer {
 		} catch (NoGraphAvailableException e) {
 			e.printStackTrace();
 		}
-        
+
         return null;
     }
-    
-    /**
-     * Returns a textual summary of the given entity.
-     *
-     * @return
-     */
-    public String summarize(OWLIndividual individual) {
-    	//compute the most specific type first
-    	OWLClass cls = getMostSpecificType(individual);
-    	
-        return summarize(individual, cls);
-    }
-    
+
     /**
      * Returns a textual summary of the given entity.
      *
@@ -550,35 +530,39 @@ public class Verbalizer {
 
         return entity2Summaries;
     }
-    
-    /**
-     * Returns the most specific type of a given individual.
-     * @param ind
-     * @return
-     */
-    private OWLClass getMostSpecificType(OWLIndividual ind){
-    	logger.debug("Getting the most specific type of " + ind);
-    	String query = String.format("PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
-					    + "select distinct ?type where {"
-					    + " <%s> a ?type ."
+
+    private static final ParameterizedSparqlString MOST_SPECIFIC_TYPE_QUERY_TEMPLATE = new ParameterizedSparqlString(
+            "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
+                    + "select distinct ?type where {"
+                    + " ?entity a ?type ."
 //    			+ "?type a owl:Class ." // too strict, thus currently omitted
-					    + "filter not exists {?subtype ^a <%s> ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}",
-    			ind.toStringID(), ind.toStringID());
-		SortedSet<OWLClass> types = new TreeSet<>();
-    	
-    	QueryExecution qe = qef.createQueryExecution(query);
-    	ResultSet rs = qe.execSelect();
-    	while (rs.hasNext()) {
-			QuerySolution qs = rs.next();
-			if(qs.get("type").isURIResource()){
-				types.add(new OWLClassImpl(IRI.create(qs.getResource("type").getURI())));
-			}
-		}
-    	qe.close();
-    	
+                    + "filter not exists {?subtype ^a ?entity ; rdfs:subClassOf ?type .filter(?subtype != ?type)}}"
+    );
+
+    /**
+     * Returns the most specific type for a given entity
+     * @param entity the entity
+     * @return the most specific type
+     */
+    private String getMostSpecificType(String entity){
+    	logger.debug("Getting the most specific type of " + entity);
+        MOST_SPECIFIC_TYPE_QUERY_TEMPLATE.setIri("entity", entity);
+    	String query = MOST_SPECIFIC_TYPE_QUERY_TEMPLATE.toString();
+		SortedSet<String> types = new TreeSet<>();
+
+    	try(QueryExecution qe = qef.createQueryExecution(query)) {
+            ResultSet rs = qe.execSelect();
+            while (rs.hasNext()) {
+                QuerySolution qs = rs.next();
+                if(qs.get("type").isURIResource()){ // omit blank nodes
+                    types.add(qs.getResource("type").getURI());
+                }
+            }
+        }
+
     	//of more than one type exists, we have to choose one
     	//TODO
-    	
+
     	return types.first();
     }
 
@@ -607,7 +591,7 @@ public class Verbalizer {
         }
         return result;
     }
-    
+
     /**
      * Returns the gender of the given resource.
      * @param resource
@@ -659,13 +643,13 @@ public class Verbalizer {
         } else {
             genderFeature = simplenlg.features.Gender.NEUTER;
         }
-        
-        // possessive as specifier of the NP 
+
+        // possessive as specifier of the NP
         NLGElement currentSubject = sphrase.getSubject();
         if (currentSubject.hasFeature(InternalFeature.SPECIFIER) && currentSubject.getFeatureAsElement(InternalFeature.SPECIFIER).getFeatureAsBoolean(Feature.POSSESSIVE)) //possessive subject
         {
             NPPhraseSpec newSubject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) currentSubject).getHead());
-            
+
             NPPhraseSpec newSpecifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
             newSpecifier.setFeature(Feature.POSSESSIVE, true);
             newSubject.setSpecifier(newSpecifier);
@@ -685,6 +669,29 @@ public class Verbalizer {
             currentSubject.setFeature(LexicalFeature.GENDER, genderFeature);
         }
         return phrase;
+    }
+
+    double threshold;
+    
+
+    public void summarize(String entity) {
+        // 1. get the instance data for the entity
+        EntityDataDownloader dl = new DBpediaEntityDataDownloader(qef);
+        Model data = dl.loadData(entity);
+
+        // 2. determine most specific type used for summarization, i.e. we use a summary graph based on the class
+        String mostSpecificType = getMostSpecificType(entity);
+
+        // 3.
+        WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, namespace, cooccurrence);
+
+        // then cluster the graph
+        BorderFlowX bf = new BorderFlowX(wg);
+        Set<Set<Node>> clusters = bf.cluster();
+        //then harden the results
+        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+        logger.info("Cluster = " + sortedPropertyClusters);
+
     }
     
     public static void main(String args[]) throws IOException {
@@ -710,7 +717,7 @@ public class Verbalizer {
 			}
 		};
 
-//		parser.printHelpOn(System.out);
+		parser.printHelpOn(System.out);
 
 		// parse options and display a message for the user in case of problems
 		OptionSet options = null;
@@ -748,11 +755,8 @@ public class Verbalizer {
 
         String cacheDirectory = (String) options.valueOf("cache");
 
-        Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
-        v.setGenderDetector(new TypeAwareGenderDetector(v.qef, new DelegateGenderDetector(Lists.newArrayList(
-                new PropertyBasedGenderDetector(v.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
-                new DictionaryBasedGenderDetector()))));
-
+        Verbalizer2 v = new Verbalizer2(endpoint, cacheDirectory);
+        
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
 
         Optional<OWLClass> cls =
