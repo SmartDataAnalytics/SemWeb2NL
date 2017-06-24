@@ -15,3 +15,6 @@ hs_err_pid*
 *.iml
 *.graph
 *.log
+*.settings
+*.project
+*.classpath
