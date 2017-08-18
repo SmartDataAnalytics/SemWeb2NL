@@ -58,6 +58,7 @@ public class TripleConverterTest {
 	
 	@BeforeClass
 	public static void init() throws Exception {
+		KS.setRetryCount(0);
 		KS.init();
 		
 		converter = new TripleConverter(KS.getQueryExecutionFactory(), "cache", (Lexicon)null);

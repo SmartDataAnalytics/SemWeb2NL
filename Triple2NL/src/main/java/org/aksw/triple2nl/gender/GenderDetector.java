@@ -33,8 +33,10 @@ public interface GenderDetector {
 	/**
 	 * Returns the gender of the given name.
 	 *
-	 * @param name the name
+	 * @param uri the URI of the resource
+	 * @param label the label of the resource
+	 *
 	 * @return the gender
 	 */
-	Gender getGender(String name);
+	Gender getGender(String uri, String label);
 }

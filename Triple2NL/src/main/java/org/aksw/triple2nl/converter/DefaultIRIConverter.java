@@ -68,7 +68,7 @@ import java.util.stream.Collectors;
  */
 public class DefaultIRIConverter implements IRIConverter{
 
-	ParameterizedSparqlString LABEL_QUERY_SINGLE_PROP = new ParameterizedSparqlString(
+	private static final ParameterizedSparqlString LABEL_QUERY_SINGLE_PROP = new ParameterizedSparqlString(
 			"SELECT ?label WHERE {" +
 					"?s ?p1 ?o ." +
 					"optional {" +
@@ -81,7 +81,7 @@ public class DefaultIRIConverter implements IRIConverter{
 					"} " +
 					"ORDER BY DESC(?label) LIMIT 1");
 
-	ParameterizedSparqlString LABEL_QUERY_MULTI_PROP = new ParameterizedSparqlString(
+	private static final ParameterizedSparqlString LABEL_QUERY_MULTI_PROP = new ParameterizedSparqlString(
 			"SELECT ?p ?label WHERE {" +
 					"VALUES (?l_id ?lang) {%LANGUAGES}" +
 					"VALUES (?p_id ?p) {%PROPERTIES}" +

@@ -26,6 +26,7 @@ package org.aksw.avatar;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import org.aksw.triple2nl.gender.*;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
@@ -51,9 +52,6 @@ import org.aksw.avatar.rules.*;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
-import org.aksw.triple2nl.gender.Gender;
-import org.aksw.triple2nl.gender.DictionaryBasedGenderDetector;
-import org.aksw.triple2nl.gender.TypeAwareGenderDetector;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
@@ -163,6 +161,10 @@ public class Verbalizer {
         this.omitContentInBrackets = omitContentInBrackets;
     }
 
+    public void setGenderDetector(TypeAwareGenderDetector genderDetector) {
+        this.gender = genderDetector;
+    }
+
     /**
      * Gets all triples for resource r and property p.
      * If outgoing is true it returns all triples with <r,p,o>, else <s,p,r>
@@ -196,7 +198,7 @@ public class Verbalizer {
         }
 
         // merge triple with redundant objects modulo syntactic difference
-        result.stream().map(t -> t.getObject()).filter(o -> o.isLiteral()).forEach(l -> System.out.println(l.getLiteral().getValue()));
+//        result.stream().map(t -> t.getObject()).filter(o -> o.isLiteral()).forEach(l -> System.out.println(l.getLiteral().getValue()));
 
 
         return result;
@@ -746,6 +748,9 @@ public class Verbalizer {
         String cacheDirectory = (String) options.valueOf("cache");
 
         Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
+        v.setGenderDetector(new TypeAwareGenderDetector(v.qef, new DelegateGenderDetector(Lists.newArrayList(
+                new PropertyBasedGenderDetector(v.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
+                new DictionaryBasedGenderDetector()))));
         
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
 

@@ -80,22 +80,18 @@ public class TypeAwareGenderDetector implements GenderDetector{
 			personTypes.addAll(inferredTypes);
 		}
 	}
-	
-	public Gender getGender(String uri, String label) {
-		if(isPerson(uri)){
-			return genderDetector.getGender(label);
-		}
-		return Gender.UNKNOWN;
-	}
 
 	/* (non-Javadoc)
 	 * @see org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector#getGender(java.lang.String)
 	 */
 	@Override
-	public Gender getGender(String name) {
-		return genderDetector.getGender(name);
+	public Gender getGender(String uri, String label) {
+		if(isPerson(uri)){
+			return genderDetector.getGender(uri, label);
+		}
+		return Gender.UNKNOWN;
 	}
-	
+
 	private boolean isPerson(String uri){
 		if(personTypes.isEmpty()){
 			return true;

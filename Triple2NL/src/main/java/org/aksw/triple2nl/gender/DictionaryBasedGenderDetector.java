@@ -45,17 +45,12 @@ public class DictionaryBasedGenderDetector implements GenderDetector {
 		this.dictionary = dictionary;
 	}
 
-	public static void main(String[] args) throws Exception {
-		DictionaryBasedGenderDetector genderDetector = new DictionaryBasedGenderDetector();
-		System.out.println(genderDetector.getGender("Axel"));
-	}
-
 	/*
 	 * (non-Javadoc) @see
 	 * org.aksw.sparql2nl.entitysummarizer.gender.GenderDetector#getGender(java.lang.String)
 	 */
 	@Override
-	public Gender getGender(String name) {
+	public Gender getGender(String iri, String name) {
 		String searchName = name;
 		// check if name is compound
 		String[] words = name.split(" ");
@@ -70,5 +65,10 @@ public class DictionaryBasedGenderDetector implements GenderDetector {
 		} else {
 			return Gender.UNKNOWN;
 		}
+	}
+
+	public static void main(String[] args) throws Exception {
+		DictionaryBasedGenderDetector genderDetector = new DictionaryBasedGenderDetector();
+		System.out.println(genderDetector.getGender(null,"Axel"));
 	}
 }

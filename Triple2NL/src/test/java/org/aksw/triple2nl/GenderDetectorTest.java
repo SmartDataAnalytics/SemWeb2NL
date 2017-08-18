@@ -41,7 +41,7 @@ import static org.hamcrest.CoreMatchers.is;
 public class GenderDetectorTest {
 
 	/**
-	 * Test method for {@link GenderAPIGenderDetector#getGender(String)}.
+	 * Test method for {@link GenderAPIGenderDetector#getGender(String, String)}.
 	 */
 	@Ignore("needs API key")
 	@Test
@@ -56,7 +56,7 @@ public class GenderDetectorTest {
 	}
 
 	/**
-	 * Test method for {@link org.aksw.triple2nl.gender.CoreNLPGenderDetector#getGender(String)}.
+	 * Test method for {@link org.aksw.triple2nl.gender.CoreNLPGenderDetector#getGender(String, String)}.
 	 */
 	@Test
 	public void testGetGenderCoreNLP() {
@@ -70,7 +70,7 @@ public class GenderDetectorTest {
 	}
 
 	/**
-	 * Test method for {@link org.aksw.triple2nl.gender.DictionaryBasedGenderDetector#getGender(String)}.
+	 * Test method for {@link org.aksw.triple2nl.gender.DictionaryBasedGenderDetector#getGender(String, String)}.
 	 */
 	@Test
 	public void testGetGenderDictionaryBased() {
@@ -84,7 +84,7 @@ public class GenderDetectorTest {
 	}
 
 	/**
-	 * Test method for {@link org.aksw.triple2nl.gender.DictionaryBasedGenderDetector#getGender(String)}.
+	 * Test method for {@link org.aksw.triple2nl.gender.DictionaryBasedGenderDetector#getGender(String, String)}.
 	 */
 	@Test
 	public void testGetGenderDelegate() {
@@ -103,7 +103,7 @@ public class GenderDetectorTest {
 
 	private void check(GenderDetector genderDetector, Map<String, Gender> data) {
 		data.forEach((name, gender) -> {
-			Gender learnedGender = genderDetector.getGender(name);
+			Gender learnedGender = genderDetector.getGender(null, name);
 			Assert.assertThat(learnedGender, is(gender));
 		});
 	}

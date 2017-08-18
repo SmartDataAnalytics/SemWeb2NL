@@ -20,9 +20,9 @@ public class DelegateGenderDetector implements GenderDetector{
 	}
 
 	@Override
-	public Gender getGender(String name) {
+	public Gender getGender(String iri, String name) {
 		for (GenderDetector detector : detectors) {
-			Gender gender = detector.getGender(name);
+			Gender gender = detector.getGender(iri, name);
 			if(gender != Gender.UNKNOWN) {
 				return gender;
 			}

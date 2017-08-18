@@ -20,5 +20,13 @@
 package org.aksw.triple2nl.gender;
 
 public enum Gender {
-	MALE, FEMALE, UNKNOWN
+	MALE, FEMALE, UNKNOWN;
+
+	public static Gender fromText(String text) {
+		switch(text.toLowerCase()) {
+			case "male": return MALE;
+			case "female" : return FEMALE;
+			default: return UNKNOWN;
+		}
+	}
 }

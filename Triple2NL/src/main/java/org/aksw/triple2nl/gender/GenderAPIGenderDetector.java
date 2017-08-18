@@ -46,7 +46,7 @@ public class GenderAPIGenderDetector implements GenderDetector {
 	 * @see org.aksw.avatar.gender.GenderDetector#getGender(java.lang.String)
 	 */
 	@Override
-	public Gender getGender(String name) {
+	public Gender getGender(String iri, String name) {
 		try {
 			URL url = new URL(API_URL + name);
 			HttpURLConnection conn = (HttpURLConnection) url.openConnection();

@@ -612,7 +612,7 @@ public class TripleConverter {
 
 		// add gender information if enabled
 		if(useGenderInformation) {
-			Gender gender = genderDetector.getGender(s);
+			Gender gender = genderDetector.getGender(node.getURI(), s);
 
 			if(gender == Gender.FEMALE) {
 				word.setFeature(LexicalFeature.GENDER, simplenlg.features.Gender.FEMININE);

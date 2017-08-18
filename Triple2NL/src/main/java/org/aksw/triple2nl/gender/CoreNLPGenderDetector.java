@@ -34,7 +34,7 @@ public class CoreNLPGenderDetector implements GenderDetector {
 
 
 	@Override
-	public Gender getGender(String name) {
+	public Gender getGender(String iri, String name) {
 		Annotation document = new Annotation(name);
 
 		pipeline.annotate(document);
