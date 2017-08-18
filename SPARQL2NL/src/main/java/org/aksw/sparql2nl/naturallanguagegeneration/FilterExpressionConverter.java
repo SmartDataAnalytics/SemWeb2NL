@@ -361,6 +361,11 @@ public class FilterExpressionConverter implements ExprVisitor{
 		stack.push(element);
 	}
 
+	@Override
+	public void visit(ExprNone exprNone) {
+
+	}
+
 	public void finishVisit() {
 		// TODO Auto-generated method stub
 		

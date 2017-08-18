@@ -19,32 +19,22 @@
  */
 package org.aksw.triple2nl.nlp.relation;
 
+import com.google.common.base.Joiner;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
-
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrServer;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.SolrDocumentList;
-
-import com.google.common.base.Joiner;
 
 /**
  * 
@@ -52,7 +42,7 @@ import com.google.common.base.Joiner;
  */
 public class BoaPatternSelector {
 
-    private static SolrServer server;
+    private static SolrClient server;
     private static Double WORDNET_DISTANCE_BOOST_FACTOR = 300000D;
     private static Double BOA_SCORE_BOOST_FACTOR = 10000D;
     private static Double REVERB_BOOST_FACTOR = 1000000D;
@@ -62,7 +52,7 @@ public class BoaPatternSelector {
     private static final String SOLR_INDEX = "sparql2nl";//"sparql2nl";//"boa_detail";
 
     static {
-    	server = new HttpSolrServer("http://dbpedia.aksw.org:8080/solr/" + SOLR_INDEX);
+    	server = new HttpSolrClient.Builder("http://dbpedia.aksw.org:8080/solr/" + SOLR_INDEX).build();
     }
 
     /**
@@ -217,8 +207,10 @@ public class BoaPatternSelector {
             }
         }
         catch (SolrServerException e) {
-
-            System.out.println("Could not execute query: " + e);
+            System.err.println("Could not execute query: " + e);
+            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println("Could not execute query: " + e);
             e.printStackTrace();
         }
         return new HashSet<>(patterns.values());
