@@ -26,8 +26,10 @@ import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.URIDereferencer.DereferencingFailedException;
 import org.apache.commons.collections15.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QueryExecution;
+import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
 import org.apache.jena.rdf.model.Literal;
 import org.apache.jena.rdf.model.Model;
@@ -54,8 +56,10 @@ import java.net.URLDecoder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayDeque;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Converts IRIs into natural language.
@@ -63,6 +67,30 @@ import java.util.List;
  *
  */
 public class DefaultIRIConverter implements IRIConverter{
+
+	ParameterizedSparqlString LABEL_QUERY_SINGLE_PROP = new ParameterizedSparqlString(
+			"SELECT ?label WHERE {" +
+					"?s ?p1 ?o ." +
+					"optional {" +
+					"		?s ?p ?label. " +
+					"		FILTER (LANGMATCHES(LANG(?label),?lang))" +
+					"	}" +
+					"optional {" +
+					"     ?s ?p ?label" +
+					"   }" +
+					"} " +
+					"ORDER BY DESC(?label) LIMIT 1");
+
+	ParameterizedSparqlString LABEL_QUERY_MULTI_PROP = new ParameterizedSparqlString(
+			"SELECT ?p ?label WHERE {" +
+					"VALUES (?l_id ?lang) {%LANGUAGES}" +
+					"VALUES (?p_id ?p) {%PROPERTIES}" +
+					"?s ?p ?o . FILTER (LANGMATCHES(LANG(?label), ?lang))" +
+					"optional {" +
+					"     ?s ?p ?label" +
+					"   }" +
+					"} " +
+					"ORDER BY ASC(?l_id) ASC(?p_id) DESC(?label) LIMIT 1");
 	
 	private static final Logger logger = LoggerFactory.getLogger(DefaultIRIConverter.class);
 	
@@ -76,8 +104,10 @@ public class DefaultIRIConverter implements IRIConverter{
 			"http://www.w3.org/2004/02/skos/core#prefLabel",
 			"http://www.w3.org/2004/02/skos/core#altLabel",
 			"http://xmlns.com/foaf/0.1/name");
-	
-	private String language = "en";
+
+	private List<String> languages = Lists.newArrayList("en");
+
+	private boolean singlePropQuery = false;
 
 	// normalization options
 	private boolean splitCamelCase = true;
@@ -209,10 +239,21 @@ public class DefaultIRIConverter implements IRIConverter{
 	
 	/**
 	 * Set the language of the returned textual representation.
+	 *
 	 * @param language the language
 	 */
 	public void setLanguage(String language) {
-		this.language = language;
+		this.languages = Collections.singletonList(language);
+	}
+
+	/**
+	 * Set the languages of the returned textual representation. A preference list of languages is given, the first
+	 * language that exist will be used for rendering.
+	 *
+	 * @param languages the languages
+	 */
+	public void setLanguages(List<String> languages) {
+		this.languages = languages;
 	}
 	
 	public void setSplitCamelCase(boolean splitCamelCase) {
@@ -257,40 +298,45 @@ public class DefaultIRIConverter implements IRIConverter{
 		}
 		return null;
 	}
-	
+
 	private String getLabelFromKnowledgebase(String iri){
-		ParameterizedSparqlString query = new ParameterizedSparqlString(
-				"SELECT ?label WHERE {" +
-						"?s ?p1 ?o ." +
-						"optional {" +
-						"		?s ?p ?label. " +
-						"		FILTER (LANGMATCHES(LANG(?label),'" + language + "' ))" +
-						"	}" +
-						"optional {" +
-						"     ?s ?p ?label" +
-						"   }" +
-						"} " +
-						"ORDER BY DESC(?label) LIMIT 1");
-		query.setIri("s", iri);
-		// for each label property
-		for (String labelProperty : labelProperties) {
-			query.setIri("p", labelProperty);
-			try (QueryExecution qe = qef.createQueryExecution(query.toString())){
-				ResultSet rs = qe.execSelect();
+		logger.debug("Get label for " + iri + " from SPARQL endpoint ...");
+
+		ParameterizedSparqlString queryTemplate = singlePropQuery ? LABEL_QUERY_SINGLE_PROP : LABEL_QUERY_MULTI_PROP;
+		queryTemplate.clearParams();
+		queryTemplate.setIri("s", iri);
+
+		String query = queryTemplate.toString();
+		query = query.replace("%LANGUAGES",
+				labelProperties.stream().map(p -> "(" + labelProperties.indexOf(p) + " <" + p + ">)").collect(Collectors.joining()));
+		query = query.replace("%PROPERTIES",
+				labelProperties.stream().map(p -> "(" + labelProperties.indexOf(p) + " <" + p + ">)").collect(Collectors.joining()));
+
+		logger.debug("Label lookup query:\n" + query);
+		try (QueryExecution qe = qef.createQueryExecution(query.toString())){
+			ResultSet rs = qe.execSelect();
+
+			while(rs.hasNext())
 				if(rs.hasNext()){
-					return rs.next().getLiteral("label").getLexicalForm();
+					QuerySolution qs = rs.next();
+					Literal label = qs.getLiteral("label");
+					if(label != null) {// there is a bug in Virtuoso that might return an empty solution
+						return label.getLexicalForm();
+					}
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
-				int code = -1;
-				//cached exception is wrapped in a RuntimeException
-				if(e.getCause() instanceof QueryExceptionHTTP){
-					code = ((QueryExceptionHTTP)e.getCause()).getResponseCode();
-				} else if(e instanceof QueryExceptionHTTP){
-					code = ((QueryExceptionHTTP) e).getResponseCode();
-				}
-				logger.warn("Getting label of " + iri + " from SPARQL endpoint failed: " + code + " - " + HttpSC.getCode(code).getMessage());
+		} catch (Exception e) {
+			int code = -1;
+			//cached exception is wrapped in a RuntimeException
+			if(e.getCause() instanceof QueryExceptionHTTP){
+				code = ((QueryExceptionHTTP)e.getCause()).getResponseCode();
+			} else if(e instanceof QueryExceptionHTTP){
+				code = ((QueryExceptionHTTP) e).getResponseCode();
+			} else {
+
 			}
+			HttpSC.Code statusCode = HttpSC.getCode(code);
+			logger.warn("Getting label of " + iri + " from SPARQL endpoint failed. "
+					+ (statusCode != null ? "Status code: " + code + " - " + statusCode.getMessage() : ExceptionUtils.getRootCauseMessage(e)));
 		}
 		return null;
 	}
@@ -301,7 +347,7 @@ public class DefaultIRIConverter implements IRIConverter{
      * @return the label if exist, otherwise <code>null</code>
      */
     private String getLabelFromLinkedData(String iri){
-    	logger.debug("Get label for " + iri + " from Linked Data...");
+    	logger.debug("Get label for " + iri + " from Linked Data ...");
     	
 		try {
 			// 1. get triples for the IRI by sending a Linked Data request
@@ -314,8 +360,12 @@ public class DefaultIRIConverter implements IRIConverter{
 					
 					// language check
 					String language = literal.getLanguage();
-					if(language != null && language.equals(this.language)){
-						return literal.getLexicalForm();
+					if(language != null) {
+						for(String lang : languages) {
+							if(language.equals(lang)) {
+								return literal.getLexicalForm();
+							}
+						}
 					}
 				}
 			}

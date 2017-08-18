@@ -194,6 +194,11 @@ public class Verbalizer {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // merge triple with redundant objects modulo syntactic difference
+        result.stream().map(t -> t.getObject()).filter(o -> o.isLiteral()).forEach(l -> System.out.println(l.getLiteral().getValue()));
+
+
         return result;
     }
     
@@ -702,7 +707,7 @@ public class Verbalizer {
 			}
 		};
 
-		parser.printHelpOn(System.out);
+//		parser.printHelpOn(System.out);
 
 		// parse options and display a message for the user in case of problems
 		OptionSet options = null;
