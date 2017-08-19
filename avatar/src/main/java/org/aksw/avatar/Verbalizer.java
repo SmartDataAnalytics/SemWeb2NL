@@ -253,7 +253,7 @@ public class Verbalizer {
 		dateTimeEntryMap.entrySet().forEach(System.out::println);
 		triples.removeAll(Sets.difference(Sets.newHashSet(dateLiteralsMap.values()), Sets.newHashSet(dateTimeEntryMap.values())));
 	}
-    
+
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,
 			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
