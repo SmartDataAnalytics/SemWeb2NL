@@ -674,7 +674,7 @@ public class Verbalizer2 {
     double threshold;
     
 
-    public void summarize(String entity) {
+    public String summarize(String entity) {
         // 1. get the instance data for the entity
         EntityDataDownloader dl = new DBpediaEntityDataDownloader(qef);
         Model data = dl.loadData(entity);
@@ -682,15 +682,17 @@ public class Verbalizer2 {
         // 2. determine most specific type used for summarization, i.e. we use a summary graph based on the class
         String mostSpecificType = getMostSpecificType(entity);
 
-        // 3.
-        WeightedGraph wg = graphGenerator.generateGraph(nc, threshold, namespace, cooccurrence);
+        return null;
 
-        // then cluster the graph
-        BorderFlowX bf = new BorderFlowX(wg);
-        Set<Set<Node>> clusters = bf.cluster();
-        //then harden the results
-        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
-        logger.info("Cluster = " + sortedPropertyClusters);
+        // 3.
+//        WeightedGraph wg = graphGenerator.generateGraph(mostSpecificType, threshold, "", Cooccurrence.PROPERTIES);
+//
+//        // then cluster the graph
+//        BorderFlowX bf = new BorderFlowX(wg);
+//        Set<Set<Node>> clusters = bf.cluster();
+//        //then harden the results
+//        List<Set<Node>> sortedPropertyClusters = HardeningFactory.getHardening(hType).harden(clusters, wg);
+//        logger.info("Cluster = " + sortedPropertyClusters);
 
     }
     
@@ -770,7 +772,7 @@ public class Verbalizer2 {
 			v.setPersonTypes(new HashSet(personTypes));
 		}
 
-		String summary = cls.isPresent() ? v.summarize(ind, cls.get()) : v.summarize(ind);
+		String summary = cls.isPresent() ? v.summarize(ind, cls.get()) : v.summarize(ind.toStringID());
 
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");

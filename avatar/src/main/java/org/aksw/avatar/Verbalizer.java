@@ -731,7 +731,7 @@ public class Verbalizer {
 		try {
 			endpointURL = (URL) options.valueOf("endpoint");
 		} catch(OptionException e) {
-			System.out.println("The specified endpoint appears not be a proper URL.");
+			System.out.println("The specified endpoint appears not to be a proper URL.");
 			System.exit(0);
 		}
 		String defaultGraphURI = null;
@@ -740,7 +740,7 @@ public class Verbalizer {
 				defaultGraphURI = (String) options.valueOf("graph");
 				URI.create(defaultGraphURI);
 			} catch(OptionException e) {
-				System.out.println("The specified graph appears not be a proper URI.");
+				System.out.println("The specified graph appears not to be a proper URI.");
 				System.exit(0);
 			}
 		}
