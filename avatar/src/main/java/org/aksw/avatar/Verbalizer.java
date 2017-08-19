@@ -28,7 +28,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.aksw.triple2nl.gender.*;
 import org.aksw.avatar.util.EntityDataDownloader;
+import org.apache.jena.datatypes.xsd.XSDDateTime;
+import org.apache.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.impl.LiteralLabel;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
@@ -56,6 +59,8 @@ import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.utilities.MapUtils;
+import org.joda.time.DateTime;
+import org.joda.time.format.ISODateTimeFormat;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLIndividual;
@@ -77,6 +82,8 @@ import java.net.URI;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * A verbalizer for triples without variables.
@@ -185,25 +192,67 @@ public class Verbalizer {
         		q = "SELECT ?o where { ?o <" + p.getURI() + "> <" + r.getURI() + ">.}";
         	}
         	q += " LIMIT " + maxShownValuesPerProperty+1;
-            QueryExecution qe = qef.createQueryExecution(q);
-            ResultSet results = qe.execSelect();
-            if (results.hasNext()) {
-                while (results.hasNext()) {
-                    RDFNode n = results.next().get("o");
-                    result.add(Triple.create(r.asNode(), p.asNode(), n.asNode()));
-                }
-            }
-            qe.close();
+			System.out.println(p + "::" + q);
+			try(QueryExecution qe = qef.createQueryExecution(q)) {
+				ResultSet results = qe.execSelect();
+				if (results.hasNext()) {
+					while (results.hasNext()) {
+						RDFNode n = results.next().get("o");
+						result.add(Triple.create(r.asNode(), p.asNode(), n.asNode()));
+					}
+				}
+			}
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         // merge triple with redundant objects modulo syntactic difference
-//        result.stream().map(t -> t.getObject()).filter(o -> o.isLiteral()).forEach(l -> System.out.println(l.getLiteral().getValue()));
-
+		merge(result);
 
         return result;
     }
+
+	Function<LiteralLabel, DateTime> funcLitToDatetime = (LiteralLabel lit) -> {
+		DateTime time = null;
+
+		try {
+			time = ISODateTimeFormat.dateTimeParser().parseDateTime(lit.getLexicalForm());
+		} catch (Exception e1) {
+			try {
+				time = ISODateTimeFormat.localDateParser().parseDateTime(lit.getLexicalForm());
+			} catch (Exception e2) {
+				e2.printStackTrace();
+				time = ISODateTimeFormat.dateParser().parseDateTime(lit.getLexicalForm());
+			}
+		}
+
+		return time;
+	};
+
+
+	public void merge(Set<Triple> triples) {
+		//
+		Map<LiteralLabel, Triple> nodeTripleMap = triples.stream()
+				.filter(t -> t.getObject().isLiteral())
+				.collect(Collectors.toMap(t -> t.getObject().getLiteral(),
+										  Function.identity()));
+
+		// process date literals
+		Map<LiteralLabel, Triple> dateLiteralsMap = nodeTripleMap.entrySet().stream()
+				.filter((e) -> e.getKey().getDatatype() != null && e.getKey().getDatatype() instanceof XSDAbstractDateTimeType)
+				.collect(Collectors.toMap(e -> e.getKey(),
+										  e -> e.getValue()));
+		Map<DateTime, Triple> dateTimeEntryMap = dateLiteralsMap.entrySet().stream()
+				.collect(Collectors.toMap(e -> funcLitToDatetime.apply(e.getKey()), // convert date literal to DateTime object
+										  e -> e.getValue(), // the triple as object
+										 (t1, t2) -> { // merge triples with same date
+											 System.out.println("duplicate date found!");
+											 return t1;
+										 }));
+
+		dateTimeEntryMap.entrySet().forEach(System.out::println);
+		triples.removeAll(Sets.difference(Sets.newHashSet(dateLiteralsMap.values()), Sets.newHashSet(dateTimeEntryMap.values())));
+	}
     
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,

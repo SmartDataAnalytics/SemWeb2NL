@@ -38,6 +38,8 @@ import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
+import org.apache.jena.query.*;
+import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
 import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
@@ -58,9 +60,6 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-import org.apache.jena.query.QueryExecution;
-import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.ResultSet;
 
 /**
  * @author Lorenz Buehmann
@@ -129,7 +128,7 @@ public class DatasetBasedGraphGenerator {
     }
     
     /**
-     * @param personTypes the personTypes to set
+     * @param blacklist the property blacklist
      */
     public void setPropertiesBlacklist(Set<String> blacklist) {
         this.blacklist = blacklist;
@@ -305,7 +304,7 @@ public class DatasetBasedGraphGenerator {
      * is used by instances of the given class.
      *
      * @param cls
-     * @param namespace
+     * @param propertyDirection
      * @return
      */
     private Map<OWLObjectProperty, Integer> getPropertiesWithFrequency(OWLClass cls, Direction propertyDirection) {
@@ -335,20 +334,20 @@ public class DatasetBasedGraphGenerator {
          		+ "?s ?p ?o ."
          		+ "} GROUP BY ?p";
 
-        ResultSet rs = executeSelectQuery(query);
-        QuerySolution qs;
-        while (rs.hasNext()) {
-            qs = rs.next();
-            int frequency = qs.getLiteral("cnt").getInt();
-            if(frequency > 0) {
-                String uri = qs.getResource("p").getURI();
-                if (!blacklist.contains(uri)) {
-                    properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+        try(ResultSetCloseable rs = executeSelectQuery(query)) {
+            while (rs.hasNext()) {
+                QuerySolution qs = rs.next();
+                int frequency = qs.getLiteral("cnt").getInt();
+                if(frequency > 0) {
+                    String uri = qs.getResource("p").getURI();
+                    if (!blacklist.contains(uri)) {
+                        properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+                    }
                 }
+
             }
-            
         }
-        
+
         query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
         		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
          		+ "?s a <" + cls.toStringID() + "> ."
@@ -356,17 +355,19 @@ public class DatasetBasedGraphGenerator {
          		+ "?s ?p ?o ."
          		+ "} GROUP BY ?p";
         logger.info(query);
-        rs = executeSelectQuery(query);
-        while (rs.hasNext()) {
-            qs = rs.next();
-            int frequency = qs.getLiteral("cnt").getInt();
-            if(frequency > 0) {
-	            String uri = qs.getResource("p").getURI();
-	            if (!blacklist.contains(uri)) {
-	                properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
-	            }
+        try(ResultSetCloseable rs = executeSelectQuery(query)) {
+            while (rs.hasNext()) {
+                QuerySolution qs = rs.next();
+                int frequency = qs.getLiteral("cnt").getInt();
+                if(frequency > 0) {
+                    String uri = qs.getResource("p").getURI();
+                    if (!blacklist.contains(uri)) {
+                        properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+                    }
+                }
             }
         }
+
         return properties;
     }
     
@@ -441,11 +442,14 @@ public class DatasetBasedGraphGenerator {
         return rs.next().getLiteral("cnt").getInt();
     }
 
-    private ResultSet executeSelectQuery(String query) {
+    private ResultSetCloseable executeSelectQuery(String query) {
     	logger.debug(query);
-        QueryExecution qe = qef.createQueryExecution(query);
-        ResultSet rs = qe.execSelect();
-        return rs;
+        System.out.println(query);
+
+        QueryEngineHTTP qe = new QueryEngineHTTP("http://dbpedia.org/sparql", QueryFactory.create(query));
+
+//        QueryExecution qe = qef.createQueryExecution(QueryFactory.create(query));
+        return ResultSetCloseable.closeableResultSet(qe);
     }
 
     private <T> Set<Set<T>> getSubsets(Set<T> set, int size) {
