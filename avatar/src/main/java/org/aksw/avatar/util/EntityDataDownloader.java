@@ -24,6 +24,7 @@ public class EntityDataDownloader {
             "PREFIX  dbo:  <http://dbpedia.org/ontology/>\n" +
                     "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
                     "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+                    "PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +
                     "\n" +
                     "CONSTRUCT \n" +
                     "  { \n" +
@@ -31,7 +32,7 @@ public class EntityDataDownloader {
                     "    #2 ?o ?p1 ?o1 .\n" +
                     "  }\n" +
                     "WHERE\n" +
-                    "  { ?s  ?p  ?o\n" +
+                    "  { ?s  ?p  ?o .\n" + " ?p a ?p_type . VALUES ?p_type {owl:ObjectProperty owl:DatatypeProperty}" +
                     "    FILTER ( ( isURI(?o) || ( datatype(?o) != \"\" ) ) || langMatches(lang(?o), \"en\") )\n" +
                     "    #1 FILTER ( ?p NOT IN ($IGNORED_PROPERTIES$) )\n" +
                     "    #2 OPTIONAL\n" +

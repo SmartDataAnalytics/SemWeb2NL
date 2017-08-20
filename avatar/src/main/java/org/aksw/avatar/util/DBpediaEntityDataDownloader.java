@@ -22,7 +22,8 @@ public class DBpediaEntityDataDownloader extends EntityDataDownloader{
             RDFS.seeAlso.getURI(),
             "http://dbpedia.org/ontology/wikiPageExternalLink",
             "http://dbpedia.org/ontology/wikiPageID",
-            "http://dbpedia.org/ontology/wikiPageRevisionID");
+            "http://dbpedia.org/ontology/wikiPageRevisionID",
+            "http://www.w3.org/ns/prov#wasDerivedFrom");
 
     public DBpediaEntityDataDownloader(QueryExecutionFactory qef) {
         super(qef, expansionClasses, ignoredProperties);
