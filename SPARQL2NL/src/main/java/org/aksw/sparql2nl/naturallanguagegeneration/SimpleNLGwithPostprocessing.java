@@ -956,7 +956,7 @@ public class SimpleNLGwithPostprocessing implements Sparql2NLConverter {
 
     public SPhraseSpec getNLForTriple(Triple t, boolean outgoing) {
         SPhraseSpec p = tripleConverter.convertToPhrase(t, false, !outgoing);
-        logger.info("TP:" + t + " -> " + realiser.realise(p));
+        logger.debug("TP:" + t + " -> " + realiser.realise(p));
         return p;
     }
 

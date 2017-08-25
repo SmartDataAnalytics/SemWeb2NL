@@ -19,12 +19,14 @@
  */
 package org.aksw.triple2nl.converter;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.jena_sparql_api.model.QueryExecutionFactoryModel;
 import org.aksw.triple2nl.converter.URIDereferencer.DereferencingFailedException;
-import org.apache.commons.collections15.map.LRUMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.jena.query.ParameterizedSparqlString;
@@ -59,12 +61,14 @@ import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
  * Converts IRIs into natural language.
- * @author Lorenz Buehmann
  *
+ * @author Lorenz Buehmann
  */
 public class DefaultIRIConverter implements IRIConverter{
 
@@ -95,8 +99,17 @@ public class DefaultIRIConverter implements IRIConverter{
 	private static final Logger logger = LoggerFactory.getLogger(DefaultIRIConverter.class);
 	
 	private IRIShortFormProvider sfp = new SimpleIRIShortFormProvider();
-	private LRUMap<String, String> uri2LabelCache = new LRUMap<>(200);
-	
+
+	private LoadingCache<String, String> uri2LabelCache = CacheBuilder.newBuilder()
+			.maximumSize(1000)
+			.expireAfterWrite(1, TimeUnit.HOURS)
+			.build(
+					new CacheLoader<String, String>() {
+						public String load(String iri) {
+							return computeLabel(iri);
+						}
+					});
+
 	private QueryExecutionFactory qef;
 	
 	private List<String> labelProperties = Lists.newArrayList(
@@ -114,7 +127,8 @@ public class DefaultIRIConverter implements IRIConverter{
 	private boolean replaceUnderScores = true;
 	private boolean toLowerCase = false;
 	private boolean omitContentInBrackets = true;
-	
+
+	private boolean useUriDereferencing = false;
 	private URIDereferencer uriDereferencer;
 	
 	public DefaultIRIConverter(SparqlEndpoint endpoint, String cacheDirectory) {
@@ -170,63 +184,16 @@ public class DefaultIRIConverter implements IRIConverter{
         } else if (iri.equals(RDFS.label.getURI())) {
             return "label";
         }
-		
-		// check if already cached
-		String label = uri2LabelCache.get(iri);
-		
-		// if not in cache
-		if(label == null){
-			// 1. check if it's some built-in resource
-			try {
-				label = getLabelFromBuiltIn(iri);
-			} catch (Exception e) {
-				logger.error("Getting label for " + iri + " from knowledge base failed.", e);
-			}
 
-			// 2. try to get the label from the endpoint
-			if(label == null){
-				 try {
-						label = getLabelFromKnowledgebase(iri);
-					} catch (Exception e) {
-						logger.error("Getting label for " + iri + " from knowledge base failed.", e);
-					}
-			}
-            
-            // 3. try to dereference the IRI and search for the label in the returned triples
-            if(dereferenceURI && label == null){
-            	try {
-					label = getLabelFromLinkedData(iri);
-				} catch (Exception e) {e.printStackTrace();
-					logger.error("Dereferencing of " + iri + " failed.");
-				}
-            }
-            
-            // 4. use the short form of the IRI
-            if(label == null){
-            	try {
-					label = sfp.getShortForm(IRI.create(URLDecoder.decode(iri, "UTF-8")));
-
-		            // do some normalization, e.g. remove underscores
-		            label = normalize(label);
-
-            	} catch (UnsupportedEncodingException e) {
-					logger.error("Getting short form of " + iri + "failed.", e);
-				}
-            }
-            
-            // 5. use the IRI itself
-            if(label == null){
-            	label = iri;
-            }
-
+		try {
+			return uri2LabelCache.get(iri);
+		} catch (ExecutionException e) {
+			logger.error("Failed to compute label for IRI " + iri, e);
 		}
-	    
-		// put into cache
-		uri2LabelCache.put(iri, label);
-		
-		return label;
+
+		return iri;
 	}
-	
+
 	/**
 	 * Set a list of properties that return textual representations a IRI, e.g.
 	 * rdfs:label, foaf:name, etc.
@@ -267,9 +234,62 @@ public class DefaultIRIConverter implements IRIConverter{
 	public void setOmitContentInBrackets(boolean omitContentInBrackets) {
 		this.omitContentInBrackets = omitContentInBrackets;
 	}
-	
+
 	public void setToLowerCase(boolean toLowerCase) {
 		this.toLowerCase = toLowerCase;
+	}
+
+	public void setUseUriDereferencing(boolean useUriDereferencing) {
+		this.useUriDereferencing = useUriDereferencing;
+	}
+
+	private String computeLabel(String iri) {
+		String label = null;
+
+		// 1. check if it's some built-in resource
+		try {
+			label = getLabelFromBuiltIn(iri);
+		} catch (Exception e) {
+			logger.error("Getting label for " + iri + " from knowledge base failed.", e);
+		}
+
+		// 2. try to get the label from the endpoint
+		if(label == null){
+			try {
+				label = getLabelFromKnowledgebase(iri);
+			} catch (Exception e) {
+				logger.error("Getting label for " + iri + " from knowledge base failed.", e);
+			}
+		}
+
+		// 3. try to dereference the IRI and search for the label in the returned triples
+		if(useUriDereferencing && label == null){
+			try {
+				label = getLabelFromLinkedData(iri);
+			} catch (Exception e) {e.printStackTrace();
+				logger.error("Dereferencing of " + iri + " failed.");
+			}
+		}
+
+		// 4. use the short form of the IRI
+		if(label == null){
+			try {
+				label = sfp.getShortForm(IRI.create(URLDecoder.decode(iri, "UTF-8")));
+
+				// do some normalization, e.g. remove underscores
+				label = normalize(label);
+
+			} catch (UnsupportedEncodingException e) {
+				logger.error("Getting short form of " + iri + "failed.", e);
+			}
+		}
+
+		// 5. use the IRI itself
+		if(label == null){
+			label = iri;
+		}
+
+		return label;
 	}
 	
 	private String getLabelFromBuiltIn(String uri){
@@ -308,7 +328,7 @@ public class DefaultIRIConverter implements IRIConverter{
 
 		String query = queryTemplate.toString();
 		query = query.replace("%LANGUAGES",
-				labelProperties.stream().map(p -> "(" + labelProperties.indexOf(p) + " <" + p + ">)").collect(Collectors.joining()));
+				languages.stream().map(l -> "(" + languages.indexOf(l) + " \""+ l + "\")").collect(Collectors.joining()));
 		query = query.replace("%PROPERTIES",
 				labelProperties.stream().map(p -> "(" + labelProperties.indexOf(p) + " <" + p + ">)").collect(Collectors.joining()));
 

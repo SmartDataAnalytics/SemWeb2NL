@@ -30,9 +30,11 @@ public class EntityDataDownloader {
                     "  { \n" +
                     "    ?s ?p ?o .\n" +
                     "    #2 ?o ?p1 ?o1 .\n" +
+                    "    #3 ?o a ?type .\n" +
                     "  }\n" +
                     "WHERE\n" +
                     "  { ?s  ?p  ?o .\n" + " ?p a ?p_type . VALUES ?p_type {owl:ObjectProperty owl:DatatypeProperty}" +
+                    "#3 OPTIONAL {?o a ?type . }" +
                     "    FILTER ( ( isURI(?o) || ( datatype(?o) != \"\" ) ) || langMatches(lang(?o), \"en\") )\n" +
                     "    #1 FILTER ( ?p NOT IN ($IGNORED_PROPERTIES$) )\n" +
                     "    #2 OPTIONAL\n" +
@@ -47,15 +49,23 @@ public class EntityDataDownloader {
 
     private final QueryExecutionFactory qef;
 
-    public EntityDataDownloader(QueryExecutionFactory qef, Set<String> expansionClasses, Set<String> ignoredProperties) {
+    private boolean retrieveObjectValueTypes = true;
+
+    public EntityDataDownloader(QueryExecutionFactory qef, String queryString, Set<String> expansionClasses, Set<String> ignoredProperties) {
         this.qef = qef;
 
-        String queryStr = QUERY_TEMPLATE_STRING;
+        String queryStr = queryString;
+
+        // get types for object resources if enabled
+        if(retrieveObjectValueTypes) {
+            queryStr = queryStr.replace("#3", "");
+        }
+
         // set ignored properties
         if(!ignoredProperties.isEmpty()) {
             queryStr = queryStr.replace("#1", "");
             queryStr = queryStr.replace(
-                            "$IGNORED_PROPERTIES$",
+                    "$IGNORED_PROPERTIES$",
                     ignoredProperties.stream().map(p -> "<" + p + ">").collect(Collectors.joining(", ")));
         }
 
@@ -63,12 +73,15 @@ public class EntityDataDownloader {
         if(!expansionClasses.isEmpty()) {
             queryStr = queryStr.replace("#2", "");
             queryStr = queryStr.replace(
-                            "$EXPANSION_CLASSES$",
+                    "$EXPANSION_CLASSES$",
                     expansionClasses.stream().map(cls -> "<" + cls + ">").collect(Collectors.joining(" ")));
         }
 
-        System.out.println(queryStr);
         QUERY_TEMPLATE = new ParameterizedSparqlString(queryStr);
+    }
+
+    public EntityDataDownloader(QueryExecutionFactory qef, Set<String> expansionClasses, Set<String> ignoredProperties) {
+        this(qef, QUERY_TEMPLATE_STRING, expansionClasses, ignoredProperties);
     }
 
     /**
@@ -79,6 +92,7 @@ public class EntityDataDownloader {
     public Model loadData(String entity) {
         QUERY_TEMPLATE.setIri("entity", entity);
         String query = QUERY_TEMPLATE.toString();
+        System.out.println(query);
         try(QueryExecution qe = qef.createQueryExecution(query)) {
             return qe.execConstruct();
         }

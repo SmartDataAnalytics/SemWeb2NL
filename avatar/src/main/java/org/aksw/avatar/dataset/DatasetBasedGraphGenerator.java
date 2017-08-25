@@ -22,7 +22,9 @@
  */
 package org.aksw.avatar.dataset;
 
-import java.io.File;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,14 +35,16 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
+import com.inamik.text.tables.GridTable;
+import com.inamik.text.tables.SimpleTable;
+import com.inamik.text.tables.grid.Border;
+import com.inamik.text.tables.grid.Util;
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.apache.jena.query.*;
-import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
-import org.apache.log4j.Logger;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.dllearner.utilities.MapUtils;
@@ -48,6 +52,8 @@ import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import simplenlg.framework.NLGFactory;
 import simplenlg.lexicon.Lexicon;
 import simplenlg.phrasespec.SPhraseSpec;
@@ -60,6 +66,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+
+import static com.inamik.text.tables.Cell.Functions.RIGHT_ALIGN;
 
 /**
  * @author Lorenz Buehmann
@@ -75,7 +83,7 @@ public class DatasetBasedGraphGenerator {
     	OUTGOING, INCOMING
     }
 	
-	private static final Logger logger = Logger.getLogger(DatasetBasedGraphGenerator.class);
+	private static final Logger logger = LoggerFactory.getLogger(DatasetBasedGraphGenerator.class);
 
     private QueryExecutionFactory qef;
     protected SPARQLReasoner reasoner;
@@ -171,10 +179,11 @@ public class DatasetBasedGraphGenerator {
     	int individualsCount = reasoner.getIndividualsCount(cls);
     	
     	if(individualsCount == 0) {
+    	    logger.warn("Can't generate summary graph based on dataset statistics. Reason: Empty class " + cls);
     		return null;
     	}
     	
-        //get the outgoing properties with a prominence score above threshold
+        // get the outgoing properties with a prominence score above threshold
         final SortedSet<OWLObjectProperty> outgoingProperties = getMostProminentProperties(cls, threshold, namespace, Direction.OUTGOING);
         class2OutgoingProperties.put(cls, outgoingProperties);
         
@@ -227,7 +236,7 @@ public class DatasetBasedGraphGenerator {
                     }
                 }
             } catch (ExecutionException e) {
-                logger.error(e, e);
+                logger.error("Failed to generate summary graph for class " + cls, e);
             }
         }
         if(allRelevantProperties.size() == 1){
@@ -299,6 +308,52 @@ public class DatasetBasedGraphGenerator {
         return PropertySimilarityCorrelation.getCooccurrences(cls, properties);
     }
 
+    private static final ParameterizedSparqlString PROPERTY_FREQUENCY_TEMPLATE = new ParameterizedSparqlString(
+            "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+            + "SELECT (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
+            + "?s a ?cls ."
+            + "?s ?p ?o ."
+            + "}");
+
+    private static final ParameterizedSparqlString PROPERTIES_OF_CLASS_TEMPLATE = new ParameterizedSparqlString(
+            "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
+                    + "SELECT DISTINCT ?p WHERE {"
+                    + "?s a ?cls ."
+                    + "?s ?p ?o . {select ?p {?p a owl:ObjectProperty}}"
+                    + "}");
+
+    private Map<OWLObjectProperty, Integer> getPropertiesWithFrequencySingle(OWLClass cls, Direction propertyDirection) {
+        Map<OWLObjectProperty, Integer> properties = new HashMap<>();
+
+        PROPERTIES_OF_CLASS_TEMPLATE.setIri("cls", cls.toStringID());
+        PROPERTY_FREQUENCY_TEMPLATE.setIri("cls", cls.toStringID());
+
+        String query = PROPERTIES_OF_CLASS_TEMPLATE.toString();
+
+        try(ResultSetCloseable rs = executeSelectQuery(query)) {
+            while (rs.hasNext()) {
+                QuerySolution qs = rs.next();
+                String property = qs.getResource("p").getURI();
+                if(!property.startsWith("http://dbpedia.org/ontology/")) continue;
+
+                PROPERTY_FREQUENCY_TEMPLATE.setIri("p", property);
+                String query2 = PROPERTY_FREQUENCY_TEMPLATE.toString();
+
+                try(ResultSetCloseable rs2 = executeSelectQuery(query2)) {
+                    int frequency = rs2.next().getLiteral("cnt").getInt();
+                    if(frequency > 0) {
+                        String uri = qs.getResource("p").getURI();
+                        if (!blacklist.contains(uri)) {
+                            properties.put(new OWLObjectPropertyImpl(IRI.create(uri)), frequency);
+                        }
+                    }
+                }
+            }
+        }
+
+        return properties;
+    }
+
     /**
      * Get all properties and its frequencies based on how often each property
      * is used by instances of the given class.
@@ -307,7 +362,7 @@ public class DatasetBasedGraphGenerator {
      * @param propertyDirection
      * @return
      */
-    private Map<OWLObjectProperty, Integer> getPropertiesWithFrequency(OWLClass cls, Direction propertyDirection) {
+    private Map<OWLObjectProperty, Integer> getPropertiesWithFrequencyBatch(OWLClass cls, Direction propertyDirection) {
         Map<OWLObjectProperty, Integer> properties = new HashMap<>();
         String query;
         if(propertyDirection == Direction.OUTGOING){
@@ -325,7 +380,7 @@ public class DatasetBasedGraphGenerator {
              		+ "?o ?p ?s."
              		+ "} GROUP BY ?p";
         }
-        
+
         //split into 2 queries because triple stores sometimes do not answer the query above
         query = "PREFIX owl:<http://www.w3.org/2002/07/owl#> "
         		+ "SELECT ?p (COUNT(DISTINCT ?s) AS ?cnt) WHERE {"
@@ -354,7 +409,7 @@ public class DatasetBasedGraphGenerator {
          		+ " ?p a owl:DatatypeProperty . "
          		+ "?s ?p ?o ."
          		+ "} GROUP BY ?p";
-        logger.info(query);
+
         try(ResultSetCloseable rs = executeSelectQuery(query)) {
             while (rs.hasNext()) {
                 QuerySolution qs = rs.next();
@@ -412,22 +467,65 @@ public class DatasetBasedGraphGenerator {
         int instanceCount = getInstanceCount(cls);
         logger.info("Number of instances in class: " + instanceCount);
 
-        //get all properties+frequency that are used by instances of the class
-        Map<OWLObjectProperty, Integer> propertiesWithFrequency = getPropertiesWithFrequency(cls, propertyDirection);
+        // get all properties+frequency that are used by instances of the class
+        Map<OWLObjectProperty, Integer> propertiesWithFrequency =
+                (instanceCount > 500000)
+                ? getPropertiesWithFrequencySingle(cls, propertyDirection)
+                : getPropertiesWithFrequencyBatch(cls, propertyDirection);
 
-        //get all properties with a relative frequency above the threshold
+        if(propertiesWithFrequency.isEmpty()) {
+            logger.warn("No properties found for class " + cls);
+        }
+
+        SimpleTable table = SimpleTable.of();
+
+        // get all properties with a relative frequency above the threshold
         for (Entry<OWLObjectProperty, Integer> entry : MapUtils.sortByValues(propertiesWithFrequency)) {
             OWLObjectProperty property = entry.getKey();
             Integer frequency = entry.getValue();
            
             double score = frequency / (double) instanceCount;
-            logger.info(property + ": " + frequency + " -> " + score);
+
             if (score >= threshold) {
                 properties.add(property);
             }
+
+            table.nextRow()
+                    .nextCell().addLine(property.toString())
+                    .nextCell().addLine(String.valueOf(frequency)).applyToCell(RIGHT_ALIGN.withWidth(5))
+                    .nextCell().addLine(df.format(score));
         }
-        logger.info("...got " + properties);
-        return properties;
+
+        if(properties.isEmpty()) {
+            logger.warn("No prominent properties above threshold found for class " + cls);
+        } else {
+            logger.info(prettyString(table));
+            logger.info("Most prominent " + propertyDirection.name().toLowerCase() + " properties for class " + cls + ":\n" + properties);
+        }
+
+       return properties;
+    }
+
+    private static final DecimalFormat df = new DecimalFormat("#.000000");
+
+    private String prettyString(SimpleTable table) {
+        GridTable g = table.toGrid();
+        g = Border.of(Border.Chars.of('+', '-', '|')).apply(g);
+        try {
+            try(ByteArrayOutputStream baos = new ByteArrayOutputStream()){
+                PrintStream ps = new PrintStream(baos);
+                Util.print(g, ps);
+                try {
+                    return new String(baos.toByteArray(), "UTF-8");
+                } catch (UnsupportedEncodingException e) {
+                    logger.error("Failed to convert table.", e);
+                }
+            }
+        } catch (IOException e) {
+            logger.error("Failed to convert table.", e);
+        }
+
+        return null;
     }
 
     /**
@@ -446,9 +544,9 @@ public class DatasetBasedGraphGenerator {
     	logger.debug(query);
         System.out.println(query);
 
-        QueryEngineHTTP qe = new QueryEngineHTTP("http://dbpedia.org/sparql", QueryFactory.create(query));
+//        QueryEngineHTTP qe = new QueryEngineHTTP("http://dbpedia.org/sparql", QueryFactory.create(query));
 
-//        QueryExecution qe = qef.createQueryExecution(QueryFactory.create(query));
+        QueryExecution qe = qef.createQueryExecution(QueryFactory.create(query));
         return ResultSetCloseable.closeableResultSet(qe);
     }
 

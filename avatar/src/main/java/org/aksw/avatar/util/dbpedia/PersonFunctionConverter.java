@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import org.aksw.avatar.util.DBpediaEntityDataDownloader;
 import org.aksw.avatar.util.EntityDataDownloader;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.update.UpdateAction;
 import org.apache.jena.vocabulary.OWL;
 import org.apache.jena.vocabulary.RDFS;
@@ -26,9 +27,17 @@ public class PersonFunctionConverter {
 			"}\n" +
 			"group by ?p";
 
+	private static final String UPDATE_QUERY =
+			"PREFIX dbo: <http://dbpedia.org/ontology/> " +
+					"DELETE {?s dbo:personFunction ?o}" +
+					"INSERT {?s dbo:personFunction ?t}" +
+					"WHERE {?s dbo:personFunction ?o . ?o dbo:title ?t}";
 
-	public void convert(Model model) {
 
+	public Model convert(Model model) {
+		Model copy = ModelFactory.createDefaultModel().add(model);
+		UpdateAction.parseExecute(UPDATE_QUERY, copy);
+		return copy;
 	}
 
 	public static void main(String[] args) throws Exception {
@@ -41,14 +50,9 @@ public class PersonFunctionConverter {
 		model.setNsPrefix("dbo", "http://dbpedia.org/ontology/");
 		model.setNsPrefix("", "http://dbpedia.org/resource/");
 
-		String update =
-				"PREFIX dbo: <http://dbpedia.org/ontology/> " +
-						"DELETE {?s dbo:personFunction ?o}" +
-						"INSERT {?s dbo:personFunction ?t}" +
-						"WHERE {?s dbo:personFunction ?o . ?o dbo:title ?t}";
 
-		UpdateAction.parseExecute(update, model);
-
+		model.write(System.out, "TURTLE");
+		model = new PersonFunctionConverter().convert(model);
 		model.write(System.out, "TURTLE");
 	}
 }

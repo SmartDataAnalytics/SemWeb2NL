@@ -118,7 +118,6 @@ public class PredicateMergeRule implements Rule {
         }
         if(phraseIndex == -1) return phrases;
         //now merge
-        NLGFactory nlgFactory = new NLGFactory(Lexicon.getDefaultLexicon());
         Collection<Integer> toMerge = map.get(phraseIndex);
         toMerge.add(phraseIndex);
         CoordinatedPhraseElement elt = nlgFactory.createCoordinatedPhrase();

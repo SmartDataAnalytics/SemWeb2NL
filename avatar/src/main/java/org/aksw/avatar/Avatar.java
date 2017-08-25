@@ -42,12 +42,12 @@ import org.aksw.avatar.rules.*;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
+import org.aksw.triple2nl.TripleConverter;
 import org.aksw.triple2nl.gender.*;
 import org.aksw.triple2nl.gender.Gender;
 import org.apache.jena.datatypes.xsd.impl.XSDAbstractDateTimeType;
 import org.apache.jena.graph.Triple;
 import org.apache.jena.graph.impl.LiteralLabel;
-import org.apache.jena.query.ParameterizedSparqlString;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QuerySolution;
 import org.apache.jena.query.ResultSet;
@@ -87,9 +87,9 @@ import java.util.stream.Collectors;
  *
  * @author ngonga
  */
-public class Verbalizer {
-	
-	private static final Logger logger = Logger.getLogger(Verbalizer.class.getName());
+public class Avatar {
+
+	private static final Logger logger = Logger.getLogger(Avatar.class.getName());
 
 	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
 
@@ -98,8 +98,7 @@ public class Verbalizer {
 	private static final Cooccurrence DEFAULT_COOCCURRENCE_TYPE = Cooccurrence.PROPERTIES;
 	private static final HardeningType DEFAULT_HARDENING_TYPE = HardeningType.SMALLEST;
 
-    public SimpleNLGwithPostprocessing nlg;
-    SparqlEndpoint endpoint;
+//    public SimpleNLGwithPostprocessing nlg;
     String language = "en";
     protected Realiser realiser;
     Map<Resource, String> labels;
@@ -114,37 +113,41 @@ public class Verbalizer {
     public DatasetBasedGraphGenerator graphGenerator;
     int maxShownValuesPerProperty = DEFAULT_MAX_NUMBER_OF_SHOWN_VALUES_PER_PROPERTY;
     boolean omitContentInBrackets = true;
-    
-    public Verbalizer(QueryExecutionFactory qef, String cacheDirectory) {
+
+    private TripleConverter tripleConverter;
+
+    public Avatar(QueryExecutionFactory qef, String cacheDirectory) {
     	this.qef = qef;
 
 		if(cacheDirectory == null) {
 			cacheDirectory = DEFAULT_CACHE_BASE_DIR;
 		}
 		cacheDirectory = new File(cacheDirectory, "avatar-cache/sparql").getAbsolutePath();
-    	
-        nlg = new SimpleNLGwithPostprocessing(qef, cacheDirectory, null);
+
+		tripleConverter = new TripleConverter(qef, cacheDirectory);
+        realiser = tripleConverter.realiser;
+
         labels = new HashMap<>();
         litFilter = new NumericLiteralFilter(qef, cacheDirectory);
-        realiser = nlg.realiser;
 
-        pr = new PredicateMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        or = new ObjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
-        sr = new SubjectMergeRule(nlg.lexicon, nlg.nlgFactory, nlg.realiser);
+
+        pr = new PredicateMergeRule(tripleConverter.lexicon, tripleConverter.nlgFactory, tripleConverter.realiser);
+        or = new ObjectMergeRule(tripleConverter.lexicon, tripleConverter.nlgFactory, tripleConverter.realiser);
+        sr = new SubjectMergeRule(tripleConverter.lexicon, tripleConverter.nlgFactory, tripleConverter.realiser);
 
         gender = new TypeAwareGenderDetector(qef, new DictionaryBasedGenderDetector());
 
         graphGenerator = new CachedDatasetBasedGraphGenerator(qef, cacheDirectory);
     }
-    
-    public Verbalizer(SparqlEndpoint endpoint, String cacheDirectory) {
+
+    public Avatar(SparqlEndpoint endpoint, String cacheDirectory) {
     	this(new QueryExecutionFactoryHttp(endpoint.getURL().toString(), endpoint.getDefaultGraphURIs()), cacheDirectory);
     }
 
-	public Verbalizer(SparqlEndpoint endpoint) {
+	public Avatar(SparqlEndpoint endpoint) {
 		this(endpoint, DEFAULT_CACHE_BASE_DIR);
 	}
-    
+
     /**
      * @param blacklist a blacklist of properties that are omitted when building the summary
      */
@@ -174,8 +177,8 @@ public class Verbalizer {
      * Gets all triples for resource r and property p.
      * If outgoing is true it returns all triples with <r,p,o>, else <s,p,r>
      *
-     * @param r the resource 
-     * @param p the property 
+     * @param r the resource
+     * @param p the property
      * @param outgoing whether to get outgoing or ingoing triples
      * @return A set of triples
      */
@@ -260,7 +263,7 @@ public class Verbalizer {
 
 	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
 			String namespace,
-			DatasetBasedGraphGenerator.Cooccurrence cooccurrence) {
+			Cooccurrence cooccurrence) {
 		Set<Node> properties = new HashSet<>();
 		WeightedGraph wg;
 		try {
@@ -468,7 +471,7 @@ public class Verbalizer {
      * @return A simple phrase
      */
     public SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
-        return nlg.getNLForTriple(triple);
+        return generateSimplePhraseFromTriple(triple, true);
     }
     
     /**
@@ -478,7 +481,7 @@ public class Verbalizer {
      * @return A simple phrase
      */
     public SPhraseSpec generateSimplePhraseFromTriple(Triple triple, boolean outgoing) {
-        return nlg.getNLForTriple(triple, outgoing);
+        return tripleConverter.convertToPhrase(triple, outgoing);
     }
 
     public List<NLGElement> verbalize(OWLIndividual ind, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
@@ -743,19 +746,22 @@ public class Verbalizer {
      */
     public List<NPPhraseSpec> generateSubjects(Resource resource, OWLClass resourceType, Gender resourceGender) {
         List<NPPhraseSpec> result = new ArrayList<>();
-        //the textual representation of the resource itself
-        result.add(nlg.getNPPhrase(resource.getURI(), false, false));
-        //the class, e.g. 'this book'
-        NPPhraseSpec np = nlg.getNPPhrase(resourceType.toStringID(), false);
+
+        // the textual representation of the resource itself
+        result.add(tripleConverter.getNPPhrase(resource.getURI(), false, false));
+
+        // the class, e.g. 'this book'
+        NPPhraseSpec np = tripleConverter.getNPPhrase(resourceType.toStringID(), false, true);
         np.addPreModifier("This");
         result.add(np);
-        //the pronoun depending on the gender of the resource
+
+        // the pronoun depending on the gender of the resource
         if (resourceGender.equals(Gender.MALE)) {
-            result.add(nlg.nlgFactory.createNounPhrase("he"));
+            result.add(tripleConverter.nlgFactory.createNounPhrase("he"));
         } else if (resourceGender.equals(Gender.FEMALE)) {
-            result.add(nlg.nlgFactory.createNounPhrase("she"));
+            result.add(tripleConverter.nlgFactory.createNounPhrase("she"));
         } else {
-            result.add(nlg.nlgFactory.createNounPhrase("it"));
+            result.add(tripleConverter.nlgFactory.createNounPhrase("it"));
         }
         return result;
     }
@@ -767,7 +773,7 @@ public class Verbalizer {
      */
     public Gender getGender(Resource resource){
     	//get a textual representation of the resource
-    	String label = realiser.realiseSentence(nlg.getNPPhrase(resource.getURI(), false, false));
+    	String label = realiser.realiseSentence(tripleConverter.getNPPhrase(resource.getURI(), false, false));
     	//we take the first token because we assume this is the first name
         String firstToken = label.split(" ")[0];
         //lookup the gender
@@ -816,9 +822,9 @@ public class Verbalizer {
         NLGElement currentSubject = sphrase.getSubject();
         if (currentSubject.hasFeature(InternalFeature.SPECIFIER) && currentSubject.getFeatureAsElement(InternalFeature.SPECIFIER).getFeatureAsBoolean(Feature.POSSESSIVE)) //possessive subject
         {
-            NPPhraseSpec newSubject = nlg.nlgFactory.createNounPhrase(((NPPhraseSpec) currentSubject).getHead());
+            NPPhraseSpec newSubject = tripleConverter.nlgFactory.createNounPhrase(((NPPhraseSpec) currentSubject).getHead());
             
-            NPPhraseSpec newSpecifier = nlg.nlgFactory.createNounPhrase(subjects.get(index));
+            NPPhraseSpec newSpecifier = tripleConverter.nlgFactory.createNounPhrase(subjects.get(index));
             newSpecifier.setFeature(Feature.POSSESSIVE, true);
             newSubject.setSpecifier(newSpecifier);
 
@@ -902,7 +908,7 @@ public class Verbalizer {
 
         String cacheDirectory = (String) options.valueOf("cache");
 
-        Verbalizer v = new Verbalizer(endpoint, cacheDirectory);
+        Avatar v = new Avatar(endpoint, cacheDirectory);
         v.setGenderDetector(new TypeAwareGenderDetector(v.qef, new DelegateGenderDetector(Lists.newArrayList(
                 new PropertyBasedGenderDetector(v.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
                 new DictionaryBasedGenderDetector()))));

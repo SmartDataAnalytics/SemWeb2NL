@@ -81,8 +81,9 @@ public class TripleConverter {
 	private static String DEFAULT_CACHE_BASE_DIR = System.getProperty("java.io.tmpdir");
 	private static String DEFAULT_CACHE_DIR = DEFAULT_CACHE_BASE_DIR + "/triple2nl-cache";
 
-	private NLGFactory nlgFactory;
-	private Realiser realiser;
+	public Lexicon lexicon;
+	public NLGFactory nlgFactory;
+	public Realiser realiser;
 
 	private IRIConverter uriConverter;
 	private LiteralConverter literalConverter;
@@ -109,6 +110,10 @@ public class TripleConverter {
 
 	public TripleConverter(SparqlEndpoint endpoint) {
 		this(endpoint, DEFAULT_CACHE_DIR);
+	}
+
+	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory) {
+		this(qef, cacheDirectory, (Dictionary)null);
 	}
 	
 	public TripleConverter(QueryExecutionFactory qef, String cacheDirectory, Dictionary wordnetDirectory) {
@@ -147,10 +152,8 @@ public class TripleConverter {
 			propertyVerbalizer = new PropertyVerbalizer(uriConverter, wordnetDirectory);
 		}
 		pp = propertyVerbalizer;
-		
-		if(lexicon == null) {
-			lexicon = Lexicon.getDefaultLexicon();
-		}
+
+		this.lexicon = (lexicon == null) ? Lexicon.getDefaultLexicon() : lexicon;
 		
 		nlgFactory = new NLGFactory(lexicon);
 		realiser = new Realiser(lexicon);
