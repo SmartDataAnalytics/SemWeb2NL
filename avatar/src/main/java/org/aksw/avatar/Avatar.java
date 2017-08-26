@@ -841,12 +841,11 @@ public class Avatar {
         String cacheDirectory = (String) options.valueOf("cache");
 
         Avatar avatar = new Avatar(endpoint, cacheDirectory);
-        avatar.setGenderDetector(new TypeAwareGenderDetector(avatar.qef, new DelegateGenderDetector(Lists.newArrayList(
-                new PropertyBasedGenderDetector(avatar.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
-                new DictionaryBasedGenderDetector()))));
 
+        // get the entity to summarize
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
 
+        // optionally, we can get the class of the entity used for summarization
 		Optional<OWLClass> cls = Optional.ofNullable(
 				options.has("c")
 						? new OWLClassImpl(IRI.create((URI) options.valueOf("c")))
@@ -856,7 +855,11 @@ public class Avatar {
 		// optionally, set the person types
 		if(options.has("p")) {
 			List<String> personTypes = Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) options.valueOf("p"));
-			avatar.setPersonTypes(new HashSet<>(personTypes));
+            TypeAwareGenderDetector genderDetector = new TypeAwareGenderDetector(avatar.qef, new DelegateGenderDetector(Lists.newArrayList(
+                    new PropertyBasedGenderDetector(avatar.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
+                    new DictionaryBasedGenderDetector())));
+            genderDetector.setPersonTypes(Sets.newHashSet(personTypes));
+            avatar.setGenderDetector(genderDetector);
 		}
 
 		avatar.setDatasetConstraints(DBpediaDatasetConstraints.getInstance());
