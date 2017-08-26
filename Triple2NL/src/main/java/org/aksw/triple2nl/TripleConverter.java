@@ -155,8 +155,8 @@ public class TripleConverter {
 
 		this.lexicon = (lexicon == null) ? Lexicon.getDefaultLexicon() : lexicon;
 		
-		nlgFactory = new NLGFactory(lexicon);
-		realiser = new Realiser(lexicon);
+		nlgFactory = new NLGFactory(this.lexicon);
+		realiser = new Realiser(this.lexicon);
 		
 		literalConverter = new LiteralConverter(uriConverter);
 		literalConverter.setEncapsulateStringLiterals(encapsulateStringLiterals);

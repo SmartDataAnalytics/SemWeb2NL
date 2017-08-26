@@ -39,6 +39,8 @@ import org.aksw.avatar.dataset.DatasetBasedGraphGenerator;
 import org.aksw.avatar.dataset.DatasetBasedGraphGenerator.Cooccurrence;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
 import org.aksw.avatar.rules.*;
+import org.aksw.avatar.util.DatasetConstraints;
+import org.aksw.avatar.util.dbpedia.DBpediaDatasetConstraints;
 import org.aksw.jena_sparql_api.core.QueryExecutionFactory;
 import org.aksw.jena_sparql_api.http.QueryExecutionFactoryHttp;
 import org.aksw.sparql2nl.naturallanguagegeneration.SimpleNLGwithPostprocessing;
@@ -76,6 +78,7 @@ import uk.ac.manchester.cs.owl.owlapi.OWLNamedIndividualImpl;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.*;
 import java.util.Map.Entry;
@@ -116,6 +119,8 @@ public class Avatar {
 
     private TripleConverter tripleConverter;
 
+    private DatasetConstraints datasetConstraints = new DatasetConstraints();
+
     public Avatar(QueryExecutionFactory qef, String cacheDirectory) {
     	this.qef = qef;
 
@@ -149,13 +154,6 @@ public class Avatar {
 	}
 
     /**
-     * @param blacklist a blacklist of properties that are omitted when building the summary
-     */
-    public void setPropertiesBlacklist(Set<String> blacklist) {
-        graphGenerator.setPropertiesBlacklist(blacklist);
-    }
-
-    /**
      * @param personTypes the personTypes to set
      */
     public void setPersonTypes(Set<String> personTypes) {
@@ -182,7 +180,7 @@ public class Avatar {
      * @param outgoing whether to get outgoing or ingoing triples
      * @return A set of triples
      */
-    public Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
+    private Set<Triple> getTriples(Resource r, Property p, boolean outgoing) {
         Set<Triple> result = new HashSet<>();
         try {
         	String q;
@@ -261,21 +259,6 @@ public class Avatar {
 		triples.removeAll(Sets.difference(Sets.newHashSet(dateLiteralsMap.values()), Sets.newHashSet(dateTimeEntryMap.values())));
 	}
 
-	public Set<Node> getSummaryProperties(OWLClass cls, double threshold,
-			String namespace,
-			Cooccurrence cooccurrence) {
-		Set<Node> properties = new HashSet<>();
-		WeightedGraph wg;
-		try {
-			wg = graphGenerator.generateGraph(cls, threshold, namespace,
-					cooccurrence);
-			return wg.getNodes().keySet();
-		} catch (NoGraphAvailableException e) {
-			logger.error(e.getMessage());
-		}
-		return null;
-	}
-
     public String realize(List<NLGElement> elts) {
         if(elts.isEmpty()) return null;
 
@@ -292,7 +275,7 @@ public class Avatar {
      * @param resource Resource to summarize
      * @return List of NLGElement
      */
-    public List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
+    private List<NLGElement> generateSentencesFromClusters(List<Set<Node>> clusters,
             Resource resource, OWLClass namedClass, boolean replaceSubjects) {
         //compute the gender of the resource
         Gender g = getGender(resource);
@@ -470,7 +453,7 @@ public class Avatar {
      * @param triple A triple
      * @return A simple phrase
      */
-    public SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
+    private SPhraseSpec generateSimplePhraseFromTriple(Triple triple) {
         return generateSimplePhraseFromTriple(triple, true);
     }
     
@@ -480,8 +463,8 @@ public class Avatar {
      * @param triple A triple
      * @return A simple phrase
      */
-    public SPhraseSpec generateSimplePhraseFromTriple(Triple triple, boolean outgoing) {
-        return tripleConverter.convertToPhrase(triple, outgoing);
+	private SPhraseSpec generateSimplePhraseFromTriple(Triple triple, boolean outgoing) {
+        return tripleConverter.convertToPhrase(triple, false, !outgoing);
     }
 
     public List<NLGElement> verbalize(OWLIndividual ind, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
@@ -506,7 +489,7 @@ public class Avatar {
 
 			for (OWLIndividual ind : individuals) {
 			    //finally generate sentences from clusters
-			    List<NLGElement> result = generateSentencesFromClusters(
+			    List<NLGElement> phrases = generateSentencesFromClusters(
 			            sortedPropertyClusters,
                         ResourceFactory.createResource(ind.toStringID()), nc, true);
 
@@ -516,9 +499,9 @@ public class Avatar {
 			            ResourceFactory.createResource(nc.toStringID()).asNode());
 
 			    // put the sentence in first position
-			    result.add(0, generateSimplePhraseFromTriple(t));
+			    phrases.add(0, generateSimplePhraseFromTriple(t));
 
-			    verbalizations.put(ind, result);
+			    verbalizations.put(ind, phrases);
 
 			    resource2Triples.get(ResourceFactory.createResource(ind.toStringID())).add(t);
 			}
@@ -531,38 +514,7 @@ public class Avatar {
         return null;
     }
 
-    private Set<String> allowedNamespaces = new HashSet<>();
-    private Set<String> ignoredNamespaces = new HashSet<>();
-    private Set<String> allowedClasses = new HashSet<>();
-    private Set<String> ignoredClasses = new HashSet<>();
 
-    public void setAllowedNamespaces(Set<String> allowedNamespaces) {
-        if(!Sets.intersection(allowedNamespaces, ignoredNamespaces).isEmpty()) {
-            throw new RuntimeException("Ignored and allowed namespaces overlap!");
-        }
-        this.allowedNamespaces = allowedNamespaces;
-    }
-
-    public void setIgnoredNamespaces(Set<String> ignoredNamespaces) {
-        if(!Sets.intersection(allowedNamespaces, ignoredNamespaces).isEmpty()) {
-            throw new RuntimeException("Ignored and allowed namespaces overlap!");
-        }
-        this.ignoredNamespaces = ignoredNamespaces;
-    }
-
-    public void setAllowedClasses(Set<String> allowedClasses) {
-        if(!Sets.intersection(allowedClasses, ignoredClasses).isEmpty()) {
-            throw new RuntimeException("Ignored and allowed classes overlap!");
-        }
-        this.allowedClasses = allowedClasses;
-    }
-
-    public void setIgnoredClasses(Set<String> ignoredClasses) {
-        if(!Sets.intersection(allowedClasses, ignoredClasses).isEmpty()) {
-            throw new RuntimeException("Ignored and allowed classes overlap!");
-        }
-        this.ignoredClasses = ignoredClasses;
-    }
 
     /**
      * Returns a textual summary of the given entity or <code>null</code> if we couldn't find any data.
@@ -571,11 +523,12 @@ public class Avatar {
      */
     public String summarize(OWLIndividual individual) {
     	// compute the most specific type first
-    	Optional<OWLClass> cls = getMostSpecificType(individual.toStringID(), allowedClasses, ignoredClasses, allowedNamespaces, ignoredNamespaces);
+    	Optional<OWLClass> cls = getMostSpecificType(individual, datasetConstraints);
 
-    	// if
+    	// if there is no such type, return null
         if(!cls.isPresent()) {
-
+			logger.warn(String.format("Could not find a class for the individual %s. Currently, this is necessary to compute a summary.", individual));
+			return null;
         }
 
         return summarize(individual, cls.get());
@@ -622,30 +575,8 @@ public class Avatar {
         }
     }
 
-    /**
-     * Returns a textual summary of the given entity.
-     *
-     * @return
-     */
-    public Map<OWLIndividual, String> getSummaries(Set<OWLIndividual> individuals, OWLClass nc, String namespace, double threshold, Cooccurrence cooccurrence, HardeningType hType) {
-        Map<OWLIndividual, String> entity2Summaries = new HashMap<>();
-
-        Map<OWLIndividual, List<NLGElement>> verbalize = verbalize(individuals, nc, namespace, threshold, cooccurrence, hType);
-        for (Entry<OWLIndividual, List<NLGElement>> entry : verbalize.entrySet()) {
-        	OWLIndividual individual = entry.getKey();
-            List<NLGElement> elements = entry.getValue();
-            String summary = realize(elements);
-            summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
-            summary = summary.replace(" , among others,", ", among others,");
-            entity2Summaries.put(individual, summary);
-        }
-
-        return entity2Summaries;
-    }
-
-    private Optional<OWLClass> getMostSpecificType(String ind,
-                                                   Set<String> allowedClasses, Set<String> ignoredClasses,
-                                                   Set<String> allowedNamespaces, Set<String> ignoredNamespaces){
+    private Optional<OWLClass> getMostSpecificType(OWLIndividual ind,
+												   DatasetConstraints c){
 
         logger.info("Getting the most specific type of " + ind);
         String query = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n"
@@ -659,39 +590,39 @@ public class Avatar {
                         "#4 filter(%CLS_IGNORED)\n" +
                         "}";
 
-        if(!allowedNamespaces.isEmpty()) {
+        if(!c.getAllowedNamespaces().isEmpty()) {
             query = query.replace("#1", "");
             query = query.replace("%NS_ALLOWED",
-                    allowedNamespaces.stream().map(ns -> "STRSTARTS(STR(?type), '" + ns + "')").collect(Collectors.joining(" && ")));
+								  c.getAllowedNamespaces().stream().map(ns -> "STRSTARTS(STR(?type), '" + ns + "')").collect(Collectors.joining(" && ")));
         } else {
             query = query.replaceAll( ".*#1.*(\\r?\\n|\\r)?", "" );
         }
 
-        if(!ignoredNamespaces.isEmpty()) {
+        if(!c.getIgnoredNamespaces().isEmpty()) {
             query = query.replace("#2", "");
             query = query.replace("%NS_IGNORED",
-                    ignoredNamespaces.stream().map(ns -> "!STRSTARTS(STR(?type), '" + ns + "')").collect(Collectors.joining(" && ")));
+                    c.getIgnoredNamespaces().stream().map(ns -> "!STRSTARTS(STR(?type), '" + ns + "')").collect(Collectors.joining(" && ")));
         } else {
             query = query.replaceAll( ".*#2.*(\\r?\\n|\\r)?", "" );
         }
 
-        if(!allowedClasses.isEmpty()) {
+        if(!c.getAllowedClasses().isEmpty()) {
             query = query.replace("#3", "");
             query = query.replace("%CLS_ALLOWED",
-                    allowedClasses.stream().map(cls -> "?type = <" + cls + ">").collect(Collectors.joining(" || ")));
+                    c.getAllowedClasses().stream().map(cls -> "?type = <" + cls + ">").collect(Collectors.joining(" || ")));
         } else {
             query = query.replaceAll( ".*#3.*(\\r?\\n|\\r)?", "" );
         }
 
-        if(!ignoredClasses.isEmpty()) {
+        if(!c.getIgnoredClasses().isEmpty()) {
             query = query.replace("#4", "");
             query = query.replace("%CLS_IGNORED",
-                    ignoredClasses.stream().map(cls -> "?type != <" + cls + ">").collect(Collectors.joining(" && ")));
+                    c.getIgnoredClasses().stream().map(cls -> "?type != <" + cls + ">").collect(Collectors.joining(" && ")));
         } else {
             query = query.replaceAll( ".*#4.*(\\r?\\n|\\r)?", "" );
         }
 
-        query = query.replace("?ind", "<" + ind + ">");
+		query = query.replace("?ind", "<" + ind.toStringID() + ">");
 
         logger.debug(query);
 
@@ -771,7 +702,7 @@ public class Avatar {
      * @param resource
      * @return the gender
      */
-    public Gender getGender(Resource resource){
+    private Gender getGender(Resource resource){
     	//get a textual representation of the resource
     	String label = realiser.realiseSentence(tripleConverter.getNPPhrase(resource.getURI(), false, false));
     	//we take the first token because we assume this is the first name
@@ -844,12 +775,17 @@ public class Avatar {
         }
         return phrase;
     }
-    
-    public static void main(String args[]) throws IOException {
+
+	public void setDatasetConstraints(DatasetConstraints datasetConstraints) {
+		this.datasetConstraints = datasetConstraints;
+		graphGenerator.setPropertiesBlacklist(datasetConstraints.getIgnoredProperties());
+	}
+
+	public static void main(String args[]) throws IOException {
     	OptionParser parser = new OptionParser() {
 			{
 				acceptsAll(Lists.newArrayList("e", "endpoint"), "SPARQL endpoint URL to be used.").withRequiredArg().ofType(URL.class).required();
-				acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withRequiredArg().ofType(String.class);
+				acceptsAll(Lists.newArrayList("g", "graph"), "URI of default graph for queries on SPARQL endpoint.").withRequiredArg().ofType(URI.class);
 				acceptsAll(Lists.newArrayList("i", "individual"), "The URI of the entity to summarize.")
 						.withRequiredArg()
 						.ofType(URI.class)
@@ -868,22 +804,18 @@ public class Avatar {
 			}
 		};
 
-//		parser.printHelpOn(System.out);
-
 		// parse options and display a message for the user in case of problems
 		OptionSet options = null;
 		try {
 			options = parser.parse(args);
 		} catch (Exception e) {
-			System.out.println("Error: " + e.getMessage() + ". Use -? to get help.");
+			System.err.println("Error: " + e.getMessage() + ". Use -? to get help.");
 			System.exit(0);
 		}
 		
 		// print help screen
 		if (options.has("?")) {
 			parser.printHelpOn(System.out);
-		} else {
-
 		}
 
 		// parse the SPARQL endpoint
@@ -891,42 +823,46 @@ public class Avatar {
 		try {
 			endpointURL = (URL) options.valueOf("endpoint");
 		} catch(OptionException e) {
-			System.out.println("The specified endpoint appears not to be a proper URL.");
+			System.out.println(String.format("The specified endpoint <%s> appears not to be a proper URL.", endpointURL));
 			System.exit(0);
 		}
-		String defaultGraphURI = null;
+		URI defaultGraphURI = null;
 		if(options.has("g")){
 			try {
-				defaultGraphURI = (String) options.valueOf("graph");
-				URI.create(defaultGraphURI);
-			} catch(OptionException e) {
-				System.out.println("The specified graph appears not to be a proper URI.");
+				defaultGraphURI = (URI) options.valueOf("graph");
+			} catch (IllegalArgumentException | OptionException e) {
+				System.err.println(String.format("The specified graph <%s> appears not to be a proper URI.", defaultGraphURI));
 				System.exit(0);
 			}
 		}
-		SparqlEndpoint endpoint = new SparqlEndpoint(endpointURL, defaultGraphURI);
+		SparqlEndpoint endpoint = new SparqlEndpoint(endpointURL, defaultGraphURI.getPath());
 
+		// parse the cache directory
         String cacheDirectory = (String) options.valueOf("cache");
 
-        Avatar v = new Avatar(endpoint, cacheDirectory);
-        v.setGenderDetector(new TypeAwareGenderDetector(v.qef, new DelegateGenderDetector(Lists.newArrayList(
-                new PropertyBasedGenderDetector(v.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
+        Avatar avatar = new Avatar(endpoint, cacheDirectory);
+        avatar.setGenderDetector(new TypeAwareGenderDetector(avatar.qef, new DelegateGenderDetector(Lists.newArrayList(
+                new PropertyBasedGenderDetector(avatar.qef, Lists.newArrayList("http://xmlns.com/foaf/0.1/gender")),
                 new DictionaryBasedGenderDetector()))));
 
         OWLIndividual ind = new OWLNamedIndividualImpl(IRI.create(options.valueOf("i").toString()));
 
-        Optional<OWLClass> cls =
-                Optional.ofNullable(options.has("c")
-                        ? new OWLClassImpl(IRI.create((URI)options.valueOf("c")))
-                        : null);
+		Optional<OWLClass> cls = Optional.ofNullable(
+				options.has("c")
+						? new OWLClassImpl(IRI.create((URI) options.valueOf("c")))
+						: null
+		);
 
 		// optionally, set the person types
 		if(options.has("p")) {
 			List<String> personTypes = Splitter.on(',').trimResults().omitEmptyStrings().splitToList((String) options.valueOf("p"));
-			v.setPersonTypes(new HashSet(personTypes));
+			avatar.setPersonTypes(new HashSet<>(personTypes));
 		}
 
-		String summary = cls.isPresent() ? v.summarize(ind, cls.get()) : v.summarize(ind);
+		avatar.setDatasetConstraints(DBpediaDatasetConstraints.getInstance());
+
+		// generate the summary
+		String summary = cls.isPresent() ? avatar.summarize(ind, cls.get()) : avatar.summarize(ind);
 
         summary = summary.replaceAll("\\s?\\((.*?)\\)", "");
         summary = summary.replace(" , among others,", ", among others,");

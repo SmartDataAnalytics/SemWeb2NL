@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import com.google.common.net.UrlEscapers;
 import org.aksw.avatar.clustering.Node;
 import org.aksw.avatar.clustering.WeightedGraph;
 import org.aksw.avatar.exceptions.NoGraphAvailableException;
@@ -148,7 +149,7 @@ public class CachedDatasetBasedGraphGenerator extends DatasetBasedGraphGenerator
 		       .putDouble(configuration.threshold)
 		       .putString(configuration.c.name(), Charsets.UTF_8)
 		       .hash();
-		String filename = hc.toString() + ".graph";
+		String filename = UrlEscapers.urlPathSegmentEscaper().escape(configuration.cls.toStringID()) + "-" + hc.toString() + ".graph";
 		File file = new File(graphsFolder, filename);
 		WeightedGraph g = null;
 		if(isUseCache() && file.exists()){
