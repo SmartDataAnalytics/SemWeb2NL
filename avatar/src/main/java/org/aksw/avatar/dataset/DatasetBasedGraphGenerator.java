@@ -48,6 +48,7 @@ import org.apache.jena.query.*;
 import org.dllearner.kb.sparql.SparqlEndpoint;
 import org.dllearner.reasoning.SPARQLReasoner;
 import org.dllearner.utilities.MapUtils;
+import org.dllearner.utilities.OWLAPIUtils;
 import org.semanticweb.owlapi.model.IRI;
 import org.semanticweb.owlapi.model.OWLClass;
 import org.semanticweb.owlapi.model.OWLObjectProperty;
@@ -459,13 +460,63 @@ public class DatasetBasedGraphGenerator {
         }
     }
 
+    ParameterizedSparqlString SUPER_CLASSES_QUERY = new ParameterizedSparqlString("PREFIX owl: <http://www.w3.org/2002/07/owl#>\n" +
+                                                                                          "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+                                                                                          "SELECT DISTINCT ?sup WHERE {?cls rdfs:subClassOf+ ?sup . FILTER(?sup != owl:Thing)}");
+
     private SortedSet<OWLObjectProperty> getMostProminentProperties(OWLClass cls, double threshold, String namespace, Direction propertyDirection) {
     	logger.info("Computing most prominent " + propertyDirection.name().toLowerCase() + " properties for class " + cls + " ...");
         SortedSet<OWLObjectProperty> properties = new TreeSet<>();
 
+        SUPER_CLASSES_QUERY.setIri("cls", cls.toStringID());
+        try(ResultSetCloseable rs = executeSelectQuery(SUPER_CLASSES_QUERY.toString())){
+            while(rs.hasNext()) {
+                cls = new OWLClassImpl(IRI.create(rs.next().getResource("sup").getURI()));
+
+                // get total number of instances for the class
+                int instanceCount = getInstanceCount(cls);
+                logger.info("Number of instances in class: " + instanceCount);
+
+
+
+                // get all properties+frequency that are used by instances of the class
+                Map<OWLObjectProperty, Integer> propertiesWithFrequency =
+                        (instanceCount > 500000)
+                                ? getPropertiesWithFrequencySingle(cls, propertyDirection)
+                                : getPropertiesWithFrequencyBatch(cls, propertyDirection);
+
+                if(propertiesWithFrequency.isEmpty()) {
+                    logger.warn("No properties found for class " + cls);
+                }
+
+                SimpleTable table = SimpleTable.of();
+
+                // get all properties with a relative frequency above the threshold
+                for (Entry<OWLObjectProperty, Integer> entry : MapUtils.sortByValues(propertiesWithFrequency)) {
+                    OWLObjectProperty property = entry.getKey();
+                    Integer frequency = entry.getValue();
+
+                    double score = frequency / (double) instanceCount;
+
+                    if (score >= threshold) {
+                        properties.add(property);
+                    }
+
+                    table.nextRow()
+                            .nextCell().addLine(property.toString())
+                            .nextCell().addLine(String.valueOf(frequency)).applyToCell(RIGHT_ALIGN.withWidth(8))
+                            .nextCell().addLine(df.format(score));
+                }
+
+                logger.info(prettyString(table));
+            }
+        }
+
         //get total number of instances for the class
         int instanceCount = getInstanceCount(cls);
         logger.info("Number of instances in class: " + instanceCount);
+
+
 
         // get all properties+frequency that are used by instances of the class
         Map<OWLObjectProperty, Integer> propertiesWithFrequency =
@@ -492,7 +543,7 @@ public class DatasetBasedGraphGenerator {
 
             table.nextRow()
                     .nextCell().addLine(property.toString())
-                    .nextCell().addLine(String.valueOf(frequency)).applyToCell(RIGHT_ALIGN.withWidth(5))
+                    .nextCell().addLine(String.valueOf(frequency)).applyToCell(RIGHT_ALIGN.withWidth(8))
                     .nextCell().addLine(df.format(score));
         }
 
